@@ -334,7 +334,7 @@ function buildTitle(){
   var raw=(cfg.title||'').replace(/\r/g,'');
   var hard=raw.split('\n').filter(function(s,i,a){ return s.length||a.length===1; });
   if(!hard.length) hard=[' '];
-  /* 超长行按【词边界】断（有空格先切词，别把「明动」劈两半），无空格退回硬切 */
+  /* 超长行按【词边界】断（有空格先切词，别把「名称」劈两半），无空格退回硬切 */
   var lines=[];
   hard.forEach(function(s){
     if(s.length<=MAXLINE){ lines.push(s); return; }
