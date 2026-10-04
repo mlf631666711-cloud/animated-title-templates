@@ -8,171 +8,278 @@
   :root { --bg:#0e1116; --card:#171c24; --line:#252d3a; --tx:#e8edf4; --sub:#8b97a8; --acc:#5ea0ff; }
   * { box-sizing:border-box; margin:0; padding:0; }
   body { background:var(--bg); color:var(--tx); font:15px/1.6 "Segoe UI","Microsoft YaHei",sans-serif; padding:40px 4vw 60px; }
-  h1 { font-size:26px; margin-bottom:6px; }
+  .top { display:flex; align-items:flex-start; gap:16px; }
+  .top h1 { font-size:26px; margin-bottom:6px; flex:1; }
+  .langbtn { background:var(--card); color:var(--acc); border:1px solid var(--line); border-radius:20px;
+             padding:5px 16px; font-size:13px; font-weight:600; cursor:pointer; white-space:nowrap; margin-top:4px;
+             transition:border-color .15s; }
+  .langbtn:hover { border-color:var(--acc); }
   .lead { color:var(--sub); margin-bottom:34px; }
   .lead b { color:var(--acc); font-weight:600; }
   .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:18px; }
   .card { background:var(--card); border:1px solid var(--line); border-radius:12px; overflow:hidden;
           display:block; transition:transform .15s ease, border-color .15s ease; }
   .card:hover { transform:translateY(-3px); border-color:var(--acc); }
-  .cover { display:block; text-decoration:none; color:var(--tx); }
+  .cover { display:block; position:relative; cursor:pointer; color:var(--tx); outline:none; }
+  .cover:focus-visible { box-shadow:0 0 0 2px var(--acc); }
   .card img { width:100%; aspect-ratio:16/9; object-fit:cover; display:block; background:#000; }
+  .play { position:absolute; left:50%; top:38%; transform:translate(-50%,-50%); width:52px; height:52px;
+          border-radius:50%; background:rgba(10,14,20,.62); border:1px solid rgba(255,255,255,.28);
+          color:#fff; font-size:20px; display:flex; align-items:center; justify-content:center;
+          padding-left:4px; opacity:0; transition:opacity .15s ease, transform .15s ease; pointer-events:none; }
+  .cover:hover .play, .cover:focus-visible .play { opacity:1; transform:translate(-50%,-50%) scale(1.06); }
   .meta { display:flex; align-items:baseline; gap:10px; padding:12px 14px 4px; }
   .num { color:var(--acc); font-weight:700; font-size:13px; }
   .name { font-weight:600; font-size:16px; flex:1; }
   .size { color:var(--sub); font-size:12px; }
   .links { padding:0 14px 12px; color:var(--sub); font-size:12px; }
-  .links a { color:var(--acc); text-decoration:none; margin-left:10px; }
-  .lk { color:var(--sub); }
+  .links a { color:var(--acc); text-decoration:none; margin-left:10px; cursor:pointer; }
   footer { margin-top:40px; color:var(--sub); font-size:13px; }
   footer a { color:var(--acc); }
+  /* 视频弹层 */
+  .modal { display:none; position:fixed; inset:0; z-index:50; background:rgba(5,8,12,.86);
+           align-items:center; justify-content:center; padding:4vh 4vw; }
+  .modal.on { display:flex; }
+  .mbox { width:min(1100px,94vw); }
+  .mhead { display:flex; align-items:center; gap:12px; margin-bottom:10px; }
+  .mtitle { font-weight:600; font-size:16px; flex:1; }
+  .mclose { background:none; border:1px solid var(--line); color:var(--tx); width:34px; height:34px;
+            border-radius:50%; font-size:16px; cursor:pointer; line-height:1; }
+  .mclose:hover { border-color:var(--acc); color:var(--acc); }
+  .mbox video { width:100%; aspect-ratio:16/9; background:#000; border-radius:10px;
+                border:1px solid var(--line); display:block; }
 </style>
 </head>
 <body>
-<h1>动态开头 / 标题模板库</h1>
-<p class="lead">20 个单文件 HTML 动态标题模板 · 纯前端零依赖 · <b>点卡片打开模板本体</b>，文案参数直接在代码里改</p>
+<div class="top">
+  <h1 data-zh="动态开头 / 标题模板库" data-en="Animated Title &amp; Opener Templates">动态开头 / 标题模板库</h1>
+  <button class="langbtn" id="langbtn" type="button">EN</button>
+</div>
+<p class="lead"><span data-zh="20 个单文件 HTML 动态标题模板 · 纯前端零依赖 · " data-en="20 single-file HTML animated title templates · zero dependencies · ">20 个单文件 HTML 动态标题模板 · 纯前端零依赖 · </span><b data-zh="点卡片在线看视频" data-en="click a card to watch the video">点卡片在线看视频</b><span data-zh="，或打开模板本体，文案参数直接在代码里改" data-en=", or open the live template — edit text &amp; params right in the code">，或打开模板本体，文案参数直接在代码里改</span></p>
 <div class="grid">
 <div class="card">
-  <a class="cover" href="demos/cyber/cyber-chapter-card.html" target="_blank" rel="noopener">
+  <div class="cover" data-vid="cyber" data-name="Cyber 章节卡" data-name-en="Cyber Chapter Card" role="button" tabindex="0" aria-label="Cyber 章节卡 video preview">
     <img src="demos/cyber/preview.png" alt="Cyber 章节卡" loading="lazy">
-    <div class="meta"><span class="num">01</span><span class="name">Cyber 章节卡</span><span class="size">1280×720</span></div>
-  </a>
-  <div class="links"><a href="demos/cyber/cyber-chapter-card.html" target="_blank" rel="noopener">▶ 打开模板</a><a href="demos/cyber/demo.mp4" target="_blank" rel="noopener">MP4</a></div>
+    <div class="play">▶</div>
+    <div class="meta"><span class="num">01</span><span class="name" data-zh="Cyber 章节卡" data-en="Cyber Chapter Card">Cyber 章节卡</span><span class="size">1280×720</span></div>
+  </div>
+  <div class="links"><a class="vid" data-vid="cyber" data-name="Cyber 章节卡" data-name-en="Cyber Chapter Card">▶ <span data-zh="看视频" data-en="Watch">看视频</span></a><a href="demos/cyber/cyber-chapter-card.html" target="_blank" rel="noopener">▶ <span data-zh="打开模板" data-en="Open">打开模板</span></a><a href="demos/cyber/demo.mp4" target="_blank" rel="noopener">MP4</a></div>
 </div>
 <div class="card">
-  <a class="cover" href="demos/cyber2/part02-opener.html" target="_blank" rel="noopener">
+  <div class="cover" data-vid="cyber2" data-name="Cyber2 开场" data-name-en="Cyber2 Opener" role="button" tabindex="0" aria-label="Cyber2 开场 video preview">
     <img src="demos/cyber2/preview.png" alt="Cyber2 开场" loading="lazy">
-    <div class="meta"><span class="num">02</span><span class="name">Cyber2 开场</span><span class="size">2048×1152</span></div>
-  </a>
-  <div class="links"><a href="demos/cyber2/part02-opener.html" target="_blank" rel="noopener">▶ 打开模板</a><a href="demos/cyber2/demo.mp4" target="_blank" rel="noopener">MP4</a></div>
+    <div class="play">▶</div>
+    <div class="meta"><span class="num">02</span><span class="name" data-zh="Cyber2 开场" data-en="Cyber2 Opener">Cyber2 开场</span><span class="size">2048×1152</span></div>
+  </div>
+  <div class="links"><a class="vid" data-vid="cyber2" data-name="Cyber2 开场" data-name-en="Cyber2 Opener">▶ <span data-zh="看视频" data-en="Watch">看视频</span></a><a href="demos/cyber2/part02-opener.html" target="_blank" rel="noopener">▶ <span data-zh="打开模板" data-en="Open">打开模板</span></a><a href="demos/cyber2/demo.mp4" target="_blank" rel="noopener">MP4</a></div>
 </div>
 <div class="card">
-  <a class="cover" href="demos/neon/neon-circuit.html" target="_blank" rel="noopener">
+  <div class="cover" data-vid="neon" data-name="霓虹电路" data-name-en="Neon Circuit" role="button" tabindex="0" aria-label="霓虹电路 video preview">
     <img src="demos/neon/preview.png" alt="霓虹电路" loading="lazy">
-    <div class="meta"><span class="num">03</span><span class="name">霓虹电路</span><span class="size">2048×1152</span></div>
-  </a>
-  <div class="links"><a href="demos/neon/neon-circuit.html" target="_blank" rel="noopener">▶ 打开模板</a><a href="demos/neon/demo.mp4" target="_blank" rel="noopener">MP4</a></div>
+    <div class="play">▶</div>
+    <div class="meta"><span class="num">03</span><span class="name" data-zh="霓虹电路" data-en="Neon Circuit">霓虹电路</span><span class="size">2048×1152</span></div>
+  </div>
+  <div class="links"><a class="vid" data-vid="neon" data-name="霓虹电路" data-name-en="Neon Circuit">▶ <span data-zh="看视频" data-en="Watch">看视频</span></a><a href="demos/neon/neon-circuit.html" target="_blank" rel="noopener">▶ <span data-zh="打开模板" data-en="Open">打开模板</span></a><a href="demos/neon/demo.mp4" target="_blank" rel="noopener">MP4</a></div>
 </div>
 <div class="card">
-  <a class="cover" href="demos/motion/motion-wipe.html" target="_blank" rel="noopener">
+  <div class="cover" data-vid="motion" data-name="MOTION 文字弹球" data-name-en="MOTION Text Bounce" role="button" tabindex="0" aria-label="MOTION 文字弹球 video preview">
     <img src="demos/motion/preview.png" alt="MOTION 文字弹球" loading="lazy">
-    <div class="meta"><span class="num">04</span><span class="name">MOTION 文字弹球</span><span class="size">1280×720</span></div>
-  </a>
-  <div class="links"><a href="demos/motion/motion-wipe.html" target="_blank" rel="noopener">▶ 打开模板</a><a href="demos/motion/demo.mp4" target="_blank" rel="noopener">MP4</a></div>
+    <div class="play">▶</div>
+    <div class="meta"><span class="num">04</span><span class="name" data-zh="MOTION 文字弹球" data-en="MOTION Text Bounce">MOTION 文字弹球</span><span class="size">1280×720</span></div>
+  </div>
+  <div class="links"><a class="vid" data-vid="motion" data-name="MOTION 文字弹球" data-name-en="MOTION Text Bounce">▶ <span data-zh="看视频" data-en="Watch">看视频</span></a><a href="demos/motion/motion-wipe.html" target="_blank" rel="noopener">▶ <span data-zh="打开模板" data-en="Open">打开模板</span></a><a href="demos/motion/demo.mp4" target="_blank" rel="noopener">MP4</a></div>
 </div>
 <div class="card">
-  <a class="cover" href="demos/cloudpop/cloud-pop.html" target="_blank" rel="noopener">
+  <div class="cover" data-vid="cloudpop" data-name="云朵弹跳" data-name-en="Cloud Pop" role="button" tabindex="0" aria-label="云朵弹跳 video preview">
     <img src="demos/cloudpop/preview.png" alt="云朵弹跳" loading="lazy">
-    <div class="meta"><span class="num">05</span><span class="name">云朵弹跳</span><span class="size">1280×720</span></div>
-  </a>
-  <div class="links"><a href="demos/cloudpop/cloud-pop.html" target="_blank" rel="noopener">▶ 打开模板</a><a href="demos/cloudpop/demo.mp4" target="_blank" rel="noopener">MP4</a></div>
+    <div class="play">▶</div>
+    <div class="meta"><span class="num">05</span><span class="name" data-zh="云朵弹跳" data-en="Cloud Pop">云朵弹跳</span><span class="size">1280×720</span></div>
+  </div>
+  <div class="links"><a class="vid" data-vid="cloudpop" data-name="云朵弹跳" data-name-en="Cloud Pop">▶ <span data-zh="看视频" data-en="Watch">看视频</span></a><a href="demos/cloudpop/cloud-pop.html" target="_blank" rel="noopener">▶ <span data-zh="打开模板" data-en="Open">打开模板</span></a><a href="demos/cloudpop/demo.mp4" target="_blank" rel="noopener">MP4</a></div>
 </div>
 <div class="card">
-  <a class="cover" href="demos/opener/opener.html" target="_blank" rel="noopener">
+  <div class="cover" data-vid="opener" data-name="Opener 开场" data-name-en="Cinematic Opener" role="button" tabindex="0" aria-label="Opener 开场 video preview">
     <img src="demos/opener/preview.png" alt="Opener 开场" loading="lazy">
-    <div class="meta"><span class="num">06</span><span class="name">Opener 开场</span><span class="size">1920×1080</span></div>
-  </a>
-  <div class="links"><a href="demos/opener/opener.html" target="_blank" rel="noopener">▶ 打开模板</a><a href="demos/opener/demo.mp4" target="_blank" rel="noopener">MP4</a></div>
+    <div class="play">▶</div>
+    <div class="meta"><span class="num">06</span><span class="name" data-zh="Opener 开场" data-en="Cinematic Opener">Opener 开场</span><span class="size">1920×1080</span></div>
+  </div>
+  <div class="links"><a class="vid" data-vid="opener" data-name="Opener 开场" data-name-en="Cinematic Opener">▶ <span data-zh="看视频" data-en="Watch">看视频</span></a><a href="demos/opener/opener.html" target="_blank" rel="noopener">▶ <span data-zh="打开模板" data-en="Open">打开模板</span></a><a href="demos/opener/demo.mp4" target="_blank" rel="noopener">MP4</a></div>
 </div>
 <div class="card">
-  <a class="cover" href="demos/schema/chip-pulse_tpl.html" target="_blank" rel="noopener">
+  <div class="cover" data-vid="schema" data-name="芯片弹跳" data-name-en="Chip Pulse" role="button" tabindex="0" aria-label="芯片弹跳 video preview">
     <img src="demos/schema/preview.png" alt="芯片弹跳" loading="lazy">
-    <div class="meta"><span class="num">07</span><span class="name">芯片弹跳</span><span class="size">1280×720</span></div>
-  </a>
-  <div class="links"><a href="demos/schema/chip-pulse_tpl.html" target="_blank" rel="noopener">▶ 打开模板</a><a href="demos/schema/demo.mp4" target="_blank" rel="noopener">MP4</a></div>
+    <div class="play">▶</div>
+    <div class="meta"><span class="num">07</span><span class="name" data-zh="芯片弹跳" data-en="Chip Pulse">芯片弹跳</span><span class="size">1280×720</span></div>
+  </div>
+  <div class="links"><a class="vid" data-vid="schema" data-name="芯片弹跳" data-name-en="Chip Pulse">▶ <span data-zh="看视频" data-en="Watch">看视频</span></a><a href="demos/schema/chip-pulse_tpl.html" target="_blank" rel="noopener">▶ <span data-zh="打开模板" data-en="Open">打开模板</span></a><a href="demos/schema/demo.mp4" target="_blank" rel="noopener">MP4</a></div>
 </div>
 <div class="card">
-  <a class="cover" href="demos/gridblue/grid-blue-open.html" target="_blank" rel="noopener">
+  <div class="cover" data-vid="gridblue" data-name="网格标题" data-name-en="Grid Title" role="button" tabindex="0" aria-label="网格标题 video preview">
     <img src="demos/gridblue/preview.png" alt="网格标题" loading="lazy">
-    <div class="meta"><span class="num">08</span><span class="name">网格标题</span><span class="size">1920×1080</span></div>
-  </a>
-  <div class="links"><a href="demos/gridblue/grid-blue-open.html" target="_blank" rel="noopener">▶ 打开模板</a><a href="demos/gridblue/demo.mp4" target="_blank" rel="noopener">MP4</a></div>
+    <div class="play">▶</div>
+    <div class="meta"><span class="num">08</span><span class="name" data-zh="网格标题" data-en="Grid Title">网格标题</span><span class="size">1920×1080</span></div>
+  </div>
+  <div class="links"><a class="vid" data-vid="gridblue" data-name="网格标题" data-name-en="Grid Title">▶ <span data-zh="看视频" data-en="Watch">看视频</span></a><a href="demos/gridblue/grid-blue-open.html" target="_blank" rel="noopener">▶ <span data-zh="打开模板" data-en="Open">打开模板</span></a><a href="demos/gridblue/demo.mp4" target="_blank" rel="noopener">MP4</a></div>
 </div>
 <div class="card">
-  <a class="cover" href="demos/draftdesk/draft-desk.html" target="_blank" rel="noopener">
+  <div class="cover" data-vid="draftdesk" data-name="蓝图制图台" data-name-en="Blueprint Desk" role="button" tabindex="0" aria-label="蓝图制图台 video preview">
     <img src="demos/draftdesk/preview.png" alt="蓝图制图台" loading="lazy">
-    <div class="meta"><span class="num">09</span><span class="name">蓝图制图台</span><span class="size">1920×1080</span></div>
-  </a>
-  <div class="links"><a href="demos/draftdesk/draft-desk.html" target="_blank" rel="noopener">▶ 打开模板</a><a href="demos/draftdesk/demo.mp4" target="_blank" rel="noopener">MP4</a></div>
+    <div class="play">▶</div>
+    <div class="meta"><span class="num">09</span><span class="name" data-zh="蓝图制图台" data-en="Blueprint Desk">蓝图制图台</span><span class="size">1920×1080</span></div>
+  </div>
+  <div class="links"><a class="vid" data-vid="draftdesk" data-name="蓝图制图台" data-name-en="Blueprint Desk">▶ <span data-zh="看视频" data-en="Watch">看视频</span></a><a href="demos/draftdesk/draft-desk.html" target="_blank" rel="noopener">▶ <span data-zh="打开模板" data-en="Open">打开模板</span></a><a href="demos/draftdesk/demo.mp4" target="_blank" rel="noopener">MP4</a></div>
 </div>
 <div class="card">
-  <a class="cover" href="demos/helldive/hell-dive.html" target="_blank" rel="noopener">
+  <div class="cover" data-vid="helldive" data-name="黑金突入" data-name-en="Black & Gold Dive" role="button" tabindex="0" aria-label="黑金突入 video preview">
     <img src="demos/helldive/preview.png" alt="黑金突入" loading="lazy">
-    <div class="meta"><span class="num">10</span><span class="name">黑金突入</span><span class="size">1920×1080</span></div>
-  </a>
-  <div class="links"><a href="demos/helldive/hell-dive.html" target="_blank" rel="noopener">▶ 打开模板</a><a href="demos/helldive/demo.mp4" target="_blank" rel="noopener">MP4</a></div>
+    <div class="play">▶</div>
+    <div class="meta"><span class="num">10</span><span class="name" data-zh="黑金突入" data-en="Black & Gold Dive">黑金突入</span><span class="size">1920×1080</span></div>
+  </div>
+  <div class="links"><a class="vid" data-vid="helldive" data-name="黑金突入" data-name-en="Black & Gold Dive">▶ <span data-zh="看视频" data-en="Watch">看视频</span></a><a href="demos/helldive/hell-dive.html" target="_blank" rel="noopener">▶ <span data-zh="打开模板" data-en="Open">打开模板</span></a><a href="demos/helldive/demo.mp4" target="_blank" rel="noopener">MP4</a></div>
 </div>
 <div class="card">
-  <a class="cover" href="demos/mosswin/moss-window.html" target="_blank" rel="noopener">
+  <div class="cover" data-vid="mosswin" data-name="竹窗苔原" data-name-en="Moss Window" role="button" tabindex="0" aria-label="竹窗苔原 video preview">
     <img src="demos/mosswin/preview.png" alt="竹窗苔原" loading="lazy">
-    <div class="meta"><span class="num">11</span><span class="name">竹窗苔原</span><span class="size">1920×1080</span></div>
-  </a>
-  <div class="links"><a href="demos/mosswin/moss-window.html" target="_blank" rel="noopener">▶ 打开模板</a><a href="demos/mosswin/demo.mp4" target="_blank" rel="noopener">MP4</a></div>
+    <div class="play">▶</div>
+    <div class="meta"><span class="num">11</span><span class="name" data-zh="竹窗苔原" data-en="Moss Window">竹窗苔原</span><span class="size">1920×1080</span></div>
+  </div>
+  <div class="links"><a class="vid" data-vid="mosswin" data-name="竹窗苔原" data-name-en="Moss Window">▶ <span data-zh="看视频" data-en="Watch">看视频</span></a><a href="demos/mosswin/moss-window.html" target="_blank" rel="noopener">▶ <span data-zh="打开模板" data-en="Open">打开模板</span></a><a href="demos/mosswin/demo.mp4" target="_blank" rel="noopener">MP4</a></div>
 </div>
 <div class="card">
-  <a class="cover" href="demos/popmint/pop-mint.html" target="_blank" rel="noopener">
+  <div class="cover" data-vid="popmint" data-name="薄荷撞色" data-name-en="Pop Mint" role="button" tabindex="0" aria-label="薄荷撞色 video preview">
     <img src="demos/popmint/preview.png" alt="薄荷撞色" loading="lazy">
-    <div class="meta"><span class="num">12</span><span class="name">薄荷撞色</span><span class="size">1920×1080</span></div>
-  </a>
-  <div class="links"><a href="demos/popmint/pop-mint.html" target="_blank" rel="noopener">▶ 打开模板</a><a href="demos/popmint/demo.mp4" target="_blank" rel="noopener">MP4</a></div>
+    <div class="play">▶</div>
+    <div class="meta"><span class="num">12</span><span class="name" data-zh="薄荷撞色" data-en="Pop Mint">薄荷撞色</span><span class="size">1920×1080</span></div>
+  </div>
+  <div class="links"><a class="vid" data-vid="popmint" data-name="薄荷撞色" data-name-en="Pop Mint">▶ <span data-zh="看视频" data-en="Watch">看视频</span></a><a href="demos/popmint/pop-mint.html" target="_blank" rel="noopener">▶ <span data-zh="打开模板" data-en="Open">打开模板</span></a><a href="demos/popmint/demo.mp4" target="_blank" rel="noopener">MP4</a></div>
 </div>
 <div class="card">
-  <a class="cover" href="demos/pressht/press-halftone.html" target="_blank" rel="noopener">
+  <div class="cover" data-vid="pressht" data-name="半调套印" data-name-en="Halftone Press" role="button" tabindex="0" aria-label="半调套印 video preview">
     <img src="demos/pressht/preview.png" alt="半调套印" loading="lazy">
-    <div class="meta"><span class="num">13</span><span class="name">半调套印</span><span class="size">1920×1080</span></div>
-  </a>
-  <div class="links"><a href="demos/pressht/press-halftone.html" target="_blank" rel="noopener">▶ 打开模板</a><a href="demos/pressht/demo.mp4" target="_blank" rel="noopener">MP4</a></div>
+    <div class="play">▶</div>
+    <div class="meta"><span class="num">13</span><span class="name" data-zh="半调套印" data-en="Halftone Press">半调套印</span><span class="size">1920×1080</span></div>
+  </div>
+  <div class="links"><a class="vid" data-vid="pressht" data-name="半调套印" data-name-en="Halftone Press">▶ <span data-zh="看视频" data-en="Watch">看视频</span></a><a href="demos/pressht/press-halftone.html" target="_blank" rel="noopener">▶ <span data-zh="打开模板" data-en="Open">打开模板</span></a><a href="demos/pressht/demo.mp4" target="_blank" rel="noopener">MP4</a></div>
 </div>
 <div class="card">
-  <a class="cover" href="demos/blushm/blush-morandi.html" target="_blank" rel="noopener">
+  <div class="cover" data-vid="blushm" data-name="莫兰迪柔雾" data-name-en="Blush Morandi" role="button" tabindex="0" aria-label="莫兰迪柔雾 video preview">
     <img src="demos/blushm/preview.png" alt="莫兰迪柔雾" loading="lazy">
-    <div class="meta"><span class="num">14</span><span class="name">莫兰迪柔雾</span><span class="size">1920×1080</span></div>
-  </a>
-  <div class="links"><a href="demos/blushm/blush-morandi.html" target="_blank" rel="noopener">▶ 打开模板</a><a href="demos/blushm/demo.mp4" target="_blank" rel="noopener">MP4</a></div>
+    <div class="play">▶</div>
+    <div class="meta"><span class="num">14</span><span class="name" data-zh="莫兰迪柔雾" data-en="Blush Morandi">莫兰迪柔雾</span><span class="size">1920×1080</span></div>
+  </div>
+  <div class="links"><a class="vid" data-vid="blushm" data-name="莫兰迪柔雾" data-name-en="Blush Morandi">▶ <span data-zh="看视频" data-en="Watch">看视频</span></a><a href="demos/blushm/blush-morandi.html" target="_blank" rel="noopener">▶ <span data-zh="打开模板" data-en="Open">打开模板</span></a><a href="demos/blushm/demo.mp4" target="_blank" rel="noopener">MP4</a></div>
 </div>
 <div class="card">
-  <a class="cover" href="demos/liqchr/liquid-chrome.html" target="_blank" rel="noopener">
+  <div class="cover" data-vid="liqchr" data-name="液态铬镜" data-name-en="Liquid Chrome" role="button" tabindex="0" aria-label="液态铬镜 video preview">
     <img src="demos/liqchr/preview.png" alt="液态铬镜" loading="lazy">
-    <div class="meta"><span class="num">15</span><span class="name">液态铬镜</span><span class="size">1920×1080</span></div>
-  </a>
-  <div class="links"><a href="demos/liqchr/liquid-chrome.html" target="_blank" rel="noopener">▶ 打开模板</a><a href="demos/liqchr/demo.mp4" target="_blank" rel="noopener">MP4</a></div>
+    <div class="play">▶</div>
+    <div class="meta"><span class="num">15</span><span class="name" data-zh="液态铬镜" data-en="Liquid Chrome">液态铬镜</span><span class="size">1920×1080</span></div>
+  </div>
+  <div class="links"><a class="vid" data-vid="liqchr" data-name="液态铬镜" data-name-en="Liquid Chrome">▶ <span data-zh="看视频" data-en="Watch">看视频</span></a><a href="demos/liqchr/liquid-chrome.html" target="_blank" rel="noopener">▶ <span data-zh="打开模板" data-en="Open">打开模板</span></a><a href="demos/liqchr/demo.mp4" target="_blank" rel="noopener">MP4</a></div>
 </div>
 <div class="card">
-  <a class="cover" href="demos/gsam/gold-seam.html" target="_blank" rel="noopener">
+  <div class="cover" data-vid="gsam" data-name="金缮合缝" data-name-en="Gold Seam" role="button" tabindex="0" aria-label="金缮合缝 video preview">
     <img src="demos/gsam/preview.png" alt="金缮合缝" loading="lazy">
-    <div class="meta"><span class="num">16</span><span class="name">金缮合缝</span><span class="size">1920×1080</span></div>
-  </a>
-  <div class="links"><a href="demos/gsam/gold-seam.html" target="_blank" rel="noopener">▶ 打开模板</a><a href="demos/gsam/demo.mp4" target="_blank" rel="noopener">MP4</a></div>
+    <div class="play">▶</div>
+    <div class="meta"><span class="num">16</span><span class="name" data-zh="金缮合缝" data-en="Gold Seam">金缮合缝</span><span class="size">1920×1080</span></div>
+  </div>
+  <div class="links"><a class="vid" data-vid="gsam" data-name="金缮合缝" data-name-en="Gold Seam">▶ <span data-zh="看视频" data-en="Watch">看视频</span></a><a href="demos/gsam/gold-seam.html" target="_blank" rel="noopener">▶ <span data-zh="打开模板" data-en="Open">打开模板</span></a><a href="demos/gsam/demo.mp4" target="_blank" rel="noopener">MP4</a></div>
 </div>
 <div class="card">
-  <a class="cover" href="demos/vinyl/vinyl.html" target="_blank" rel="noopener">
+  <div class="cover" data-vid="vinyl" data-name="黑胶落针" data-name-en="Vinyl Drop" role="button" tabindex="0" aria-label="黑胶落针 video preview">
     <img src="demos/vinyl/preview.png" alt="黑胶落针" loading="lazy">
-    <div class="meta"><span class="num">17</span><span class="name">黑胶落针</span><span class="size">1920×1080</span></div>
-  </a>
-  <div class="links"><a href="demos/vinyl/vinyl.html" target="_blank" rel="noopener">▶ 打开模板</a><a href="demos/vinyl/demo.mp4" target="_blank" rel="noopener">MP4</a></div>
+    <div class="play">▶</div>
+    <div class="meta"><span class="num">17</span><span class="name" data-zh="黑胶落针" data-en="Vinyl Drop">黑胶落针</span><span class="size">1920×1080</span></div>
+  </div>
+  <div class="links"><a class="vid" data-vid="vinyl" data-name="黑胶落针" data-name-en="Vinyl Drop">▶ <span data-zh="看视频" data-en="Watch">看视频</span></a><a href="demos/vinyl/vinyl.html" target="_blank" rel="noopener">▶ <span data-zh="打开模板" data-en="Open">打开模板</span></a><a href="demos/vinyl/demo.mp4" target="_blank" rel="noopener">MP4</a></div>
 </div>
 <div class="card">
-  <a class="cover" href="demos/pcut/paper-cut.html" target="_blank" rel="noopener">
+  <div class="cover" data-vid="pcut" data-name="纸层隧道" data-name-en="Paper Tunnel" role="button" tabindex="0" aria-label="纸层隧道 video preview">
     <img src="demos/pcut/preview.png" alt="纸层隧道" loading="lazy">
-    <div class="meta"><span class="num">18</span><span class="name">纸层隧道</span><span class="size">1920×1080</span></div>
-  </a>
-  <div class="links"><a href="demos/pcut/paper-cut.html" target="_blank" rel="noopener">▶ 打开模板</a><a href="demos/pcut/demo.mp4" target="_blank" rel="noopener">MP4</a></div>
+    <div class="play">▶</div>
+    <div class="meta"><span class="num">18</span><span class="name" data-zh="纸层隧道" data-en="Paper Tunnel">纸层隧道</span><span class="size">1920×1080</span></div>
+  </div>
+  <div class="links"><a class="vid" data-vid="pcut" data-name="纸层隧道" data-name-en="Paper Tunnel">▶ <span data-zh="看视频" data-en="Watch">看视频</span></a><a href="demos/pcut/paper-cut.html" target="_blank" rel="noopener">▶ <span data-zh="打开模板" data-en="Open">打开模板</span></a><a href="demos/pcut/demo.mp4" target="_blank" rel="noopener">MP4</a></div>
 </div>
 <div class="card">
-  <a class="cover" href="demos/mb/mission-badge.html" target="_blank" rel="noopener">
+  <div class="cover" data-vid="mb" data-name="极坐标徽" data-name-en="Mission Badge" role="button" tabindex="0" aria-label="极坐标徽 video preview">
     <img src="demos/mb/preview.png" alt="极坐标徽" loading="lazy">
-    <div class="meta"><span class="num">19</span><span class="name">极坐标徽</span><span class="size">1920×1080</span></div>
-  </a>
-  <div class="links"><a href="demos/mb/mission-badge.html" target="_blank" rel="noopener">▶ 打开模板</a><a href="demos/mb/demo.mp4" target="_blank" rel="noopener">MP4</a></div>
+    <div class="play">▶</div>
+    <div class="meta"><span class="num">19</span><span class="name" data-zh="极坐标徽" data-en="Mission Badge">极坐标徽</span><span class="size">1920×1080</span></div>
+  </div>
+  <div class="links"><a class="vid" data-vid="mb" data-name="极坐标徽" data-name-en="Mission Badge">▶ <span data-zh="看视频" data-en="Watch">看视频</span></a><a href="demos/mb/mission-badge.html" target="_blank" rel="noopener">▶ <span data-zh="打开模板" data-en="Open">打开模板</span></a><a href="demos/mb/demo.mp4" target="_blank" rel="noopener">MP4</a></div>
 </div>
 <div class="card">
-  <a class="cover" href="demos/bz/brass-gauge.html" target="_blank" rel="noopener">
+  <div class="cover" data-vid="bz" data-name="黄铜表" data-name-en="Brass Gauge" role="button" tabindex="0" aria-label="黄铜表 video preview">
     <img src="demos/bz/preview.png" alt="黄铜表" loading="lazy">
-    <div class="meta"><span class="num">20</span><span class="name">黄铜表</span><span class="size">1920×1080</span></div>
-  </a>
-  <div class="links"><a href="demos/bz/brass-gauge.html" target="_blank" rel="noopener">▶ 打开模板</a><a href="demos/bz/demo.mp4" target="_blank" rel="noopener">MP4</a></div>
+    <div class="play">▶</div>
+    <div class="meta"><span class="num">20</span><span class="name" data-zh="黄铜表" data-en="Brass Gauge">黄铜表</span><span class="size">1920×1080</span></div>
+  </div>
+  <div class="links"><a class="vid" data-vid="bz" data-name="黄铜表" data-name-en="Brass Gauge">▶ <span data-zh="看视频" data-en="Watch">看视频</span></a><a href="demos/bz/brass-gauge.html" target="_blank" rel="noopener">▶ <span data-zh="打开模板" data-en="Open">打开模板</span></a><a href="demos/bz/demo.mp4" target="_blank" rel="noopener">MP4</a></div>
 </div>
 </div>
-<footer>每个模板内部都有 <code>cfg</code> 配置对象，改文案/参数刷新即生效 · <a href="README.md" target="_blank" rel="noopener">README</a> · MIT License</footer>
+<footer><span data-zh="每个模板内部都有 " data-en="Every template ships a ">每个模板内部都有 </span><code>cfg</code><span data-zh=" 配置对象，改文案/参数刷新即生效 · " data-en=" config object — edit text &amp; params, refresh to apply · "> 配置对象，改文案/参数刷新即生效 · </span><a href="README.md" target="_blank" rel="noopener">README</a> · MIT License</footer>
+
+<div class="modal" id="modal">
+  <div class="mbox">
+    <div class="mhead"><div class="mtitle" id="mtitle"></div><button class="mclose" id="mclose" type="button" aria-label="close">✕</button></div>
+    <video id="mvideo" controls playsinline preload="none"></video>
+  </div>
+</div>
+
+<script>
+(function() {
+  var modal = document.getElementById('modal'),
+      mvideo = document.getElementById('mvideo'),
+      mtitle = document.getElementById('mtitle'),
+      mclose = document.getElementById('mclose'),
+      langbtn = document.getElementById('langbtn'),
+      lang = 'zh';
+
+  function applyLang(l) {
+    lang = l;
+    document.documentElement.lang = (l === 'en') ? 'en' : 'zh';
+    document.title = (l === 'en') ? 'Animated Title & Opener Templates' : '动态开头 / 标题模板库 · animated-title-templates';
+    var nodes = document.querySelectorAll('[data-zh]');
+    for (var i = 0; i < nodes.length; i++) {
+      var el = nodes[i];
+      var v = (l === 'en') ? el.getAttribute('data-en') : el.getAttribute('data-zh');
+      if (v !== null) el.textContent = v;
+    }
+    langbtn.textContent = (l === 'en') ? '中文' : 'EN';
+    try { localStorage.setItem('att-lang', l); } catch(e) {}
+  }
+  langbtn.addEventListener('click', function() { applyLang(lang === 'en' ? 'zh' : 'en'); });
+  try { var saved = localStorage.getItem('att-lang'); if (saved === 'en' || saved === 'zh') applyLang(saved); } catch(e) {}
+
+  function openVid(el) {
+    var slug = el.getAttribute('data-vid');
+    mtitle.textContent = (lang === 'en') ? (el.getAttribute('data-name-en') || '') : (el.getAttribute('data-name') || '');
+    mvideo.poster = 'demos/' + slug + '/preview.png';
+    mvideo.src = 'demos/' + slug + '/demo.mp4';
+    modal.classList.add('on');
+    document.body.style.overflow = 'hidden';
+    var p = mvideo.play(); if (p && p.catch) p.catch(function() {});
+  }
+  function closeVid() {
+    modal.classList.remove('on');
+    mvideo.pause();
+    document.body.style.overflow = '';
+  }
+  document.addEventListener('click', function(e) {
+    var t = e.target.closest ? e.target.closest('[data-vid]') : null;
+    if (t) { openVid(t); return; }
+    if (e.target === modal) closeVid();
+  });
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && modal.classList.contains('on')) closeVid();
+    if ((e.key === 'Enter' || e.key === ' ') && document.activeElement &&
+        document.activeElement.getAttribute && document.activeElement.getAttribute('data-vid')) {
+      e.preventDefault(); openVid(document.activeElement);
+    }
+  });
+  mclose.addEventListener('click', closeVid);
+})();
+</script>
 </body>
 </html>
