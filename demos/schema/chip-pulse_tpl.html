@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>Chip Pulse — 芯片半导体标题动画</title>
+<style id="tpl-style">
+:root{
+  --pcb-bg:#0b0e13;        /* PCB 底（产品黑） */
+  --pcb-deep:#06090e;      /* 蔓深处 */
+  --pcb-line:rgba(0,212,170,.12);   /* 走线网格（青绿环境） */
+  --trace:#3a2e1c;         /* 走线基色（暗金） */
+  --trace-hi:#ffcf4d;      /* 走线高光（金） */
+  --chip-steel:#16181d;    /* 芯片基板（钛黑） */
+  --chip-edge:#d4af37;     /* 芯片描边（金） */
+  --pin-gold:#ffd700;      /* 引脚金 */
+  --core:#ffd700;          /* 核心荧光（金） */
+  --env:#00d4aa;           /* 环境青 */
+  --txt:#f4f6f8;           /* 主标题 */
+  --txt-dim:#d8c89c;       /* 副标题（浅金） */
+  --txt-dark:#1a1204;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;background:#04080a;overflow:hidden;font-family:"PingFang SC","HarmonyOS Sans","Microsoft YaHei",sans-serif;display:flex;flex-direction:column;user-select:none}
+/* ===== 编辑面板 ===== */
+#panel{flex-shrink:0;display:flex;align-items:center;gap:14px;padding:12px 18px;background:linear-gradient(180deg,rgba(20,16,6,.96),rgba(10,8,4,.96));border-bottom:1px solid rgba(255,215,0,.35);backdrop-filter:blur(10px);color:#e8dcb8;font:600 14px/1 "PingFang SC",sans-serif;flex-wrap:wrap}
+#panel .field{display:flex;flex-direction:column;gap:5px}
+#panel .field label{font-size:11px;color:#c9b270;letter-spacing:.5px}
+#panel input,#panel textarea{width:160px;padding:8px 12px;border-radius:9px;border:1px solid rgba(212,175,55,.45);background:rgba(16,12,4,.7);color:#f2efe6;font:700 14px "PingFang SC",sans-serif;outline:none}
+#panel textarea{height:50px;resize:none;line-height:1.3}
+#panel input:focus,#panel textarea:focus{border-color:#d4af37;box-shadow:0 0 0 3px rgba(212,175,55,.18)}
+#panel button{padding:9px 15px;border-radius:9px;border:1px solid rgba(212,175,55,.5);background:rgba(90,70,25,.35);color:#ffe9a8;font:700 14px "PingFang SC",sans-serif;cursor:pointer}
+#panel button:hover{background:rgba(120,90,35,.45)}
+#panel button.primary{background:linear-gradient(180deg,#e8b93a,#c8962a);color:#1a1204}
+#panel button.primary:hover{filter:brightness(1.08)}
+#panel .hint{margin-left:auto;font-size:11px;color:#9b8a55;max-width:340px;text-align:right;line-height:1.5}
+#panel.hidden{display:none}
+/* ===== 预览视口 ===== */
+#viewport{flex:1;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#04080a}
+#frame{position:relative;overflow:hidden}
+/* ===== 舞台 1280x720 ===== */
+#stage{width:1280px;height:720px;flex-shrink:0;position:relative;overflow:hidden;background:radial-gradient(120% 100% at 50% 42%, var(--pcb-bg) 0%, #0d1118 55%, var(--pcb-deep) 100%)}
+#fadein{position:absolute;inset:0;background:#04080a;pointer-events:none;opacity:1;z-index:120}
+
+/* ===== PCB 网格纹理层 ===== */
+#grid-layer{position:absolute;inset:0;opacity:0;background-image:
+  linear-gradient(var(--pcb-line) 1px,transparent 1px),
+  linear-gradient(90deg,var(--pcb-line) 1px,transparent 1px);
+  background-size:28px 28px;z-index:1}
+/* 四角过孔徽标 */
+.via-badge{position:absolute;z-index:2;opacity:0}
+.vb{position:relative;width:86px;height:86px;border-radius:50%}
+.vb .ring{position:absolute;inset:0;border-radius:50%;border:1px solid rgba(0,212,170,.5)}
+.vb .ring2{position:absolute;inset:7px;border-radius:50%;border:1px dashed rgba(0,212,170,.35)}
+.vb .dot{position:absolute;left:50%;top:50%;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:radial-gradient(circle,#ffeda3,#e8c14d 60%,#6b4f1d);box-shadow:0 0 14px rgba(255,215,0,.7)}
+.vb .lab{position:absolute;left:0;right:0;bottom:8px;margin:0;text-align:center;font:800 10px/1 "Arial Black","Microsoft YaHei",sans-serif;color:rgba(255,244,214,.85);letter-spacing:1px;white-space:nowrap}
+.vb-tl{left:44px;top:44px}.vb-tr{right:44px;top:44px}.vb-bl{left:44px;bottom:52px}.vb-br{right:44px;bottom:52px}
+
+/* ===== 走线 SVG 层 ===== */
+#traces{position:absolute;inset:0;z-index:3;pointer-events:none}
+#traces path{fill:none;stroke-linecap:round}
+.trace{stroke:var(--trace);stroke-width:3;opacity:0}
+.trace-hi{stroke:var(--trace-hi)}
+.via{fill:#6b4f1d;opacity:0}
+.via-core{fill:#ffd700}
+/* 节点小灯 */
+.tnode{position:absolute;width:9px;height:9px;border-radius:50%;background:#ffd54d;box-shadow:0 0 10px #ffd700;opacity:0;z-index:4}
+
+/* ===== 芯片主体（产品图核心） ===== */
+#chip{position:absolute;left:50%;top:calc(50% + 70px);width:460px;height:460px;margin:-230px 0 0 -230px;z-index:20;opacity:0}
+/* 金属基板（黑钛 + 金描边） */
+#chip .base{position:absolute;inset:18px;border-radius:24px;background:linear-gradient(150deg,#23272f 0%,#14171d 38%,#1b1e25 62%,#0b0d12 100%);
+  border:2px solid rgba(212,175,55,.65);box-shadow:0 14px 44px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,244,214,.10), inset 0 -16px 30px rgba(0,0,0,.4)}
+/* 引脚：上/下/左/右（装饰性金手指环绕） */
+.pins{position:absolute;display:flex;justify-content:space-between}
+.pins .pin{width:15px;height:22px;background:linear-gradient(180deg,rgba(255,215,0,.92),rgba(255,215,0,.25));border:1px solid rgba(255,215,0,.42);border-radius:2px;opacity:.18;box-shadow:0 0 6px rgba(255,215,0,.5)}
+.pins.top{left:44px;right:44px;top:0;flex-direction:row}
+.pins.bottom{left:44px;right:44px;bottom:0;flex-direction:row}
+.pins.left{top:44px;bottom:44px;left:0;flex-direction:column}
+.pins.right{top:44px;bottom:44px;right:0;flex-direction:column}
+.pins.left .pin,.pins.right .pin{width:22px;height:15px;background:linear-gradient(90deg,rgba(255,215,0,.92),rgba(255,215,0,.25))}
+/* die 中央区：产品图占据核心 */
+#chip-die{position:absolute;left:50%;top:50%;width:300px;height:300px;margin:-150px 0 0 -150px;border-radius:16px;overflow:hidden;
+  background:linear-gradient(160deg,#15181e,#0a0c11);border:1px solid rgba(212,175,55,.45)}
+#chip-die .die-tint{position:absolute;inset:0;background:radial-gradient(circle at 50% 50%,rgba(212,175,55,.20),transparent 68%)}
+#chip-core-ring{position:absolute;left:50%;top:50%;width:286px;height:286px;margin:-143px 0 0 -143px;border-radius:50%;border:2px solid rgba(255,215,0,.4);pointer-events:none}
+/* 产品图（默认加载 assets/product.png，可上传替换） */
+#chip-logo{position:absolute;left:50%;top:50%;width:294px;height:294px;margin:-147px 0 0 -147px;object-fit:contain;display:block;z-index:2;
+  filter:drop-shadow(0 6px 18px rgba(0,0,0,.6)) drop-shadow(0 0 10px rgba(255,215,0,.18))}
+
+/* ===== 标题层 ===== */
+#title-block{position:absolute;left:0;right:0;top:104px;text-align:center;z-index:30;opacity:0}
+#title-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%}
+#title-wrap .title-row{display:flex;gap:8px;justify-content:center;width:100%}
+#title-wrap .title-ch{font:900 96px/1 "Arial Black","Impact","PingFang SC",sans-serif;color:var(--txt);
+  text-shadow:0 0 16px rgba(255,215,0,.5), 0 0 3px rgba(255,215,0,.85);letter-spacing:2px}
+/* 副标题 */
+#sub-title{font:600 20px/1.4 "PingFang SC","Microsoft YaHei",sans-serif;color:var(--txt-dim);letter-spacing:8px;margin-top:16px;opacity:0}
+
+/* ===== Part 徽章（左上） ===== */
+#part-label{position:absolute;left:48px;top:40px;z-index:40;opacity:0;display:flex;align-items:center;gap:12px;
+  background:linear-gradient(135deg,#2b1c0b 0%,#160d03 70%,#241708 100%);
+  border:2px solid rgba(255,215,0,.85);border-radius:999px;padding:10px 22px;
+  box-shadow:0 0 0 1px rgba(255,215,0,.25),0 0 20px rgba(255,215,0,.32),0 8px 20px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,240,.18),inset 0 0 18px rgba(255,215,0,.14)}
+#part-label .pl-hex{width:46px;height:26px;background:linear-gradient(135deg,#ffd171,#ffb23e 60%,#ff9d2e);clip-path:polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%);box-shadow:0 3px 12px rgba(255,178,62,.6),0 0 6px rgba(255,215,0,.5)}
+#part-label .pl-text{font:900 22px/1 "Arial Black","Impact",sans-serif;color:#ffe89a;letter-spacing:2px;
+  -webkit-text-stroke:1px rgba(60,28,0,.7);text-shadow:0 0 16px rgba(255,215,0,.85),0 1px 0 rgba(0,0,0,.45),0 2px 3px rgba(0,0,0,.5)}
+
+/* ===== 底部信息条 ===== */
+#bottom-sep,#bottom-text,#bottom-glow{display:none!important}
+</style>
+</head>
+<body>
+<div id="panel">
+  <div class="field"><label>Part 标签</label><input id="in-part-tag" value="Part.01" spellcheck="false"></div>
+  <div class="field"><label>主标题（回车分行）</label><textarea id="in-title" spellcheck="false">AI
+CHIP</textarea></div>
+  <div class="field"><label>主体 Logo（上传替换）</label><input id="in-img" type="file" accept="image/*" style="width:196px;padding:6px 8px;font-size:12px"></div>
+  <button id="btn-play" class="primary">▶ 播放</button>
+  <button id="btn-export">⬇ 导出这一版</button>
+  <div class="hint">PCB 走线生长汇聚 → 芯片弹入落位 → 引脚扫描 → 核心电流涟漪 → 标题曝光 → 稳定呼吸</div>
+</div>
+
+<div id="viewport">
+  <div id="frame">
+    <div id="stage">
+      <div id="fadein"></div>
+      <div id="grid-layer"></div>
+
+      <!-- 四角过孔徽标（节点图形，无文字） -->
+      <div class="via-badge vb-tl"><div class="vb"><div class="ring"></div><div class="ring2"></div><div class="dot"></div></div></div>
+      <div class="via-badge vb-tr"><div class="vb"><div class="ring"></div><div class="ring2"></div><div class="dot"></div></div></div>
+      <div class="via-badge vb-bl"><div class="vb"><div class="ring"></div><div class="ring2"></div><div class="dot"></div></div></div>
+      <div class="via-badge vb-br"><div class="vb"><div class="ring"></div><div class="ring2"></div><div class="dot"></div></div></div>
+
+      <!-- 走线 -->
+      <svg id="traces" viewBox="0 0 1280 720" preserveAspectRatio="none">
+        <path class="trace t1" d="M0 60 H470 L640 430"/><!-- 左上 -->
+        <path class="trace t2" d="M1280 60 H820 L640 430"/><!-- 右上 -->
+        <path class="trace t3" d="M0 660 H500 L640 430"/><!-- 左下 -->
+        <path class="trace t4" d="M1280 660 H800 L640 430"/><!-- 右下 -->
+        <path class="trace t5" d="M60 0 V430 L640 430"/><!-- 左上竖 -->
+        <path class="trace t6" d="M1220 0 V430 L640 430"/><!-- 右上竖 -->
+        <path class="trace t7" d="M240 720 V500 L640 430"/><!-- 左下竖 -->
+        <path class="trace t8" d="M1060 720 V500 L640 430"/><!-- 右下竖 -->
+        <!-- 电流高光（沿线往返） -->
+        <path class="trace-hi curl1" d="M0 60 H470 L640 430"/>
+        <path class="trace-hi curl2" d="M1280 660 H800 L640 430"/>
+      </svg>
+
+      <!-- 芯片主体 -->
+      <div id="chip">
+        <div class="base">
+          <div class="pins top"><i class="pin"></i><i class="pin"></i><i class="pin"></i><i class="pin"></i><i class="pin"></i><i class="pin"></i></div>
+          <div class="pins bottom"><i class="pin"></i><i class="pin"></i><i class="pin"></i><i class="pin"></i><i class="pin"></i><i class="pin"></i></div>
+          <div class="pins left"><i class="pin"></i><i class="pin"></i><i class="pin"></i><i class="pin"></i><i class="pin"></i><i class="pin"></i></div>
+          <div class="pins right"><i class="pin"></i><i class="pin"></i><i class="pin"></i><i class="pin"></i><i class="pin"></i><i class="pin"></i></div>
+          <div id="chip-die">
+            <div class="die-tint"></div>
+            <!-- 产品 Logo（默认加载 assets/product.png，可上传替换） -->
+            <img id="chip-logo" src="assets/product.png" alt="产品图" />
+            <div id="chip-core-ring"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 标题 -->
+      <div id="title-block">
+        <div id="title-wrap"></div>
+        <div id="sub-title" style="display:none"></div>
+      </div>
+
+      <!-- Part 徽章 -->
+      <div id="part-label"><span class="pl-hex"></span><span class="pl-text" id="part-tag-text">Part.01</span></div>
+
+      <!-- 底部 -->
+      <div id="bottom-glow"></div>
+      <div id="bottom-sep"></div>
+      <div id="bottom-text">
+        <div class="bt-left">HELLO</div>
+        <div class="bt-center">小星</div>
+        <div class="bt-right" id="bt-right-text">AI 芯片旗舰</div>
+      </div>
+
+      <!-- 右侧竖排 -->
+      <div id="cn-label">智芯科技</div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ================================================================
+   Chip Pulse — 芯片半导体标题动画
+   总时长 DURATION=6.0s，PAUSE=0.5s，CYCLE=6.5s
+   ================================================================ */
+const DURATION=6.0, PAUSE=0.5, CYCLE=DURATION+PAUSE;
+
+const stage=document.getElementById('stage');
+const fadeEl=document.getElementById('fadein');
+const gridLayer=document.getElementById('grid-layer');
+const viaBadges=[...document.querySelectorAll('.via-badge')];
+const tracePaths=[...document.querySelectorAll('#traces path.trace')];
+const curlPaths=[...document.querySelectorAll('#traces path.trace-hi')];
+const chip=document.getElementById('chip');
+const pins=[...document.querySelectorAll('#chip .pin')];
+const chipRing=document.getElementById('chip-core-ring');
+const chipLogo=document.getElementById('chip-logo');
+const titleBlock=document.getElementById('title-block');
+const titleWrap=document.getElementById('title-wrap');
+const subTitle=document.getElementById('sub-title');
+const partLabel=document.getElementById('part-label');
+const bottomText=document.getElementById('bottom-text');
+const bottomSep=document.getElementById('bottom-sep');
+const bottomGlow=document.getElementById('bottom-glow');
+const cnLabel=document.getElementById('cn-label');
+const traceNodes=[];
+const TRACE_LEN=900;
+
+let titleChars=[];
+let cfg={title:'AI\nCHIP',sub:'',part:'智芯科技',partTag:'Part.01',br:'AI 芯片旗舰'};
+
+/* ===== 缓动 ===== */
+function cubic(t,x1,y1,x2,y2){
+  const bx=t=>3*(1-t)*(1-t)*t*x1+3*(1-t)*t*t*x2+t*t*t;
+  const by=t=>3*(1-t)*(1-t)*t*y1+3*(1-t)*t*t*y2+t*t*t;
+  const dx=t=>3*(1-t)*(1-t)*x1+6*(1-t)*t*(x2-x1)+3*t*t*(1-x2);
+  let u=t;for(let i=0;i<8;i++){const err=bx(u)-t;if(Math.abs(err)<1e-4)break;u-=err/dx(u);}
+  return by(u);
+}
+const easeOut=t=>cubic(t,0.16,1,0.3,1);
+const easeInOut=t=>cubic(t,0.65,0,0.35,1);
+const easeOutBack=t=>{const c=1.70158;return 1+(c+1)*Math.pow(t-1,3)+c*Math.pow(t-1,2);};
+const spring=t=>{if(t<=0)return 0;if(t>=1)return 1;return Math.min(1.12,1-Math.cos(t*Math.PI*1.5)*Math.exp(-t*5.5));};
+const clamp=v=>Math.max(0,Math.min(1,v));
+const lerp=(a,b,t)=>a+(b-a)*t;
+function seg(t,s,e,a,b,fn){if(t<s)return a;if(t>=e)return b;return lerp(a,b,fn(clamp((t-s)/(e-s))));}
+
+/* ===== 构建标题 ===== */
+function buildTitle(text){
+  titleWrap.innerHTML='';
+  const lines=(text||'AI').split('\n');
+  titleChars=[];
+  lines.forEach((line,li)=>{
+    const row=document.createElement('div');row.className='title-row';
+    if(li>0) row.style.marginTop='2px';
+    [...line].forEach(c=>{
+      const s=document.createElement('span');s.className='title-ch';s.textContent=c===' '?'\u00a0':c;
+      row.appendChild(s);titleChars.push({el:s,line:li});
+    });
+    titleWrap.appendChild(row);
+  });
+  const maxLen=Math.max(...lines.map(l=>l.length));
+  const baseFs=maxLen>5?Math.max(44,Math.floor(96*5/maxLen)):96;
+  // 多行标题按「芯片上沿 TITLE_TOP—CHIP_TOP 高度预算」自适应缩小，避免压到芯片
+  const rows=lines.length;
+  const avail=283-104-22-(rows-1)*2;
+  const fs=Math.min(baseFs,Math.max(40,Math.floor(avail/rows)));
+  titleChars.forEach(ch=>{ch.el.style.fontSize=fs+'px';});
+}
+
+/* ===== 主渲染 ===== */
+function applyAll(t){
+  const tc=t%CYCLE;
+  /* 0. 淡入 */
+  fadeEl.style.opacity=String(1-clamp(tc/0.35));
+
+  /* 1. PCB 网格浮现 (0.2~0.8) */
+  gridLayer.style.opacity=String(seg(tc,0.2,0.8,0,1,easeOut));
+
+  /* 2. 四角过孔徽标 (0.4~1.1) */
+  viaBadges.forEach((vb,i)=>{
+    const s=0.4+i*0.12,e=s+0.45;
+    const k=seg(tc,s,e,0,1,spring);
+    vb.style.opacity=String(seg(tc,s,s+0.25,0,1,easeOut));
+    vb.style.transform=`translate3d(0,${lerp(16,0,k)}px,0) scale(${lerp(0.7,1,k)})`;
+  });
+
+  /* 3. 走线生长汇聚 (0.6~1.6) — 每条按序点亮 */
+  tracePaths.forEach((p,i)=>{
+    const s=0.6+i*0.06,e=s+0.6;
+    p.style.opacity=String(seg(tc,s,s+0.1,0,1,easeOut));
+    const grow=seg(tc,s,e,0,1,easeInOut);
+    p.style.strokeDasharray=TRACE_LEN+' '+(TRACE_LEN*2);
+    p.style.strokeDashoffset=String(TRACE_LEN*(1-grow)+ (grow<=0?TRACE_LEN:0));
+  });
+
+  /* 4. 芯片主体弹入 (1.0~1.8) — 落到走线汇聚中心 */
+  const ck=seg(tc,1.0,1.8,0,1,easeOutBack);
+  const cs=lerp(0.6,1,ck);
+  const cy=lerp(90,0,ck);
+  chip.style.opacity=String(seg(tc,1.0,1.2,0,1,easeOut));
+  chip.style.transform=`translate3d(0,${cy}px,0) scale(${cs})`;
+
+  /* 5. 引脚逐边扫描点亮 (1.5~2.4) */
+  pins.forEach((pi,i)=>{
+    const s=1.5+Math.floor(i/6)*0.22+ (i%6)*0.03, e=s+0.3;
+    const k=seg(tc,s,e,0,1,easeOutBack);
+    pi.style.opacity=String(0.18+k*0.82);
+    pi.style.transform=`scale(${0.5+k*0.5})`;
+  });
+
+  /* 6. 核心电流涟漪 + 光晕 (1.9~2.7) */
+  const rk=seg(tc,1.9,2.7,0,1,easeOut);
+  chipRing.style.transform=`scale(${lerp(0.5,1.35,rk)})`;
+  chipRing.style.opacity=String((1-rk)*0.9);
+  const cg=seg(tc,1.9,2.3,0,1,easeOut);
+  /* 6b. 产品图金辉光 */
+  chip.style.filter=`drop-shadow(0 0 ${seg(tc,1.9,2.6,0,26,easeOut)}px rgba(255,215,0,${0.6*cg}))`;
+
+  /* 7. 主标题曝光 (2.2~3.0) — 整行，字距拉伸+发光 */
+  const tbs=2.2,tbe=3.0;
+  const tbk=seg(tc,tbs,tbe,0,1,easeOut);
+  titleBlock.style.opacity=String(seg(tc,tbs,tbs+0.25,0,1,easeOut));
+  titleBlock.style.transform=`translate3d(0,${lerp(-34,0,tbk)}px,0)`;
+  const charK=seg(tc,tbs,tbs+0.4,0,1,easeOut);
+  titleChars.forEach(ch=>{
+    ch.el.style.transform=`scaleX(${lerp(1.28,1,charK)})`;
+    ch.el.style.letterSpacing=String(lerp(2,6,charK)*1)+'px';
+  });
+
+  /* 7b. 副标题 (2.7~3.3) */
+  subTitle.textContent=cfg.sub;
+  subTitle.style.display=(cfg.sub&&cfg.sub.trim())?'block':'none';
+  if(cfg.sub&&cfg.sub.trim()){
+    subTitle.style.opacity=String(seg(tc,2.7,3.3,0,1,easeOut));
+    subTitle.style.transform=`translate3d(0,${seg(tc,2.7,3.3,16,0,easeOut)}px,0)`;
+  }
+
+  /* 8. Part 徽章 (3.0~3.6) */
+  const pk=seg(tc,3.0,3.6,0,1,spring);
+  partLabel.style.opacity=String(seg(tc,3.0,3.2,0,1,easeOut));
+  partLabel.style.transform=`translate3d(${lerp(-20,0,pk)}px,0,0)`;
+
+  /* 9. 底部信息条 + 光带 (3.3~4.0) */
+  bottomGlow.style.opacity=String(seg(tc,3.2,3.6,0,1,easeOut));
+  bottomSep.style.opacity=String(seg(tc,3.3,3.8,0,1,easeOut));
+  bottomText.style.opacity=String(seg(tc,3.4,4.0,0,1,easeOut));
+  bottomText.style.transform=`translate3d(0,${seg(tc,3.4,4.0,20,0,easeOut)}px,0)`;
+
+  /* 10. 右侧竖排 (3.7~4.3) */
+  cnLabel.textContent=cfg.part;
+  cnLabel.style.opacity=String(seg(tc,3.7,4.3,0,1,easeOut));
+  cnLabel.style.transform=`translate3d(${seg(tc,3.7,4.3,14,0,easeOut)}px,0,0)`;
+
+  /* 11. 电流高光沿走线往返 (2.6+) 持续流动 */
+  const flow=(tc-2.6)/0.8;
+  const phase=((tc*0.22)%1);
+  curlPaths.forEach((c,i)=>{
+    c.style.strokeDasharray=TRACE_LEN+' '+(TRACE_LEN*2);
+    const ph=((tc*0.18+i*0.5)%1);
+    c.style.strokeDashoffset=String(TRACE_LEN*(1-ph));
+    c.style.opacity=String(Math.max(0,Math.sin(ph*Math.PI))*seg(tc,2.6,3.0,0,1,easeOut));
+  });
+
+  /* 12. idle 产品图呼吸辉光 (4.2+) */
+  if(tc>=4.2){
+    const idle=tc-4.2;
+    const breathe=0.55+0.35*Math.sin(idle*Math.PI*0.45);
+    chipLogo.style.filter=`drop-shadow(0 6px 18px rgba(0,0,0,.6)) drop-shadow(0 0 ${8+12*breathe}px rgba(255,215,0,${0.38*breathe}))`;
+  }
+}
+
+/* ===== 播放控制 ===== */
+let startTime=0,paused=false,rafId=null;
+function tick(now){if(paused)return;if(!startTime)startTime=now;const elapsed=((now-startTime)/1000)%CYCLE;applyAll(elapsed);rafId=requestAnimationFrame(tick);}
+function play(){paused=false;startTime=0;if(rafId)cancelAnimationFrame(rafId);rafId=requestAnimationFrame(tick);}
+function seek(t){paused=true;applyAll(Math.max(0,Math.min(DURATION,t)));}
+window.__chipPulseEngine={play,seek,applyAll,rebuild:function(){buildTitle(cfg.title);}};
+
+/* ===== 初始化 ===== */
+buildTitle(cfg.title);
+play();
+
+/* 默认产品图内联化 —— 读取 assets/product.png 转成 dataURL 内嵌，导出后依然可用 */
+(function autoInlineProduct(){
+  fetch(chipLogo.src)
+    .then(r=>r.blob())
+    .then(b=>{
+      const fr=new FileReader();
+      fr.onloadend=()=>chipLogo.src=fr.result;
+      fr.readAsDataURL(b);
+    })
+    .catch(()=>{});
+})();
+
+/* ===== 适配 ===== */
+const viewportEl=document.getElementById('viewport');
+const frameEl=document.getElementById('frame');
+function fit(){
+  const vw=viewportEl.clientWidth,vh=viewportEl.clientHeight;
+  /* ⚠️ 不要加放大上限（曾经是 ,1）：导出降级链路撑大画布时要能铺满，否则四周黑边 */
+  const s=Math.min(vw/1280,vh/720);
+  stage.style.position='absolute';stage.style.left='0';stage.style.top='0';
+  stage.style.transformOrigin='top left';stage.style.transform='scale('+s+')';
+  frameEl.style.width=(1280*s)+'px';frameEl.style.height=(720*s)+'px';
+}
+window.addEventListener('resize',fit);fit();
+
+/* ===== 编辑控件 ===== */
+const inPartTag=document.getElementById('in-part-tag');
+const inTitle=document.getElementById('in-title');
+document.getElementById('part-tag-text').textContent=inPartTag.value;
+inPartTag.addEventListener('input',()=>{cfg.partTag=inPartTag.value;document.getElementById('part-tag-text').textContent=inPartTag.value;});
+inTitle.addEventListener('input',()=>{cfg.title=inTitle.value;buildTitle(inTitle.value);play();});
+/* 主体 Logo 上传替换 */
+document.getElementById('in-img').addEventListener('change',function(e){
+  const file=e.target.files&&e.target.files[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=function(ev){ chipLogo.src=ev.target.result; };
+  reader.readAsDataURL(file);
+});
+document.getElementById('btn-play').addEventListener('click',()=>play());
+document.getElementById('btn-export').addEventListener('click',exportFrozen);
+
+/* ===== 固化导出 ===== */
+function buildFrozenString(){
+  window.__chipPulseEngine.seek(5.5);
+  const css=document.getElementById('tpl-style').innerHTML;
+  const stageHTML=stage.outerHTML;
+  return '<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8"><title>'+cfg.partTag+' '+cfg.title.replace(/\n/g,' ')+'</title><style>'+css+'</style><style>#stage{position:relative;transform-origin:50% 50%}</style></head><body style="margin:0;background:#04080a;display:flex;align-items:center;justify-content:center;height:100vh">'+stageHTML+'</body></html>';
+}
+function exportFrozen(){
+  const html=buildFrozenString();
+  const blob=new Blob([html],{type:'text/html'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='chip-pulse-'+cfg.partTag+'.html';
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+}
+
+/* ===== 宿主协议 ===== */
+function tell(m){try{parent.postMessage(Object.assign({source:'cyber'},m),'*');}catch(e){}}
+window.addEventListener('message',(e)=>{
+  const d=e.data||{};if(d.source==='chip-pulse')return;if(!d.type)return;
+  try{
+    switch(d.type){
+      case 'cyber-cfg':
+        if(typeof d.title==='string'){cfg.title=d.title;inTitle.value=d.title;buildTitle(d.title);}
+        if(typeof d.part==='string'){cfg.partTag=d.part;if(inPartTag)inPartTag.value=d.part;const pt=document.getElementById('part-tag-text');if(pt)pt.textContent=d.part;}
+        if(typeof d.sub==='string')cfg.sub=d.sub;
+        if(typeof d.cn==='string')cfg.part=d.cn;
+        if(typeof d.br==='string')cfg.br=d.br;
+        if(d.replay)play();
+        tell({type:'cyber-status',msg:'配置已应用'});break;
+      case 'cyber-seek':if(typeof d.t==='number'){try{window.__chipPulseEngine.seek(d.t);}catch(err){}}break;
+      case 'cyber-play':play();tell({type:'cyber-status',msg:'已重播'});break;
+      case 'cyber-embed':
+        document.getElementById('panel').classList.add('hidden');
+        viewportEl.style.padding='0';document.body.style.background='#04080a';fit();
+        tell({type:'cyber-status',msg:'已进入宿主模式'});break;
+      case 'cyber-unembed':
+        // 导出结束回到编辑态：本引擎未接入 preset-editor 表单，靠自带 #panel 改文案，
+        // 所以必须把面板还回来（只隐藏不还原 = 用户改不了字）。
+        document.getElementById('panel').classList.remove('hidden');
+        viewportEl.style.padding='';document.body.style.background='';fit();
+        tell({type:'cyber-status',msg:'已退出宿主模式'});break;
+      case 'cyber-get-html':tell({type:'cyber-html',reqId:d.reqId,html:buildFrozenString()});break;
+    }
+  }catch(err){tell({type:'cyber-status',err:String(err)});}
+});
+window.addEventListener('load',()=>tell({type:'cyber-ready'}));
+</script>
+</body>
+</html>
