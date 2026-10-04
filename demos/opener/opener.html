@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>开头模板 · opener v2</title>
+<style>
+  /* ============ 配色变量（全部业务代码走 var()，禁裸 hex） ============ */
+  :root {
+    --bg0:#16222E;      /* 最深 */
+    --bg1:#203245;      /* 主色 */
+    --bg2:#2E4459;      /* 提亮层 */
+    --a1:#E4B388;       /* 暖沙 · 主强调 */
+    --a2:#C9976B;       /* 深沙 · 次强调 */
+    --a3:#8FA8BE;       /* 雾蓝 · 结构 */
+    --t1:#F8F5EE;       /* 米白 · 主文字 */
+    --t2:#C9C3B8;       /* 灰米 · 次文字 */
+    --t3:#93A2B0;       /* 雾蓝灰 · 辅助 */
+    --stroke:rgba(248,245,238,.15);
+    --hair:rgba(248,245,238,.10);
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html, body{
+    width:100%; height:100%;
+    background:var(--bg0);
+    overflow:hidden;
+    font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif;
+  }
+  #stage{
+    position:relative;
+    width:1920px; height:1080px;
+    left:50%; top:50%;
+    transform:translate(-50%,-50%);
+    overflow:hidden;
+  }
+
+  /* ---------- 层 0：canvas 背景（粒子 / 脉冲环 / 扫描线 / 流光） ---------- */
+  canvas#bg{ position:absolute; inset:0; width:100%; height:100%; z-index:0; }
+
+  /* ---------- 层 1：SVG 手绘装饰（六边形 / 取景框 / 同心圆环 / 对角细线） ---------- */
+  svg#deco{ position:absolute; inset:0; width:100%; height:100%; z-index:1; pointer-events:none; }
+  #deco .hexLattice path{ fill:none; stroke:var(--a3); stroke-width:1; }
+  #deco .corner path{ fill:none; stroke:var(--a1); stroke-width:2; stroke-linecap:round; }
+  #deco .ringGrp circle{ fill:none; stroke:var(--a3); }
+  #deco .ringGrp .ringArc{ stroke:var(--a1); }
+  #deco .diag line{ stroke:var(--a3); stroke-width:1; stroke-linecap:round; }
+
+  /* ---------- 层 2：暗角 ---------- */
+  #vignette{
+    position:absolute; inset:0; z-index:2; pointer-events:none;
+    background:radial-gradient(ellipse 78% 72% at 50% 50%,
+      rgba(22,34,46,0) 40%, rgba(22,34,46,.42) 78%, rgba(22,34,46,.72) 100%);
+  }
+
+  /* ---------- 层 5：文字 ---------- */
+  #part, #title, #underline, #subtitle{ position:absolute; z-index:5; }
+
+  /* Part 标签（主标题框正上方 · 居中）—— 狗哥要求「往中间挪」，top 由 JS 按框顶自适应 */
+  #part{
+    top:366px; left:50%;
+    transform:translate(-50%,0);
+    display:flex; align-items:center; gap:14px;
+    padding:11px 22px 11px 18px;
+    border-radius:32px;
+    background:rgba(22,34,46,.55);
+    backdrop-filter:blur(10px);
+    font-size:22px; font-weight:500;
+    letter-spacing:0.05em;
+    color:var(--t2);
+    will-change:transform,opacity;
+  }
+  /* Part 外框用 SVG 描边绘制（dash 动画）—— 尺寸由 JS 按 partEl 实测自适应 */
+  #partFrame{
+    position:absolute; top:366px; left:50%;
+    transform:translate(-50%,0);
+    width:150px; height:50px; z-index:6; pointer-events:none;
+    overflow:visible;
+  }
+  #partFrame rect{ fill:none; stroke:var(--a1); stroke-width:1.5; }
+  #part .dot{
+    width:8px; height:8px;
+    border-radius:50%;
+    background:var(--a1);
+    box-shadow:0 0 14px rgba(228,179,136,.65);
+    will-change:transform;
+  }
+  #part .lbl{ color:var(--t2); }
+  #part .num{
+    font-weight:700; color:var(--t1);
+    font-size:26px; margin-left:2px;
+    font-family:'SF Mono','Consolas','Menlo',monospace;
+    letter-spacing:0.04em;
+  }
+
+  /* 主标题（中央）—— top 448：给下方描线框 + 装饰线 + 副标题留够空间 */
+  #title{
+    left:50%; top:448px;
+    transform:translate(-50%,0);
+    font-size:108px; font-weight:800;
+    color:var(--t1);
+    letter-spacing:0.02em;
+    text-align:center;
+    white-space:pre;
+    text-shadow:0 6px 36px rgba(22,34,46,.7);
+    will-change:transform,opacity,filter;
+  }
+  #title .ch{
+    display:inline-block;
+    white-space:pre;
+    will-change:transform,opacity;
+  }
+
+  /* 主标题描线框（z=4：装饰之上、文字之下） */
+  #titleFrame{
+    position:absolute; inset:0; z-index:4; pointer-events:none;
+    width:100%; height:100%;
+  }
+  #titleFrame #tfRect{ fill:none; stroke:var(--a1); stroke-width:1.6; }
+  #titleFrame #tfFlow{ fill:none; stroke:var(--a1); stroke-width:2.4; stroke-linecap:round; }
+  #titleFrame #tfFill{ fill:url(#tfFillGrad); }
+  #titleFrame #tfPen{ fill:var(--a1); }
+
+  /* 装饰线（主副标题之间） */
+  #underline{
+    left:50%; top:620px;
+    width:240px; height:2px;
+    background:linear-gradient(90deg, transparent, var(--a1), transparent);
+    transform:translate(-50%,0) scaleX(0);
+    transform-origin:center;
+    will-change:transform,opacity;
+  }
+  /* 装饰线两端光点 */
+  #ulDotL, #ulDotR{
+    position:absolute; top:616px; left:0;
+    width:10px; height:10px; border-radius:50%;
+    background:var(--a1);
+    box-shadow:0 0 16px rgba(228,179,136,.8);
+    z-index:6; will-change:transform,opacity;
+  }
+
+  /* 副标题 */
+  #subtitle{
+    left:50%; top:648px;
+    transform:translate(-50%,0);
+    font-size:30px; font-weight:400;
+    color:var(--a1);
+    letter-spacing:0.36em;
+    text-align:center;
+    white-space:nowrap;
+    will-change:transform,opacity,letter-spacing;
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="bg" width="1920" height="1080"></canvas>
+
+  <!-- ===== 手绘 SVG 装饰层 ===== -->
+  <svg id="deco" viewBox="0 0 1920 1080" preserveAspectRatio="none">
+    <!-- 六边形晶格（左上 + 右下，JS 注入） -->
+    <g class="hexLattice" id="hexLattice"></g>
+
+    <!-- 同心圆环组（1 个大圆 + 4 段斜对角弧，避开中央文字） -->
+    <g class="ringGrp" id="ringGrp">
+      <circle id="ringA" cx="960" cy="528" r="420" stroke-width="0.6" opacity="0"/>
+      <!-- 4 段斜对角弧（NE/SE/SW/NW 各 30°） -->
+      <path id="ringNE" class="ringArc" fill="none" stroke-width="2" opacity="0"/>
+      <path id="ringSE" class="ringArc" fill="none" stroke-width="2" opacity="0"/>
+      <path id="ringSW" class="ringArc" fill="none" stroke-width="2" opacity="0"/>
+      <path id="ringNW" class="ringArc" fill="none" stroke-width="2" opacity="0"/>
+    </g>
+
+    <!-- 四角取景框 -->
+    <g class="corner" id="cornerTL"><path d="M60 130 L60 60 L130 60"/></g>
+    <g class="corner" id="cornerTR"><path d="M1860 130 L1860 60 L1790 60"/></g>
+    <g class="corner" id="cornerBL"><path d="M60 950 L60 1020 L130 1020"/></g>
+    <g class="corner" id="cornerBR"><path d="M1860 950 L1860 1020 L1790 1020"/></g>
+
+    <!-- 对角细线束（右上 + 左下，JS 注入） -->
+    <g class="diag" id="diagTR"></g>
+    <g class="diag" id="diagBL"></g>
+  </svg>
+
+  <div id="vignette"></div>
+
+  <!-- 主标题描线框（动态测量文字宽 + 描线 + 流动光 + 笔尖 + 内填充） -->
+  <svg id="titleFrame" viewBox="0 0 1920 1080" preserveAspectRatio="none">
+    <defs>
+      <!-- 框内填充渐变（中心微亮，边缘透明） -->
+      <radialGradient id="tfFillGrad" cx="50%" cy="50%" r="55%">
+        <stop offset="0%"  stop-color="rgba(228,179,136,0.10)"/>
+        <stop offset="60%" stop-color="rgba(228,179,136,0.04)"/>
+        <stop offset="100%" stop-color="rgba(228,179,136,0)"/>
+      </radialGradient>
+    </defs>
+    <!-- 内填充 -->
+    <rect id="tfFill" x="0" y="0" width="0" height="0" opacity="0"/>
+    <!-- 主框（描线动画） -->
+    <path id="tfRect" fill="none" d=""/>
+    <!-- 流动光（描完后循环） -->
+    <path id="tfFlow" fill="none" d=""/>
+    <!-- 笔尖光点（描线时） -->
+    <circle id="tfPen" cx="0" cy="0" r="5" opacity="0"/>
+  </svg>
+
+  <!-- Part 外框（SVG 描边绘制） -->
+  <svg id="partFrame" viewBox="0 0 150 50" preserveAspectRatio="none">
+    <rect x="1" y="1" width="148" height="48" rx="24"/>
+  </svg>
+
+  <div id="part"><span class="dot"></span><span class="lbl">Part</span><span class="num" id="partNum">01</span></div>
+  <div id="title">主标题文案</div>
+  <div id="underline"></div>
+  <div id="ulDotL"></div>
+  <div id="ulDotR"></div>
+  <div id="subtitle">SUBTITLE TEXT</div>
+</div>
+
+<script>
+'use strict';
+/* 固化导出用的原始 HTML 副本（在任何 cfg 覆盖之前抓取） */
+const PRISTINE = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+/* =====================================================================
+   开头模板 · opener v4（软件预设版）
+   ---------------------------------------------------------------------
+   时长：6.5s @ 30fps（195 帧）
+   文字元素：只有 Part / 主标题 / 副标题（不新增任何有语义的文字 —— DG-14）
+   动态层（15 个）：
+     canvas  ：① 粒子+连线 ② 脉冲环×3 ③ 扫描线 ④ 流光×5
+     手绘 SVG：⑤ 六边形晶格×18 ⑥ 四角取景框×4 ⑦ 同心圆环×3+刻度弧 ⑧ 对角细线×12
+     文字入场：⑨ Part 框线绘制 ⑩ 主标题逐字弹入 ⑪ 副标题字距展开 ⑫ 装饰线+端点光点
+     整体    ：⑬ 暗角呼吸 ⑭ 整体呼吸 ⑮ 橙点呼吸
+   驱动：JS 纯函数按时间 t 渲染（wall-clock 不依赖），支持任意 ts 定位。
+   ---------------------------------------------------------------------
+   ★ 修改文案：仅改 PART_NUM / TITLE / SUBTITLE 三行即可
+   ★ 修改时长：改 DUR
+   ★ 修改入场节奏：改各元素的 T0 / 窗口常量
+   ===================================================================== */
+
+/* ============ 文案（顶层 const，改这里即可复用） ============ */
+const PART_NUM = '01';
+const TITLE    = '烧进 Flash';
+const SUBTITLE = 'BURNED INTO FLASH';
+
+/* ============ 时长 ============ */
+const DUR = 6.5;     // 秒
+
+/* ============ 数学工具 ============ */
+const clamp = (v, a=0, b=1) => Math.max(a, Math.min(b, v));
+function interp(v, xs, ys, ease){
+  /* ★ xs.length 必须 === ys.length（v1 手写多了个 0 → 入场全程低透明） */
+  if (v <= xs[0]) return ys[0];
+  if (v >= xs[xs.length-1]) return ys[ys.length-1];
+  for (let i=0; i<xs.length-1; i++){
+    if (v >= xs[i] && v <= xs[i+1]){
+      let t = (v - xs[i]) / (xs[i+1] - xs[i]);
+      if (ease) t = ease(t);
+      return ys[i] + (ys[i+1] - ys[i]) * t;
+    }
+  }
+}
+const smooth = t => t*t*(3-2*t);
+/* 弹簧出场（克制回弹，c=1.40） */
+function springOut(p){
+  p = clamp(p);
+  const c = 1.40, c3 = c+1;
+  return 1 + c3*Math.pow(p-1, 3) + c*Math.pow(p-1, 2);
+}
+const easeOutCubic = t => 1 - Math.pow(1-t, 3);
+/* 稳定伪随机（逐帧一致，不闪烁） */
+function rnd(i, salt){
+  const x = Math.sin(i * 127.1 + salt * 311.7) * 43758.5453;
+  return x - Math.floor(x);
+}
+
+/* ============ 读 CSS 变量（canvas 用；避免裸 hex 散落 —— 规格锁 §5.1） ============ */
+function cssVar(name){
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+function hexToRgb(h){
+  h = h.replace('#','');
+  if (h.length === 3) h = h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
+  const n = parseInt(h, 16);
+  return [(n>>16)&255, (n>>8)&255, n&255];
+}
+let C_A1 = hexToRgb(cssVar('--a1'));   /* 暖沙（可随 cyber-color 重算） */
+let C_A3 = hexToRgb(cssVar('--a3'));   /* 雾蓝 */
+let C_T1 = hexToRgb(cssVar('--t1'));   /* 米白 */
+const rgba = (c, a) => `rgba(${c[0]},${c[1]},${c[2]},${a})`;
+
+/* ============ DOM ============ */
+const stageEl  = document.getElementById('stage');
+const partEl   = document.getElementById('part');
+const titleEl  = document.getElementById('title');
+const subEl    = document.getElementById('subtitle');
+const ulEl     = document.getElementById('underline');
+const ulDotL   = document.getElementById('ulDotL');
+const ulDotR   = document.getElementById('ulDotR');
+const dotEl    = partEl.querySelector('.dot');
+const vigEl    = document.getElementById('vignette');
+const partFrame= document.getElementById('partFrame');
+const partRect = partFrame.querySelector('rect');
+/* ---- 可改文案（软件通过 cyber-cfg 覆盖；单独打开时用下面的默认值） ---- */
+const cfg = { part: PART_NUM, title: TITLE, sub: SUBTITLE };
+document.getElementById('partNum').textContent = cfg.part;
+titleEl.textContent  = cfg.title;
+subEl.textContent    = cfg.sub;
+
+/* ---- 主标题拆字（逐字弹入） ---- */
+const CH_GAP = 0.055;                       /* 逐字错峰 55ms */
+const getChEls = () => Array.from(titleEl.querySelectorAll('.ch'));   /* 文字可改后每次重查，避免缓存过期 */
+
+/* ---- 主标题框（动态测量文字宽，path 描线 + 流动光 + 笔尖 + 内填充） ---- */
+const tfFrameEl = document.getElementById('titleFrame');
+const tfRect = document.getElementById('tfRect');
+const tfFlow = document.getElementById('tfFlow');
+const tfPen  = document.getElementById('tfPen');
+const tfFill = document.getElementById('tfFill');
+let TF = null;   /* {x, y, w, h, perimeter, d} */
+
+/* ★ 实测主标题墨迹 —— 不靠「top + 字号/2」估算。
+   踩坑：行盒高 142 vs 墨迹高 104，估算法让框偏上 22px、下 padding −9（文字戳出框外）。
+   水平：逐字 span 并集，扣掉末字尾部 letter-spacing 尾隙。
+   垂直：canvas measureText 的 actualBoundingBox（Ascent/Descent）精确取墨迹。 */
+function measureTitleInk(){
+  const cs = getComputedStyle(titleEl);
+  const sR = stageEl.getBoundingClientRect();
+  let minX = Infinity, maxX = -Infinity;
+  getChEls().forEach(s => {
+    if (s.textContent.trim() === '') return;      /* 跳过空格 */
+    const r = s.getBoundingClientRect();
+    if (r.width <= 0) return;
+    minX = Math.min(minX, r.left  - sR.left);
+    maxX = Math.max(maxX, r.right - sR.left);
+  });
+  const lsPx = parseFloat(cs.letterSpacing) || 0;
+  maxX -= lsPx;                                   /* 末字尾隙 */
+  if(minX===Infinity || maxX===-Infinity) return null;   /* 不可见（display:none）时测量全 0 → 放弃，等可见后重算 */
+
+  const c = document.createElement('canvas').getContext('2d');
+  c.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+  const m = c.measureText(titleEl.textContent);
+  const H = titleEl.offsetHeight;
+  let asc = m.fontBoundingBoxAscent, desc = m.fontBoundingBoxDescent;
+  if (!asc || !desc){                             /* 老浏览器兜底 */
+    const fs = parseFloat(cs.fontSize);
+    asc = fs * 0.88; desc = fs * 0.24;
+  }
+  const halfLead = (H - (asc + desc)) / 2;
+  const baseline = titleEl.offsetTop + halfLead + asc;
+  return {
+    left: minX, right: maxX,
+    top:  baseline - m.actualBoundingBoxAscent,
+    bottom: baseline + m.actualBoundingBoxDescent,
+  };
+}
+const TF_PAD = 26;            /* 框内 padding（上下左右一致） */
+function initTF(){
+  const ink = measureTitleInk();
+  if(!ink){ TF=null; return; }   /* 不可见时不写 NaN 到 DOM */
+  const FW = (ink.right - ink.left) + TF_PAD*2;
+  const FH = (ink.bottom - ink.top) + TF_PAD*2;
+  const FX = (ink.left + ink.right)/2  - FW/2;    /* 与墨迹同心 */
+  const FY = (ink.top  + ink.bottom)/2 - FH/2;
+  TF = {
+    x: FX, y: FY, w: FW, h: FH,
+    perimeter: 2*(FW + FH),
+    d: `M${FX},${FY} L${FX+FW},${FY} L${FX+FW},${FY+FH} L${FX},${FY+FH} Z`,
+  };
+  tfRect.setAttribute('d', TF.d);
+  tfFlow.setAttribute('d', TF.d);
+  tfFill.setAttribute('x', FX + 4);
+  tfFill.setAttribute('y', FY + 4);
+  tfFill.setAttribute('width', FW - 8);
+  tfFill.setAttribute('height', FH - 8);
+  tfRect.style.strokeDasharray  = TF.perimeter;
+  tfRect.style.strokeDashoffset = TF.perimeter;
+}
+const TF_T0 = 1.0;          /* 描线起 */
+const TF_DUR = 0.75;        /* 描线总时长 */
+
+/* =====================================================================
+   背景 canvas：粒子 / 脉冲环 / 扫描线 / 流光
+   ===================================================================== */
+const bg  = document.getElementById('bg');
+const ctx = bg.getContext('2d');
+const W = 1920, H = 1080;
+
+/* ---- ① 粒子 ---- */
+const N = 110;
+const particles = [];
+for (let i=0; i<N; i++){
+  particles.push({
+    x: rnd(i,1)*W,
+    y: rnd(i,2)*H,
+    r: rnd(i,3)*1.4 + 0.6,
+    ampX: 4 + rnd(i,4)*8,
+    ampY: 4 + rnd(i,5)*8,
+    freq: 0.4 + rnd(i,6)*0.5,
+    phase: rnd(i,7)*Math.PI*2,
+    warm: (i % 7 === 0),
+  });
+}
+
+/* ---- ② 脉冲环（3 个错峰，从中心扩散） ---- */
+const PULSE = [
+  { t0: 0.00, period: 2.6, maxR: 620, w: 1.2 },
+  { t0: 0.85, period: 2.6, maxR: 760, w: 0.9 },
+  { t0: 1.70, period: 2.6, maxR: 900, w: 0.7 },
+];
+
+/* ---- ③ 扫描线常量：已移除（狗哥要求去掉大范围扫光） ---- */
+
+/* ---- ④ 流光（10 颗覆盖整个 6.5s） ---- */
+const SHOOTERS = [];
+for (let i=0; i<10; i++){
+  SHOOTERS.push({
+    t0: 0.5 + i*0.55 + rnd(i,11)*0.30,
+    dur: 0.55 + rnd(i,12)*0.35,
+    x0: rnd(i,13)*W*0.7,
+    y0: -60 + rnd(i,14)*300,
+    len: 130 + rnd(i,15)*190,
+    op: 0.32 + rnd(i,16)*0.38,
+  });
+}
+
+function renderBg(t){
+  ctx.clearRect(0, 0, W, H);
+
+  /* 底色径向渐变 */
+  const g = ctx.createRadialGradient(W*0.5, H*0.55, 100, W*0.5, H*0.55, W*0.7);
+  g.addColorStop(0, '#1c3247');
+  g.addColorStop(1, cssVar('--bg0'));
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, H);
+
+  const bgOp = interp(t, [0, 0.7], [0, 1]);
+
+  /* ---- ② 脉冲环（在粒子下方） ---- */
+  if (t > 0.15){
+    const pOp = interp(t, [0.15, 0.9], [0, 1]);
+    for (const p of PULSE){
+      const k = ((t - p.t0) % p.period) / p.period;
+      if (k < 0) continue;
+      const r = k * p.maxR;
+      const a = (1 - k) * (1 - k) * 0.30 * pOp;
+      if (a <= 0.002) continue;
+      ctx.strokeStyle = rgba(C_A3, a.toFixed(3));
+      ctx.lineWidth = p.w;
+      ctx.beginPath();
+      ctx.arc(W*0.5, H*0.52, r, 0, Math.PI*2);
+      ctx.stroke();
+    }
+  }
+
+  /* ---- ① 粒子 + 连线 ---- */
+  const op = 0.45 * bgOp;
+  const px = new Float32Array(N), py = new Float32Array(N);
+  for (let i=0; i<N; i++){
+    const p = particles[i];
+    px[i] = p.x + p.ampX * Math.sin(t * p.freq + p.phase);
+    py[i] = p.y + p.ampY * Math.sin(t * p.freq * 1.13 + p.phase);
+  }
+  ctx.strokeStyle = rgba(C_A3, (op*0.30).toFixed(3));
+  ctx.lineWidth = 0.5;
+  ctx.beginPath();
+  for (let i=0; i<N; i++){
+    for (let j=i+1; j<N; j++){
+      const dx = px[i]-px[j], dy = py[i]-py[j];
+      const d2 = dx*dx + dy*dy;
+      if (d2 < 110*110){
+        ctx.globalAlpha = (1 - Math.sqrt(d2)/110) * op * 0.55;
+        ctx.moveTo(px[i], py[i]);
+        ctx.lineTo(px[j], py[j]);
+      }
+    }
+  }
+  ctx.globalAlpha = 1;
+  ctx.stroke();
+  ctx.globalCompositeOperation = 'lighter';
+  for (let i=0; i<N; i++){
+    const p = particles[i];
+    const pr = p.r * (1 + 0.25 * Math.sin(t * 1.5 + p.phase));
+    ctx.fillStyle = p.warm ? rgba(C_A1, op.toFixed(3))
+                           : rgba(C_T1, (op*0.42).toFixed(3));
+    ctx.beginPath();
+    ctx.arc(px[i], py[i], pr, 0, Math.PI*2);
+    ctx.fill();
+  }
+  ctx.globalCompositeOperation = 'source-over';
+
+  /* ---- ③ 扫描线：已按狗哥要求移除（大范围扫光，去掉） ---- */
+
+  /* ---- ④ 流光（斜向流星） ---- */
+  const COS32 = Math.cos(0.558), SIN32 = Math.sin(0.558);
+  for (const s of SHOOTERS){
+    const k = (t - s.t0) / s.dur;
+    if (k < 0 || k > 1) continue;
+    const ease = easeOutCubic(k);
+    const travel = s.len * 3.2;
+    const x1 = s.x0 + COS32 * travel * ease;
+    const y1 = s.y0 + SIN32 * travel * ease;
+    const tail = s.len * (0.35 + 0.65*Math.sin(k*Math.PI));
+    const x0 = x1 - COS32 * tail;
+    const y0 = y1 - SIN32 * tail;
+    const a = s.op * Math.sin(k * Math.PI);
+    const grad = ctx.createLinearGradient(x0, y0, x1, y1);
+    grad.addColorStop(0, rgba(C_A1, 0));
+    grad.addColorStop(1, rgba(C_A1, a.toFixed(3)));
+    ctx.strokeStyle = grad;
+    ctx.lineWidth = 1.6;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(x0, y0); ctx.lineTo(x1, y1);
+    ctx.stroke();
+  }
+}
+
+/* =====================================================================
+   手绘 SVG 装饰
+   ===================================================================== */
+const SVGNS = 'http://www.w3.org/2000/svg';
+function svgEl(name, attrs){
+  const e = document.createElementNS(SVGNS, name);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  return e;
+}
+
+/* ---- ⑤ 六边形晶格（左上 + 右下） ---- */
+function hexPoints(cx, cy, r){
+  const pts = [];
+  for (let i=0; i<6; i++){
+    const a = Math.PI/180 * (60*i - 30);
+    pts.push(`${(cx + r*Math.cos(a)).toFixed(1)},${(cy + r*Math.sin(a)).toFixed(1)}`);
+  }
+  return 'M' + pts.join('L') + 'Z';
+}
+const HEX = [];
+(function buildHex(){
+  const g = document.getElementById('hexLattice');
+  const R = 34;
+  const dx = R * 1.5, dy = R * Math.sqrt(3);
+  const clusters = [
+    { ox: 150,  oy: 210, cols: 3, rows: 3, base: 0.45 },
+    { ox: 1770, oy: 880, cols: 3, rows: 3, base: 0.75 },
+  ];
+  let idx = 0;
+  for (const c of clusters){
+    for (let row=0; row<c.rows; row++){
+      for (let col=0; col<c.cols; col++){
+        const cx = c.ox + col*dx;
+        const cy = c.oy + row*dy + (col % 2 ? dy/2 : 0);
+        const p = svgEl('path', { d: hexPoints(cx, cy, R - 3), opacity: 0 });
+        g.appendChild(p);
+        const dist = Math.hypot(col - (c.cols-1)/2, row - (c.rows-1)/2);
+        HEX.push({
+          el: p,
+          t0: c.base + dist*0.16 + rnd(idx,21)*0.08,
+          tgt: 0.16 + rnd(idx,22)*0.10,
+          ph: rnd(idx,23)*6.28,
+        });
+        idx++;
+      }
+    }
+  }
+})();
+function renderHex(t){
+  for (const h of HEX){
+    const k = interp(t, [h.t0, h.t0 + 0.35], [0, 1], easeOutCubic);
+    const breathe = t > h.t0 + 0.35 ? 1 + 0.22*Math.sin((t - h.t0)*1.1 + h.ph) : 1;
+    h.el.setAttribute('opacity', (h.tgt * k * breathe).toFixed(3));
+  }
+}
+
+/* ---- ⑥ 四角取景框（从外向内收拢） ---- */
+const CORNERS = [
+  { id:'cornerTL', dx:-40, dy:-40 },
+  { id:'cornerTR', dx: 40, dy:-40 },
+  { id:'cornerBL', dx:-40, dy: 40 },
+  { id:'cornerBR', dx: 40, dy: 40 },
+];
+const CORNER_T0 = [0.05, 0.14, 0.20, 0.29];
+function renderCorners(t){
+  CORNERS.forEach((c, i) => {
+    const g = document.getElementById(c.id);
+    const t0 = CORNER_T0[i];
+    const k = interp(t, [t0, t0 + 0.65], [0, 1], springOut);
+    const ox = c.dx * (1 - k), oy = c.dy * (1 - k);
+    const br = t > t0 + 0.65 ? 1 + 0.10*Math.sin((t - t0)*0.9) : 1;
+    g.setAttribute('transform', `translate(${ox.toFixed(2)},${oy.toFixed(2)})`);
+    g.setAttribute('opacity', (k * br * 0.55).toFixed(3));
+  });
+}
+
+/* ---- ⑦ 同心圆环组（1 个大圆 + 4 段斜对角弧，整体旋转） ---- */
+const ringA   = document.getElementById('ringA');
+const ringArcEls = {
+  NE: document.getElementById('ringNE'),
+  SE: document.getElementById('ringSE'),
+  SW: document.getElementById('ringSW'),
+  NW: document.getElementById('ringNW'),
+};
+(function buildArcs(){
+  const R = 480;
+  /* 4 段弧的角度：每段 30°，分布于 NE/SE/SW/NW 斜对角 */
+  const segs = { NE: [30, 60], SE: [120, 150], SW: [210, 240], NW: [300, 330] };
+  for (const k in segs){
+    const [a0, a1] = segs[k];
+    const r0 = a0*Math.PI/180, r1 = a1*Math.PI/180;
+    const x0 = 960 + R*Math.cos(r0), y0 = 528 + R*Math.sin(r0);
+    const x1 = 960 + R*Math.cos(r1), y1 = 528 + R*Math.sin(r1);
+    ringArcEls[k].setAttribute('d', `M${x0.toFixed(1)},${y0.toFixed(1)}A${R},${R} 0 0 1 ${x1.toFixed(1)},${y1.toFixed(1)}`);
+  }
+})();
+const RING_T0 = 1.9;
+function renderRings(t){
+  const k = interp(t, [RING_T0, RING_T0 + 0.8], [0, 1], easeOutCubic);
+  if (k <= 0){
+    ringA.setAttribute('opacity', 0);
+    for (const id in ringArcEls) ringArcEls[id].setAttribute('opacity', 0);
+    return;
+  }
+  /* 大圆：极淡，缓慢呼吸（z<文字，被压过） */
+  const phase = (t - RING_T0) * 0.55;
+  const puls = 1 + 0.05 * Math.sin(phase * 2);
+  ringA.setAttribute('opacity', ((0.06 + 0.04 * Math.sin(phase)) * k * puls).toFixed(3));
+  /* 4 段弧：暖沙，整体绕中心缓慢旋转 */
+  const rot = (t - RING_T0) * 6.5;
+  const arcK = (0.32 * k).toFixed(3);
+  for (const id in ringArcEls){
+    ringArcEls[id].setAttribute('transform', `rotate(${rot.toFixed(2)} 960 528)`);
+    ringArcEls[id].setAttribute('opacity', arcK);
+  }
+}
+
+/* ---- ⑧ 对角细线束（右上 + 左下） ---- */
+const DIAG = [];
+(function buildDiag(){
+  const groups = [
+    { id:'diagTR', ox: 1420, oy: 150, dir:  1, n: 6, base: 0.95 },
+    { id:'diagBL', ox: 420,  oy: 880, dir: -1, n: 6, base: 1.20 },
+  ];
+  for (const G of groups){
+    const g = document.getElementById(G.id);
+    for (let i=0; i<G.n; i++){
+      const len = 60 + i*22;
+      const y = G.oy + i*17;
+      const ln = svgEl('line', {
+        x1: G.ox, y1: y, x2: G.ox + G.dir*len, y2: y, opacity: 0
+      });
+      g.appendChild(ln);
+      DIAG.push({ el: ln, t0: G.base + i*0.07, tgt: 0.20 - i*0.02, dir: G.dir });
+    }
+  }
+})();
+function renderDiag(t){
+  for (const d of DIAG){
+    const k = interp(t, [d.t0, d.t0 + 0.5], [0, 1], easeOutCubic);
+    const off = d.dir * 40 * (1 - k);
+    const breathe = t > d.t0 + 0.5 ? 1 + 0.18*Math.sin((t - d.t0)*1.3) : 1;
+    d.el.setAttribute('transform', `translate(${off.toFixed(2)},0)`);
+    d.el.setAttribute('opacity', (d.tgt * k * breathe).toFixed(3));
+  }
+}
+
+/* =====================================================================
+   文字层入场
+   ===================================================================== */
+
+/* ---- ⑨ Part 标签（框线绘制 + 从上方滑入 + 内容渐显） ----
+   ★ 框尺寸按 partEl 实测自适应（软件里 Part 文字可改，写死 150×50 会错位） */
+let PART_DASH = 2*(148 + 48);
+function syncPartFrame(){
+  const w = partEl.offsetWidth, h = partEl.offsetHeight;
+  if (!w || !h) return;
+  partFrame.style.width  = w + 'px';
+  partFrame.style.height = h + 'px';
+  partFrame.setAttribute('viewBox', `0 0 ${w} ${h}`);
+  partRect.setAttribute('x', 1);
+  partRect.setAttribute('y', 1);
+  partRect.setAttribute('width',  Math.max(2, w - 2));
+  partRect.setAttribute('height', Math.max(2, h - 2));
+  partRect.setAttribute('rx', (h - 2) / 2);
+  PART_DASH = 2*((w - 2) + (h - 2));
+  partRect.style.strokeDasharray  = PART_DASH;
+  partRect.style.strokeDashoffset = PART_DASH;
+}
+function renderPart(t){
+  const op = interp(t, [0.55, 1.0], [0, 1]);
+  /* 从上方 −70px 滑入（居中后改用 Y 轴，X 轴滑入会破坏居中） */
+  const y  = interp(t, [0.3, 0.95], [-70, 0], springOut);
+  partEl.style.opacity = op;
+  partEl.style.transform = `translate(-50%, ${y.toFixed(2)}px)`;
+
+  const dk = interp(t, [0.3, 0.85], [0, 1], easeOutCubic);
+  partRect.style.strokeDashoffset = (PART_DASH * (1 - dk)).toFixed(2);
+  partFrame.style.opacity = (dk * 0.85).toFixed(3);
+  partFrame.style.transform = `translate(-50%, ${y.toFixed(2)}px)`;
+
+  let dotS = 1;
+  if (t >= 1.0) dotS = 1 + 0.18 * Math.sin((t - 1.0) * 2.6);
+  dotEl.style.transform = `scale(${dotS.toFixed(3)})`;
+}
+
+function placePart(){
+  syncPartFrame();
+  const ph = partEl.offsetHeight || 50;
+  const top = Math.round(TF.y - 30 - ph);
+  partEl.style.top    = top + 'px';
+  partFrame.style.top = top + 'px';
+}
+
+/* 布局重算（仅在可见时测量，避免 display:none 初始化算出 NaN）
+   ★ 切到本 tab 宿主会显示画布 → IntersectionObserver 触发；打字也会经 applyCfg 触发 */
+function ensureLayout(){
+  const els=getChEls();
+  const measurable = els.length>0 && els.some(s=>{ const r=s.getBoundingClientRect(); return r.width>0; });
+  if(!measurable) return;
+  initTF(); placePart();
+}
+if('IntersectionObserver' in window){
+  const _io=new IntersectionObserver((ents)=>{ for(const e of ents){ if(e.isIntersecting) ensureLayout(); } },{threshold:0.01});
+  _io.observe(document.getElementById('stage'));
+}
+
+/* ---- 主标题拆字（可重入：文字改了重新拆） ---- */
+function setTitleText(str){
+  titleEl.innerHTML = String(str).split('').map(
+    (ch) => `<span class="ch">${ch === ' ' ? '&nbsp;' : ch}</span>`
+  ).join('');
+}
+
+/* 首次布局（★ 顺序：先拆字 → 再算框 → 再放 Part） */
+setTitleText(cfg.title);
+ensureLayout();   /* 宿主预加载时画布 display:none → 这里跳过，等可见后重算 */
+
+/* ---- ⑩ 主标题（逐字弹入 + 微光扫过） ---- */
+const TITLE_T0 = 1.25;
+function renderTitle(t){
+  getChEls().forEach((el, i) => {
+    const t0 = TITLE_T0 + i * CH_GAP;
+    const k  = interp(t, [t0, t0 + 0.62], [0, 1], springOut);
+    const y  = 40 * (1 - k);
+    const s  = 0.95 + 0.05 * k;
+    const o  = interp(t, [t0, t0 + 0.30], [0, 1]);
+    el.style.transform = `translateY(${y.toFixed(2)}px) scale(${s.toFixed(3)})`;
+    el.style.opacity = o.toFixed(3);
+  });
+  let bri = 1;
+  if (t >= 4.3 && t <= 5.0){
+    bri = 1 + 0.22 * Math.sin((t - 4.3) / 0.7 * Math.PI);
+  }
+  titleEl.style.filter = `brightness(${bri.toFixed(3)})`;
+}
+
+/* ---- ⑩b 主标题框（描线 + 流动光 + 笔尖 + 内填充） ---- */
+function renderTitleFrame(t){
+  if (!TF) return;
+  const k = interp(t, [TF_T0, TF_T0 + TF_DUR], [0, 1], easeOutCubic);
+  if (k <= 0){
+    tfFrameEl.style.opacity = 0;
+    return;
+  }
+  tfFrameEl.style.opacity = 1;
+
+  /* 主框描线（dashoffset 从 perimeter 减到 0） */
+  tfRect.style.strokeDashoffset = (TF.perimeter * (1 - k)).toFixed(1);
+
+  /* 笔尖光点（沿 path 当前位置） */
+  const penLen = TF.perimeter * k;
+  if (penLen > 0 && penLen < TF.perimeter){
+    const pt = tfRect.getPointAtLength(penLen);
+    tfPen.setAttribute('cx', pt.x.toFixed(1));
+    tfPen.setAttribute('cy', pt.y.toFixed(1));
+    tfPen.setAttribute('opacity', '1');
+    tfPen.setAttribute('r', (4 + Math.sin(t*16)*0.8).toFixed(2));
+  } else {
+    tfPen.setAttribute('opacity', '0');
+  }
+
+  /* 流动光：描完后起，循环（沿边框跑的一截光点） */
+  if (k >= 1){
+    const since = t - (TF_T0 + TF_DUR);
+    const dash  = 40;
+    tfFlow.style.strokeDasharray  = `${dash} ${TF.perimeter}`;
+    tfFlow.style.strokeDashoffset = ((-since * 130) % TF.perimeter).toFixed(1);
+    tfFlow.style.opacity = '0.55';
+  } else {
+    tfFlow.style.opacity = '0';
+  }
+
+  /* 内填充：描线后半段淡入 */
+  const fillK = interp(t, [TF_T0 + 0.45, TF_T0 + TF_DUR], [0, 1], easeOutCubic);
+  tfFill.setAttribute('opacity', (fillK * 0.7).toFixed(3));
+}
+
+/* ---- ⑪ 副标题（字距展开 + 上滑渐显） ---- */
+const SUB_T0 = 2.45;
+function renderSubtitle(t){
+  const k = interp(t, [SUB_T0, SUB_T0 + 0.75], [0, 1], easeOutCubic);
+  const y = 20 * (1 - k);
+  const ls = 0.15 + 0.21 * k;
+  subEl.style.opacity = k.toFixed(3);
+  subEl.style.transform = `translate(-50%, ${y.toFixed(2)}px)`;
+  subEl.style.letterSpacing = ls.toFixed(3) + 'em';
+}
+
+/* ---- ⑫ 装饰线（从中点展开）+ 端点光点 ---- */
+const UL_T0 = 3.05;
+const UL_W  = 240;
+function renderUnderline(t){
+  const k = interp(t, [UL_T0, UL_T0 + 0.7], [0, 1], easeOutCubic);
+  ulEl.style.opacity = k.toFixed(3);
+  ulEl.style.transform = `translate(-50%, 0) scaleX(${k.toFixed(3)})`;
+  const half = UL_W / 2 * k;
+  const dotS = t > UL_T0 + 0.7 ? 1 + 0.25*Math.sin((t - UL_T0)*2.2) : 0.6 + 0.4*k;
+  ulDotL.style.opacity = (k * 0.9).toFixed(3);
+  ulDotR.style.opacity = (k * 0.9).toFixed(3);
+  ulDotL.style.transform = `translate(${(960 - half - 5).toFixed(1)}px, 0) scale(${dotS.toFixed(3)})`;
+  ulDotR.style.transform = `translate(${(960 + half - 5).toFixed(1)}px, 0) scale(${dotS.toFixed(3)})`;
+}
+
+/* ---- ⑬ 暗角呼吸 ---- */
+function renderVignette(t){
+  const k = interp(t, [0, 1.2], [0, 1], easeOutCubic);
+  const br = 1 + 0.08 * Math.sin(t * 0.7);
+  vigEl.style.opacity = (k * br).toFixed(3);
+}
+
+/* ---- ⑭ 整体呼吸（5.0 起） ---- */
+function renderStage(t){
+  let s = 1;
+  if (t >= 5.0) s = 1 + 0.012 * Math.sin((t - 5.0) * 1.6);
+  stageEl.style.transform = `translate(-50%, -50%) scale(${s.toFixed(4)})`;
+}
+
+/* =====================================================================
+   主循环
+   ===================================================================== */
+/* ⚠️ 2026-09-16 修「预览播完就死 + 重播按钮没反应」（与 cyber 系列对齐）：
+   旧实现三处坑，合起来让预览只能播一次：
+     ① loop() 里 `if (t > DUR+1){ renderAll(DUR+1); return; }` → 播完就停，不循环；
+     ② 停住时【没有把 rafId 清零】，而 kick() 是 `if (rafId == null)` 才排队
+        → 之后任何 play() 都被 kick 挡回去 = 重播按钮点了没反应（实测复现：点两次都不动）；
+     ③ play() 用 performance.now() 锚定，跟 cyber 的 startTime=0 约定不一致。
+   现在对齐 cyber-chapter-card 的标准写法：`% CYCLE` 无限循环 + play() 先 cancel 再直接排队。 */
+const CYCLE = DUR + 1;           /* 循环周期：0~DUR 入场+定版，DUR~CYCLE 保持 → 到点硬切回开头 */
+let startTime = 0;
+let paused = false;              /* 导出逐帧 seek 时冻结自循环（与 cyber-chapter-card 协议一致） */
+let rafId = null;
+/* 一次性把整幅画到指定 t（导出逐帧驱动用，不依赖 wall-clock） */
+function renderAll(t){
+  const tt = Math.max(0, Math.min(DUR + 1, t));
+  renderBg(tt); renderHex(tt); renderCorners(tt); renderRings(tt); renderDiag(tt);
+  renderPart(tt); renderTitle(tt); renderTitleFrame(tt); renderUnderline(tt); renderSubtitle(tt);
+  renderVignette(tt); renderStage(tt);
+}
+function loop(now){
+  if (paused) return;
+  if (!startTime) startTime = now;
+  const t = ((now - startTime) / 1000) % CYCLE;   /* ★ 取模 = 无限循环（旧版此处是 return，播完即死） */
+  renderAll(t);
+  rafId = requestAnimationFrame(loop);
+}
+/* 跳到指定秒并冻结（导出逐帧驱动：host 发 cyber-seek → 这里直接出图，不靠真实时间） */
+function seek(t){
+  paused = true;
+  if (rafId != null){ cancelAnimationFrame(rafId); rafId = null; }
+  startTime = performance.now() - t * 1000;
+  renderAll(t);
+}
+/* 解除冻结、从 0 重新播放（cyber-play / cyber-resume / 重播按钮 共用）
+   ★ 必须先 cancel 再直接排队，不能走「判空再排」——见上方 ② 号坑 */
+function play(){
+  paused = false;
+  startTime = 0;                                   /* 归零 → 下一帧重新锚定（cyber 同款约定） */
+  if (rafId != null){ cancelAnimationFrame(rafId); rafId = null; }
+  rafId = requestAnimationFrame(loop);
+}
+/* 外部跳帧用（puppeteer/测试） */
+window.__seekTo = seek;
+window.seek = seek;
+window.play = play;
+play();                          /* ★ 用 play() 启动，保证 rafId 记账与后续重播一致 */
+
+/* =====================================================================
+   postMessage 桥（与 part02-opener / cyber-chapter-card 同协议）
+   ---------------------------------------------------------------------
+   host→iframe : cyber-embed / cyber-cfg{part,title,sub,replay}
+                 / cyber-color{vars} / cyber-play / cyber-get-html{reqId}
+   iframe→host : cyber-ready / cyber-html{reqId,html} / cyber-status
+                 （source 均为 'cyber'）
+   ===================================================================== */
+
+/* 重播：把时钟拨回 0 */
+function restart(){ play(); }
+
+/* 嵌入模式：按父容器缩放（★ 缩 body，不动 #stage 的 transform —— 呼吸会覆盖它） */
+function fit(){
+  const s = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+  document.body.style.transformOrigin = 'top left';
+  document.body.style.transform = 'scale(' + s + ')';
+}
+
+/* 应用文字配置（三个可改字段：part / title / sub） */
+function applyCfg(c){
+  if (c.part != null){
+    cfg.part = c.part;
+    document.getElementById('partNum').textContent = c.part;
+  }
+  if (c.title != null){
+    cfg.title = c.title;
+    setTitleText(c.title);
+  }
+  if (c.sub != null){
+    cfg.sub = c.sub;
+    subEl.textContent = c.sub;
+  }
+  /* 文字变了 → 重算主标题框 → 再放 Part（★ 顺序不能反） */
+  ensureLayout();
+}
+
+/* 应用配色（允许 host 覆盖任意 --* 变量；canvas 的 RGB 缓存要重读） */
+function applyColors(vars){
+  const root = document.documentElement.style;
+  for (const k in vars){ if (k.indexOf('--') === 0) root.setProperty(k, vars[k]); }
+  C_A1 = hexToRgb(cssVar('--a1'));
+  C_A3 = hexToRgb(cssVar('--a3'));
+  C_T1 = hexToRgb(cssVar('--t1'));
+}
+
+window.addEventListener('message', function(e){
+  const d = e.data || {};
+  if (d.source !== 'host') return;
+  try{
+    if (d.type === 'cyber-embed'){
+      document.body.classList.add('embed');
+      fit();
+    } else if (d.type === 'cyber-cfg'){
+      applyCfg(d);
+      if (d.replay) restart();
+    } else if (d.type === 'cyber-color'){
+      applyColors(d.vars || {});
+    } else if (d.type === 'cyber-play'){
+      restart();
+    } else if (d.type === 'cyber-seek'){
+      /* 导出逐帧驱动：host 发 cyber-seek{t} → 冻结自循环并直接出该帧 */
+      if (typeof d.t === 'number') seek(d.t);
+    } else if (d.type === 'cyber-resume'){
+      /* 导出结束：解冻并恢复播放 */
+      play();
+    } else if (d.type === 'cyber-get-html'){
+      /* 固化：把当前文案注入 PRISTINE 副本后回送 */
+      const boot = '<script>window.__OPENER_BOOT=' +
+        JSON.stringify({ part: cfg.part, title: cfg.title, sub: cfg.sub }) + '<\/script>';
+      const html = PRISTINE.replace('</head>', boot + '</head>');
+      parent.postMessage({ source:'cyber', type:'cyber-html', reqId: d.reqId, html: html }, '*');
+    }
+  }catch(err){
+    try{ parent.postMessage({ source:'cyber', type:'cyber-status', err: err.message }, '*'); }catch(e2){}
+  }
+});
+window.addEventListener('resize', fit);
+
+/* 固化 HTML 打开时，用注入的 boot 恢复文案 */
+if (window.__OPENER_BOOT) applyCfg(window.__OPENER_BOOT);
+
+/* 调试/外部驱动暴露（与 part02-opener 对齐） */
+window.seek = seek;
+window.play = play;
+
+/* 通知 host：iframe 已就绪（host 收到后会回推一次配置） */
+parent.postMessage({ source:'cyber', type:'cyber-ready' }, '*');
+</script>
+</body>
+</html>
