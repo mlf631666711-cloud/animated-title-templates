@@ -1,0 +1,726 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>Vinyl Needle · 黑胶落针（日轮大圆出血 + 双色刻印标题）</title>
+<!--
+  风格方向（老板 2026-10-03：Pinterest 自选参考，任意主题/配色，只求高级配色 + 高级动效；
+  元素与构图都必须与既有 19 张引擎区分）
+  参考 = _tmp/pins1003/sheets/vinyl_record_sound_wave_mo.png（14 张）
+    直接取用的三条：#03「奶油底 + 黑盘 + 中心标签位放照片」、#13「唱片像日轮从画面下方升起」、
+    #11「唱臂斜插 + 盘面外圈轨道刻度」。⚠️ 只取语汇，不取任何专辑封面/艺人/厂牌素材。
+  配色真源 = P024（本地 140 组高级配色库现成条目，无自造色值）
+    #723A21 树皮褐 / #D2632D 铁锈橙 / #CABC81 卡其 / #9DC1E3 粉蓝 / #FFE1BD 奶油 / #EEE6D2 暖纸
+    角色分配：褐=盘面+浅底上的深字 · 橙=中心标签 · 卡其=沟槽/刻度 · 粉蓝=唱臂金属+盘上小字
+             · 奶油=压在盘上的那半截标题 · 暖纸=底色浅端
+    ★ 对比度实测（写稿时手算过，不是"看着还行"）：奶油 #FFE1BD vs 褐 #723A21 = 7.16:1，
+      褐 vs 暖纸 = 7.16:1 ⇒ 标题被圆盘边界劈成两色时【两半各自都读得清】，这是本引擎的招牌。
+      卡其 vs 暖纸只有 1.52:1 ⇒ 卡其一律只用于盘面（vs 褐 4.7:1）和细装饰，绝不用于浅底小字。
+  ★ 构图 = 【右下大圆出血 + 左上通栏 + 标题跨盘双色】
+    圆心 (1240,740)、半径 545 ⇒ 盘顶 y=195、盘底 y=1285（只切下边缘，不切右边缘 ⇒ 读成"升起"而不是"滚出"）。
+    Part 左上、主标题从左上横贯到盘面里（x 110→1610）、副标题与声波在左下空白带。
+    ⚠️ 与 press-halftone「报头通栏 + 右下出血」的区别如实登记：那条是【顶部报头 + 右下矩形出血】，
+      本引擎的右下是一个【正圆 + 唱臂】，且标题不在报头位而是【压在盘面上并被盘缘换色】——
+      换色这一件事既有 19 张引擎里没有过。
+  母题 = 同心沟槽 / 频段分隔环 / 落尘与擦痕 / 唱臂+唱头+配重 / 中心标签 / 主轴孔 / 针尖涟漪 / 声波
+    （现有引擎零撞：无瓷无裂缝、无竹窗、无网点、无 blob、无液态铬、无蓝图纸、无街机电路、无贴纸）。
+  动效动词 = 【转盘匀速旋转 → 唱臂摆入落针 → 落针后由圆心甩出一道【角向刻印扇形】把标题写出来】
+    招牌是最后那条：标题不是淡入、不是逐字弹、不是竖条遮罩，而是
+    【以圆心为顶点的扇形夹子 (clip-path polygon) 顺时针扫过 ⇒ 字像被唱针从沟槽里刻出来】。
+    同一份标题复制两层：褐层 + 奶油层（后者额外被 circle() 裁在盘面内）⇒ 字跨过盘缘时【当场换色】。
+    ⚠️ 同心圆旋转在视觉上是【不变量】—— 只转沟槽 = 画面根本没动。所以旋转感由三件"不对称件"承担：
+      落尘、擦痕弧、两条径向分模线；而高光 (sheen) 必须【不转】（物理上镜面高光留在原地才对）。
+  字体 = Noto Sans SC 【800 重黑】+ 极小字距（fs*0.02）。现有引擎里最重的是 700，
+    且本引擎没有任何描边/投影/套印副本 —— 双色就是它的排版效果。
+  产品位形状 = 【中心标签圆窗】（半径 150 的圆，被半径 190 的橙色标签环框住）。
+    ⚠️ 照片【不随盘旋转】，这是刻意的：视频展示预设里产品必须始终正立可读，
+      转 3.6 圈里有大半时间产品是倒的。旋转感改由落尘/擦痕承担（见上）。
+  本文件为零依赖单文件 HTML 引擎, 挂 cyber 同款 postMessage 桥:
+    host→iframe: cyber-embed / cyber-unembed / cyber-cfg{part,title,sub,replay} / cyber-color{vars}
+                 / cyber-img{img} / cyber-play / cyber-seek{t} / cyber-resume / cyber-get-html{reqId} / cyber-font
+    iframe→host: cyber-ready / cyber-html{reqId,html} / cyber-status{err}  (source 均为 'cyber')
+  铁律: 所有视觉量 = 帧号 f 的纯函数；无 Math.random（抖动走 hash1）；禁 CSS animation/transition。
+  ⚠️ 已付过学费的硬约束（R151/R152/R158 + R165~R184 + R173 白底基线）全部落实：
+    ① 描边件 class .ln{fill:none}，实心件一律内联 style="fill:…"；
+    ② 几何（沟槽半径、落尘极坐标、波形基线）只在 build* 量一次，不进 render()；
+    ③ 「无产品图」= href 属性缺省（href="" = 永不结束的请求 ⇒ 导出第 0 帧抓屏挂死）；
+    ④ 禁一次性闩；只允许「当前值 ≠ 目标值才写」的幂等写法；
+    ⑤ SVG transform 只写裸数字，不写单位也不写 none；
+    ⑥ 同权重按书写顺序翻盘 ⇒ 覆盖用复合选择器；HTML 文字层显式 z-index 高于 SVG；
+    ⑦ seg() 段前 = 0 ⇒ 不许拿 (1-p)*k 当入场前暗度；
+    ⑧ 可编辑文字按【最坏输入】设计：超行压字号，单行缩宽时字号与字距同乘 k；
+    ⑨ 主循环开机自启（漏掉 = 预览停在第 0 帧，不报错、数值全绿）；
+    ⑩ ★ 旋转角必须写成【角速度的闭式积分】（加速段二次、稳态一次），不许在 render() 里累加，
+       否则 seek 回来角度会漂 ⇒ 逐帧纯函数判据（DET PSNR）当场判死；
+    ⑪ ★ clip-path 的扇形顶点用【舞台坐标】，所以挂夹子的容器必须 inset:0 铺满 #stage；
+       嵌套 clip（扇形 > 圆）= 视觉求交，CSS 没有"相减"，所以褐层只能【垫在下面被奶油层盖住】，
+       不能试图把褐层裁成"圆外"。
+-->
+<style>
+  /* 🔴 六个配色变量必须在这里给【默认值】：JS 里 setAttribute('style','fill:var(--vt-x)')
+     不带 CSS 回退，宿主没发色时整棵树解析成 black。 */
+  :root{
+    --vt-bark:#723A21;  --vt-rust:#D2632D;  --vt-khaki:#CABC81;
+    --vt-sky:#9DC1E3;   --vt-cream:#FFE1BD; --vt-paper:#EEE6D2;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{width:100%;height:100%;background:#2A1C14;overflow:hidden;}
+  body{font-family:"Noto Sans SC","Microsoft YaHei","PingFang SC",sans-serif;}
+  #wrap{position:absolute;left:50%;top:50%;width:1920px;height:1080px;margin:-540px 0 0 -960px;}
+  #stage{position:relative;width:1920px;height:1080px;overflow:hidden;transform-origin:0 0;
+    background:var(--vt-paper,#EEE6D2);}
+  #hud{position:absolute;inset:0;width:1920px;height:1080px;z-index:5;}
+  #hud .ln{fill:none;}
+  #txt{position:absolute;inset:0;z-index:9;pointer-events:none;}
+  /* 三层文字容器：#tBase（褐层，扇形裁）/ #tPie（奶油层的扇形裁）/ #tDisc（圆裁）。
+     🔴 三个都必须 inset:0 —— clip-path 的 px 坐标是【元素自身边框盒】原点，
+        容器一旦收缩成文字块大小，扇形顶点就跟着跑，标题会被从错误的角度刻出来。 */
+  #tBase,#tPie,#tDisc{position:absolute;inset:0;}
+  #tPie{z-index:2;}
+  #titleBox,#titleBoxD{position:absolute;left:110px;top:286px;width:1500px;}
+  .tline{display:block;white-space:pre;position:relative;font-weight:800;letter-spacing:2px;}
+  /* .tw 里必须留一个【在流里】的字撑宽度；本引擎没有副本层（双色靠两层 DOM，不靠 ghost） */
+  .tw{position:relative;display:inline-block;white-space:pre;}
+  #titleBox .tw{color:var(--vt-bark);}
+  #titleBoxD .tw{color:var(--vt-cream);}
+
+  /* ---------- Part（左上，浅底 ⇒ 深字） ---------- */
+  #partTxt{position:absolute;left:110px;top:126px;white-space:pre;font-size:25px;font-weight:700;
+    letter-spacing:15px;color:var(--vt-bark);}
+  #partRule{position:absolute;left:112px;top:176px;width:210px;height:2px;background:var(--vt-rust);
+    transform-origin:0 50%;}
+
+  /* ---------- 副标题 + 声波（左下空白带）----------
+     ⚠️ 这一行只有褐字版、没有双色刻印副本 ⇒ 宽度上限必须从【圆盘在这一行的左缘】反推：
+        圆 (1200,760) r=580，y≈872 处 dx=569 ⇒ 左缘 x=631。subMax 锁 500（字尾 610），
+        越过 631 就是一截褐字压在褐盘上 = 完全看不见。
+        同理固定串 y≈923 ⇒ 左缘 643 ⇒ tagMax 520（字尾 630）；
+        声波基线 y=986 ⇒ 左缘 666 ⇒ WAVE_X1 锁 640。 */
+  #subTxt{position:absolute;left:110px;top:858px;white-space:pre;font-size:29px;font-weight:700;
+    letter-spacing:11px;color:var(--vt-bark);}
+  #subRule{position:absolute;left:112px;top:838px;width:520px;height:1px;background:var(--vt-bark);
+    opacity:.34;transform-origin:0 50%;}
+  /* 固定串：⚠️ 不许复用副标题默认文本（R183），也不放无出处的数字 */
+  #tagline{position:absolute;left:110px;top:916px;white-space:pre;font-size:14px;font-weight:500;
+    letter-spacing:8px;color:var(--vt-bark);opacity:.66;}
+
+  /* ---------- 标签说明（压在盘面上 ⇒ 一律浅色字） ---------- */
+  #prodTag{position:absolute;left:1015px;top:975px;width:370px;text-align:center;font-size:17px;
+    font-weight:700;letter-spacing:7px;color:var(--vt-sky);}
+  #prodSub{position:absolute;left:1015px;top:1006px;width:370px;text-align:center;font-size:12px;
+    font-weight:400;letter-spacing:5px;color:var(--vt-cream);opacity:.7;}
+
+  /* ---------- 独立面板 ---------- */
+  #panel{position:fixed;left:14px;top:14px;z-index:50;display:flex;gap:8px;align-items:center;}
+  #panel input[type=text],#panel input:not([type=file]){background:rgba(255,255,255,.9);color:#2A1C14;
+    border:1px solid #c9b79a;border-radius:6px;padding:6px 9px;font-size:13px;width:150px;}
+  #panel button{background:#723A21;color:#FFE1BD;border:0;border-radius:6px;padding:7px 12px;font-size:13px;cursor:pointer;}
+  body.embed #panel{display:none;}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="stage">
+    <svg id="hud" viewBox="0 0 1920 1080" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <clipPath id="labClip"><circle id="labClipC"/></clipPath>
+        <clipPath id="discClip"><circle id="discClipC"/></clipPath>
+        <!-- 底色：暖纸 → 奶油（两个 stop 各占一个配色控件 ⇒ 六格全有消费者） -->
+        <linearGradient id="gGround" x1="0.1" y1="0" x2="0.62" y2="1">
+          <stop offset="0%"   style="stop-color:var(--vt-paper)"/>
+          <stop offset="62%"  style="stop-color:var(--vt-paper)"/>
+          <stop offset="100%" style="stop-color:var(--vt-cream)"/>
+        </linearGradient>
+        <!-- 盘面：中心略亮（褐）→ 外圈更实。没有比褐更深的变量可用，
+             所以"黑胶"的层次一律走【加亮】而不是【压暗】—— 见 header ②。 -->
+        <radialGradient id="gDisc" cx="42%" cy="36%" r="72%">
+          <stop offset="0%"   style="stop-color:var(--vt-bark);stop-opacity:1"/>
+          <stop offset="72%"  style="stop-color:var(--vt-bark);stop-opacity:1"/>
+          <stop offset="100%" style="stop-color:var(--vt-khaki);stop-opacity:.16"/>
+        </radialGradient>
+        <!-- 镜面高光：★ 不随盘旋转（物理上高光留在原地，盘在它下面转） -->
+        <radialGradient id="gSheen" cx="30%" cy="22%" r="52%">
+          <stop offset="0%"   style="stop-color:var(--vt-cream);stop-opacity:.30"/>
+          <stop offset="58%"  style="stop-color:var(--vt-cream);stop-opacity:.07"/>
+          <stop offset="100%" style="stop-color:var(--vt-cream);stop-opacity:0"/>
+        </radialGradient>
+      </defs>
+
+      <rect id="ground" x="0" y="0" width="1920" height="1080" fill="url(#gGround)"/>
+
+      <!-- 唱片的接触影：★ 只留一层。
+           🔴 第一版是三层同心圆（r=DR+4/+13/+22，各带自己的偏移）⇒ 在奶油底上刷出一圈
+              "双层盘边"，看着像盘后面还垫了一张更大的盘。硬边假高斯在这个对比度下不成立，
+              一层薄新月反而干净。 -->
+      <g id="discShadow" opacity="0">
+        <circle id="sh0" style="fill:var(--vt-bark)" opacity=".085"/>
+      </g>
+
+      <g id="discSys" opacity="0">
+        <circle id="discBody" style="fill:url(#gDisc)"/>
+        <!-- ★ 旋转组：沟槽是旋转不变量，真正让人看出"在转"的是下面这三件不对称件 -->
+        <g id="discSpin">
+          <g id="grooves" class="ln" stroke="var(--vt-cream)"></g>
+          <g id="bands" class="ln" stroke="var(--vt-khaki)"></g>
+          <g id="seams" class="ln" stroke="var(--vt-khaki)"></g>
+          <g id="scuffs" class="ln" stroke="var(--vt-cream)"></g>
+          <g id="dust" ></g>
+        </g>
+        <!-- 固定高光 + 外缘反光弧（都不转） -->
+        <g clip-path="url(#discClip)">
+          <circle id="sheen" fill="url(#gSheen)"/>
+        </g>
+        <circle id="rimOut" class="ln" stroke="var(--vt-khaki)" stroke-width="2.4" opacity=".5"/>
+        <path id="rimGlint" class="ln" stroke="var(--vt-cream)" stroke-width="5" stroke-linecap="round" opacity=".5"/>
+
+        <!-- 中心标签：橙环 + 圆窗产品图 + 自绘细环（无图时不空） -->
+        <circle id="label" style="fill:var(--vt-rust)"/>
+        <circle id="labelIn" class="ln" stroke="var(--vt-bark)" stroke-width="1.6" opacity=".38"/>
+        <g id="labelVec" class="ln" stroke="var(--vt-bark)"></g>
+        <image id="prodImg" clip-path="url(#labClip)" preserveAspectRatio="xMidYMid slice"/>
+        <circle id="labelRing" class="ln" stroke="var(--vt-bark)" stroke-width="1.2" opacity=".3"/>
+        <circle id="spindle" style="fill:var(--vt-paper)"/>
+      </g>
+
+      <!-- 针尖涟漪（落点固定，不随盘转） -->
+      <g id="ripple" class="ln" stroke="var(--vt-sky)" stroke-width="2"></g>
+
+      <!-- 刻印扇形的"读写头"：一条从圆心甩出去的细射线 + 头端一颗亮点。
+           🔴 只画线会读成"盘上一道划痕"（第一版实测）。亮点 = 让这条线有一个"正在工作的头"，
+              划痕是没有端点的，有端点才是工具。 -->
+      <line id="sweepLine" class="ln" stroke="var(--vt-sky)" stroke-width="2.4" stroke-linecap="round" opacity="0"/>
+      <circle id="sweepDot" style="fill:var(--vt-sky)" r="5" opacity="0"/>
+
+      <!-- 唱臂：影（带抬起偏移）+ 本体（绕支点旋转） -->
+      <g id="armSh" opacity="0">
+        <line id="armShBar" class="ln" stroke="var(--vt-bark)" stroke-width="15" stroke-linecap="round"/>
+      </g>
+      <g id="arm" opacity="0">
+        <line id="armPivotPost" class="ln" stroke="var(--vt-bark)" stroke-width="30" stroke-linecap="round"/>
+        <line id="armBar" class="ln" stroke="var(--vt-sky)" stroke-width="11" stroke-linecap="round"/>
+        <line id="armHi" class="ln" stroke="var(--vt-cream)" stroke-width="3" stroke-linecap="round" opacity=".55"/>
+        <circle id="armWeight" style="fill:var(--vt-bark)"/>
+        <circle id="armWeightHi" class="ln" stroke="var(--vt-khaki)" stroke-width="1.6" opacity=".5"/>
+        <circle id="armPivot" style="fill:var(--vt-bark)"/>
+        <circle id="armPivotIn" style="fill:var(--vt-khaki)"/>
+        <g id="head">
+          <rect id="headBody" style="fill:var(--vt-bark)" rx="5"/>
+          <rect id="headHi" style="fill:var(--vt-cream)" opacity=".18"/>
+          <circle id="stylus" style="fill:var(--vt-sky)"/>
+        </g>
+      </g>
+
+      <!-- 声波（针落下之后才有） -->
+      <path id="wave" style="fill:var(--vt-bark)" opacity="0"/>
+    </svg>
+
+    <div id="txt">
+      <div id="partTxt"></div>
+      <div id="partRule"></div>
+      <div id="tBase"><div id="titleBox"></div></div>
+      <div id="tPie"><div id="tDisc"><div id="titleBoxD"></div></div></div>
+      <div id="subRule"></div>
+      <div id="subTxt"></div>
+      <div id="tagline"></div>
+      <div id="prodTag"></div>
+      <div id="prodSub"></div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<div id="panel">
+  <input id="pPart" placeholder="Part" value="Part.01" />
+  <input id="pTitle" placeholder="主标题" value="转过的每一圈都算数" />
+  <input id="pSub" placeholder="副标题" value="NEEDLE DROP" />
+  <button id="pPlay">重播</button>
+  <input id="pImg" type="file" accept="image/*" />
+</div>
+
+<script>
+"use strict";
+/* ============================== 工具 ============================== */
+var $ = function(id){ return document.getElementById(id); };
+function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
+function seg(f,a,b){ return clamp((f-a)/(b-a),0,1); }                 /* 段前严格 0 */
+function easeOut(p){ return 1-Math.pow(1-p,3); }
+function easeInOut(p){ return p<0.5?4*p*p*p:1-Math.pow(-2*p+2,3)/2; }
+function smoother(p){ return p*p*p*(p*(p*6-15)+10); }
+function hash1(n){ var x=Math.sin(n*127.1+311.7)*43758.5453; return x-Math.floor(x); }
+function mk(parent,tag,attrs){
+  var e=document.createElementNS('http://www.w3.org/2000/svg',tag),k;
+  for(k in attrs){ if(Object.prototype.hasOwnProperty.call(attrs,k)) e.setAttribute(k,attrs[k]); }
+  parent.appendChild(e); return e;
+}
+function polar(cx,cy,r,deg){ var a=deg*Math.PI/180; return [cx+Math.cos(a)*r, cy+Math.sin(a)*r]; }
+
+/* ============================== 常量 ============================== */
+var FPS=30, DUR=225, HOLD=0.9, CYCLE=DUR/FPS+HOLD;
+var DCX=1200, DCY=760, DR=580, LR=185, IR=146;      /* 圆心 / 半径 / 标签半径 / 图窗半径 */
+var GR0=205, GR1=566;                                /* 沟槽带内外半径（外留 14px 光边） */
+var APX=1846, APY=232, TIPX=1446, TIPY=559;          /* 唱臂支点 / 落点 */
+var ARM_REST=26;                                     /* 停针位相对落针位的角度（外圈方向） */
+var TITX=110, TITY=286, TITW=1500, TITMAXFS=118, TITMINFS=28, TITVB=566;
+var A0=-175, A1=-18;                                 /* 刻印扇形起止角（覆盖标题块全角域） */
+var SPIN_T=60, OMEGA=200/30;                         /* 33⅓ 转 = 200°/s ⇒ 6.667°/帧 */
+var WAVE_X0=110, WAVE_X1=640, WAVE_Y=986, WAVE_N=64;
+/* 🔴 盘缘与【浅底上的深字】必须互不侵犯：本引擎的标题是刻意要跨盘缘换色的（招牌），
+   但 Part / 副标题 / 固定串 / 声波【没有】双色层，压上盘面就等于褐字压褐盘 = 直接消失。
+   所以这几个的宽度上限是从「该行 y 处盘缘的 x」反推出来的，不是随手定的：
+     y=858（副标题）→ 盘缘 x=628 ⇒ subMax 500（字尾 610）
+     y=916（固定串）→ 盘缘 x=641 ⇒ tagMax 520（字尾 630）
+     y=986（声波）  → 盘缘 x=666 ⇒ WAVE_X1 640 */
+
+/* 角位移 = 角速度的【闭式积分】（加速段二次、稳态一次）。
+   🔴 绝不能在 render() 里 angle += omega —— 那样 seek 回来角度会漂，
+      逐帧纯函数判据（DET 同帧 PSNR）当场判死，而且是"看着在动所以像对的"那种死。 */
+function spinDeg(f){
+  if(f<=SPIN_T) return OMEGA*f*f/(2*SPIN_T);
+  return OMEGA*(SPIN_T/2 + (f-SPIN_T));
+}
+
+var els={
+  stage:$('stage'), hud:$('hud'), txt:$('txt'),
+  ground:$('ground'),
+  discShadow:$('discShadow'), sh0:$('sh0'),
+  discSys:$('discSys'), discBody:$('discBody'), discClipC:$('discClipC'), discSpin:$('discSpin'),
+  grooves:$('grooves'), bands:$('bands'), seams:$('seams'), scuffs:$('scuffs'), dust:$('dust'),
+  sheen:$('sheen'), rimOut:$('rimOut'), rimGlint:$('rimGlint'),
+  label:$('label'), labelIn:$('labelIn'), labelVec:$('labelVec'), labClipC:$('labClipC'),
+  prodImg:$('prodImg'), labelRing:$('labelRing'), spindle:$('spindle'),
+  ripple:$('ripple'), sweepLine:$('sweepLine'), sweepDot:$('sweepDot'),
+  armSh:$('armSh'), armShBar:$('armShBar'), arm:$('arm'), armBar:$('armBar'), armHi:$('armHi'),
+  armWeight:$('armWeight'), armWeightHi:$('armWeightHi'), armPivot:$('armPivot'),
+  armPivotIn:$('armPivotIn'), armPivotPost:$('armPivotPost'), head:$('head'),
+  headBody:$('headBody'), headHi:$('headHi'), stylus:$('stylus'),
+  wave:$('wave'),
+  partTxt:$('partTxt'), partRule:$('partRule'),
+  tBase:$('tBase'), tPie:$('tPie'), tDisc:$('tDisc'),
+  titleBox:$('titleBox'), titleBoxD:$('titleBoxD'),
+  subTxt:$('subTxt'), subRule:$('subRule'), tagline:$('tagline'),
+  prodTag:$('prodTag'), prodSub:$('prodSub')
+};
+/* 🔴 必须在任何 build* 往 DOM 里塞生成件【之前】抓原始快照，否则固化件里带着上一轮的节点，
+   重新打开会翻倍。 */
+var PRISTINE = '<!doctype html>\n' + document.documentElement.outerHTML;
+
+/* ============================== 盘面几何 ============================== */
+var GROOVE=[], BANDS=[], DUST=[], SCUFF=[], WAVEBASE=[];
+
+function buildDisc(){
+  var i, r, t;
+  /* ① 密纹：96 圈候选半径，先【挖掉 5 段静带】再画。
+       🔴 第一版 44 圈等距 + 卡其描边 ⇒ 肉眼看是「一只靶子」，不是密纹唱片：
+          圈数不够密（密纹的圈距在视觉上应当细到数不清）、间距太均匀（= 条纹）、
+          而且用卡其（黄）当沟槽色 ⇒ 整只盘读成"金色同心圆贴纸"。
+          正解：① 圈距压到 ≈3.7px ② 沟槽用奶油低透（= 光掠在沟脊上，中性不偏黄）
+               ③ 轨与轨之间留【无沟槽静带】—— 静带是"画不出来的东西"，
+                  靠【不画】来表达，比描一条亮环真实得多。 */
+  var GAPS=[[0.155,0.192],[0.352,0.386],[0.548,0.578],[0.712,0.742],[0.872,0.900]];
+  function inGap(u){ for(var g=0;g<GAPS.length;g++){ if(u>=GAPS[g][0]&&u<=GAPS[g][1]) return true; } return false; }
+  var n=96;
+  for(i=0;i<n;i++){
+    t=i/(n-1);
+    if(inGap(t)) continue;
+    r = GR0+(GR1-GR0)*t + (hash1(31+i*7)-0.5)*1.5;   /* 间距微抖 ⇒ 不产生等距条纹/摩尔 */
+    mk(els.grooves,'circle',{cx:DCX,cy:DCY,r:r.toFixed(1),
+      'stroke-width':(i%13===0?1.7:0.9),'opacity':(i%13===0?0.13:0.062)});
+  }
+  /* ② 静带的两条边界：真唱片在静带边缘各有一道轻亮的"收口"，这是唯一用卡其的沟槽级细节 */
+  for(i=0;i<GAPS.length;i++){
+    mk(els.bands,'circle',{cx:DCX,cy:DCY,r:(GR0+(GR1-GR0)*GAPS[i][0]).toFixed(1),'stroke-width':1.4,opacity:.20});
+    mk(els.bands,'circle',{cx:DCX,cy:DCY,r:(GR0+(GR1-GR0)*GAPS[i][1]).toFixed(1),'stroke-width':1.4,opacity:.20});
+  }
+  /* ③ 分模线（2 条对径径向短线）+ 落尘 + 擦痕：★ 全场唯一"能看出在转"的三件不对称件 */
+  mk(els.seams,'line',{x1:DCX+GR0,y1:DCY,x2:DCX+GR1,y2:DCY,'stroke-width':1.6,opacity:.20});
+  mk(els.seams,'line',{x1:DCX-GR0,y1:DCY,x2:DCX-GR1,y2:DCY,'stroke-width':1.6,opacity:.20});
+  for(i=0;i<34;i++){
+    r = GR0+ (GR1-GR0)*hash1(77+i*13);
+    DUST.push([r, hash1(203+i*29)*360, 0.8+hash1(311+i*17)*1.7, 0.14+hash1(419+i*11)*0.22]);
+    mk(els.dust,'circle',{cx:0,cy:0,r:0});   /* 位置由 build 一次算死 ⇒ render 只转整组 */
+  }
+  for(i=0;i<DUST.length;i++){
+    var d=polar(DCX,DCY,DUST[i][0],DUST[i][1]);
+    els.dust.childNodes[i].setAttribute('cx',d[0].toFixed(1));
+    els.dust.childNodes[i].setAttribute('cy',d[1].toFixed(1));
+    els.dust.childNodes[i].setAttribute('r',DUST[i][2].toFixed(2));
+    els.dust.childNodes[i].setAttribute('style','fill:var(--vt-cream)');
+    els.dust.childNodes[i].setAttribute('opacity',DUST[i][3].toFixed(3));
+  }
+  [[300,-146,40],[430,22,54],[516,152,34]].forEach(function(s){
+    var a0=s[1], a1=s[1]+s[2], p0=polar(DCX,DCY,s[0],a0), p1=polar(DCX,DCY,s[0],a1);
+    SCUFF.push(mk(els.scuffs,'path',{
+      d:'M'+p0[0].toFixed(1)+' '+p0[1].toFixed(1)+'A'+s[0]+' '+s[0]+' 0 0 1 '+p1[0].toFixed(1)+' '+p1[1].toFixed(1),
+      'stroke-width':s[0]>440?7:5, opacity:.10, 'stroke-linecap':'round'}));
+  });
+}
+function buildStatic(){
+  els.discBody.setAttribute('cx',DCX); els.discBody.setAttribute('cy',DCY);
+  els.discBody.setAttribute('r',DR);
+  els.discClipC.setAttribute('cx',DCX); els.discClipC.setAttribute('cy',DCY);
+  els.discClipC.setAttribute('r',DR);
+  els.labClipC.setAttribute('cx',DCX); els.labClipC.setAttribute('cy',DCY);
+  els.labClipC.setAttribute('r',IR);
+  els.sheen.setAttribute('cx',DCX-150); els.sheen.setAttribute('cy',DCY-190);
+  els.sheen.setAttribute('r',DR*0.94);
+  els.rimOut.setAttribute('cx',DCX); els.rimOut.setAttribute('cy',DCY); els.rimOut.setAttribute('r',DR-3);
+  /* 外缘反光：只取左上 62° 一段弧 = "灯在左上方"这一条光位，和 sheen 同向 */
+  var g0=polar(DCX,DCY,DR-9,-186), g1=polar(DCX,DCY,DR-9,-124);
+  els.rimGlint.setAttribute('d','M'+g0[0].toFixed(1)+' '+g0[1].toFixed(1)+
+    'A'+(DR-9)+' '+(DR-9)+' 0 0 1 '+g1[0].toFixed(1)+' '+g1[1].toFixed(1));
+  els.sh0.setAttribute('cx',DCX+10); els.sh0.setAttribute('cy',DCY+16);
+  els.sh0.setAttribute('r',DR+2);
+  els.label.setAttribute('cx',DCX); els.label.setAttribute('cy',DCY); els.label.setAttribute('r',LR);
+  els.labelIn.setAttribute('cx',DCX); els.labelIn.setAttribute('cy',DCY); els.labelIn.setAttribute('r',IR+3);
+  els.labelRing.setAttribute('cx',DCX); els.labelRing.setAttribute('cy',DCY); els.labelRing.setAttribute('r',IR-8);
+  els.spindle.setAttribute('cx',DCX); els.spindle.setAttribute('cy',DCY); els.spindle.setAttribute('r',11);
+  els.prodImg.setAttribute('x',DCX-IR); els.prodImg.setAttribute('y',DCY-IR);
+  els.prodImg.setAttribute('width',IR*2); els.prodImg.setAttribute('height',IR*2);
+  /* 标签自绘细环（无图时顶上，不留一块空橙皮） */
+  [LR-14, LR-26, LR-40].forEach(function(r,i){
+    mk(els.labelVec,'circle',{cx:DCX,cy:DCY,r:r,'stroke-width':1.2,opacity:(0.30-i*0.06).toFixed(2)});
+  });
+  var k2;
+  for(k2=0;k2<4;k2++){
+    var a=k2*90+18, p0=polar(DCX,DCY,LR-46,a), p1=polar(DCX,DCY,LR-18,a);
+    mk(els.labelVec,'line',{x1:p0[0].toFixed(1),y1:p0[1].toFixed(1),
+      x2:p1[0].toFixed(1),y2:p1[1].toFixed(1),'stroke-width':2,opacity:.26});
+  }
+  /* 纸面颗粒：底色本身已有渐变，不再叠噪点 —— 逐帧重栅格化一层满屏纹理不值这个钱。 */
+  els.armBar.setAttribute('x1',APX); els.armBar.setAttribute('y1',APY);
+  els.armBar.setAttribute('x2',TIPX); els.armBar.setAttribute('y2',TIPY);
+  els.armHi.setAttribute('x1',APX); els.armHi.setAttribute('y1',APY-3);
+  els.armHi.setAttribute('x2',TIPX); els.armHi.setAttribute('y2',TIPY-3);
+  els.armShBar.setAttribute('x1',APX); els.armShBar.setAttribute('y1',APY);
+  els.armShBar.setAttribute('x2',TIPX); els.armShBar.setAttribute('y2',TIPY);
+  els.armPivotPost.setAttribute('x1',APX); els.armPivotPost.setAttribute('y1',APY);
+  els.armPivotPost.setAttribute('x2',APX+16); els.armPivotPost.setAttribute('y2',APY-14);
+  els.armPivot.setAttribute('cx',APX); els.armPivot.setAttribute('cy',APY); els.armPivot.setAttribute('r',23);
+  els.armPivotIn.setAttribute('cx',APX); els.armPivotIn.setAttribute('cy',APY); els.armPivotIn.setAttribute('r',8);
+  var ux=(TIPX-APX), uy=(TIPY-APY), ul=Math.sqrt(ux*ux+uy*uy);
+  var cw=polar(APX,APY,-46,Math.atan2(uy,ux)*180/Math.PI);
+  els.armWeight.setAttribute('cx',cw[0].toFixed(1)); els.armWeight.setAttribute('cy',cw[1].toFixed(1));
+  els.armWeight.setAttribute('r',19);
+  els.armWeightHi.setAttribute('cx',cw[0].toFixed(1)); els.armWeightHi.setAttribute('cy',cw[1].toFixed(1));
+  els.armWeightHi.setAttribute('r',19);
+  var ha=Math.atan2(uy,ux)*180/Math.PI;
+  els.head.setAttribute('transform','rotate('+ha.toFixed(2)+' '+TIPX+' '+TIPY+')');
+  els.headBody.setAttribute('x',TIPX-26); els.headBody.setAttribute('y',TIPY-13);
+  els.headBody.setAttribute('width',50); els.headBody.setAttribute('height',26);
+  els.headHi.setAttribute('x',TIPX-20); els.headHi.setAttribute('y',TIPY-9);
+  els.headHi.setAttribute('width',30); els.headHi.setAttribute('height',5);
+  els.stylus.setAttribute('cx',TIPX+2); els.stylus.setAttribute('cy',TIPY+9); els.stylus.setAttribute('r',4.4);
+  void ul;
+}
+function buildRipple(){
+  for(var i=0;i<3;i++) mk(els.ripple,'circle',{cx:TIPX,cy:TIPY,r:0,opacity:0});
+}
+function buildWave(){
+  /* 波形基线一次算死（hash1 的"有惯性的游走"），render() 里只改相位和包络。
+     🔴 惯性系数 0.55 太低 ⇒ 相邻条几乎不相关 = 锯齿毛刺，肉眼看是"撕坏的纸条"不是声音。
+        提到 0.74 让包络有走势（起音→持续→收尾），再乘一条首尾收拢的窗，
+        才读得出"这是一段被读出来的音频"。 */
+  var i, v=0, mx=1;
+  for(i=0;i<WAVE_N;i++){ v = v*0.74 + (hash1(900+i*17)-0.5); WAVEBASE.push(v); mx=Math.max(mx,Math.abs(v)); }
+  for(i=0;i<WAVE_N;i++){
+    var u=i/(WAVE_N-1);
+    WAVEBASE[i] = WAVEBASE[i]/mx * (0.34+0.66*Math.sin(u*Math.PI));
+  }
+}
+
+/* ============================== 文字构建 + 最坏输入预算 ============================== */
+var cfg={part:'Part.01', title:'转过的每一圈都算数', sub:'NEEDLE DROP', img:''};
+var TITBASE={partTxt:25, partLS:15, partMax:520, subTxt:29, subLS:11, subMax:500, tagFS:14, tagLS:8, tagMax:520};
+
+/* 单行缩到宽度上限：字号与字距【同乘 k】（letter-spacing 是绝对 px，只缩字号宽度不按比例降） */
+function fitOneLine(t, fs, ls, max){
+  t.style.fontSize=''; t.style.letterSpacing='';
+  var w=Math.max(t.scrollWidth, t.offsetWidth)||1;
+  if(w>max){
+    var k=max/w;
+    t.style.fontSize=(fs*k).toFixed(1)+'px'; t.style.letterSpacing=(ls*k).toFixed(1)+'px';
+    w=Math.max(t.scrollWidth, t.offsetWidth);
+    if(w>max){ k=k*max/w; t.style.fontSize=(fs*k).toFixed(1)+'px'; t.style.letterSpacing=(ls*k).toFixed(1)+'px'; w=max; }
+  }
+  return w;
+}
+function measureOne(){
+  /* 🔴 细规宽度必须跟着【实测字宽】走：定宽在 Part 变长之后会"线比字短"，肉眼可读的错版。 */
+  var pw=fitOneLine(els.partTxt, TITBASE.partTxt, TITBASE.partLS, TITBASE.partMax)||120;
+  var sw=fitOneLine(els.subTxt,  TITBASE.subTxt,  TITBASE.subLS,  TITBASE.subMax)||200;
+  fitOneLine(els.tagline, TITBASE.tagFS, TITBASE.tagLS, TITBASE.tagMax);
+  els.partRule.style.width=Math.round(pw+6)+'px';
+  els.subRule.style.width =Math.round(sw*0.72)+'px';
+}
+var TITLE={lines:1, fs:118, lh:137};
+function buildTitleInto(box){
+  box.textContent='';
+  var raw=(cfg.title||'').replace(/\s+$/,'');
+  var lines=raw.split('\n');
+  if(lines.length===1 && raw.length>11){              /* 单行过长 ⇒ 先按空格切词再硬切两行 */
+    var sp=raw.lastIndexOf(' ', Math.ceil(raw.length/2));
+    if(sp<0) sp=Math.floor(raw.length/2);
+    lines=[raw.slice(0,sp), raw.slice(sp+1)];
+  }
+  lines=lines.slice(0,2);                             /* 竖向预算只给 2 行（下面就是中心标签） */
+  var maxLen=Math.max.apply(null, lines.map(function(s){return s.length;}));
+  var fs=clamp(TITW/Math.max(1,maxLen), TITMINFS, TITMAXFS);
+  var VB=TITVB-TITY;                                  /* 标题块底不许压到中心标签顶 */
+  if(lines.length*fs*1.16>VB) fs=Math.max(TITMINFS, VB/(lines.length*1.16));
+  var ls=Math.max(1, fs*0.02), lh=fs*1.16, li, ci;
+  for(li=0;li<lines.length;li++){
+    var ln=document.createElement('div'); ln.className='tline';
+    ln.style.fontSize=fs.toFixed(1)+'px'; ln.style.lineHeight=lh.toFixed(1)+'px';
+    ln.style.letterSpacing=ls.toFixed(1)+'px';
+    var t=lines[li];
+    for(ci=0;ci<t.length;ci++){
+      var w=document.createElement('span'); w.className='tw';
+      w.textContent=t.charAt(ci); ln.appendChild(w);
+    }
+    if(!t.length){ var nb=document.createElement('span'); nb.className='tw'; nb.innerHTML='&nbsp;'; ln.appendChild(nb); }
+    box.appendChild(ln);
+  }
+  return {fs:fs, lh:lh, lines:lines.length};
+}
+function buildTitle(){
+  var A=buildTitleInto(els.titleBox);
+  buildTitleInto(els.titleBoxD);
+  TITLE.fs=A.fs; TITLE.lh=A.lh; TITLE.lines=A.lines;
+}
+function setProdImg(src){
+  cfg.img=src||'';
+  /* ⚠️ 无图 = 属性缺省（不是空串）：空串会被解析成文档 URL ⇒ 永不结束的请求 ⇒ 导出第 0 帧抓屏挂死 */
+  if(cfg.img) els.prodImg.setAttribute('href', cfg.img);
+  else els.prodImg.removeAttribute('href');
+}
+function applyCfg(d){
+  var dirty=false;
+  if(d.part!==undefined){ cfg.part=d.part; dirty=true; }
+  if(d.title!==undefined){ cfg.title=d.title; dirty=true; }
+  if(d.sub!==undefined){ cfg.sub=d.sub; dirty=true; }
+  els.partTxt.textContent=cfg.part||'';
+  els.subTxt.textContent=cfg.sub||'';
+  /* ★ 固定串里不许出现副标题的默认文本（撞词会看着像重复排版），也不许放无出处的数字 */
+  els.tagline.textContent='SIDE A · LONG PLAY';
+  measureOne();
+  if(dirty||!els.titleBox.childNodes.length) buildTitle();
+  var has=!!cfg.img;
+  els.prodTag.textContent = has ? 'ON THE LABEL' : 'EMPTY LABEL';
+  els.prodSub.textContent = has ? 'NEEDLE ON RECORD' : 'DROP IMAGE HERE';
+}
+
+/* ============================== 扇形夹子 ============================== */
+/* 以圆心为顶点、半径 2600（>对角线）的扇形多边形。a1==a0 ⇒ 所有弧点重合 ⇒ 面积为 0 ⇒ 什么都不画。
+   ★ 这就是"刻印"的全部实现：两层标题挂同一个多边形，圆内那一层再叠一个 circle() 裁切。
+   🔴 CSS polygon() 的坐标【必须带 px】：写成 'polygon(1240,740 ...)' 是非法值，
+      Chrome 不会报错、不会截断，只会把整条 clip-path 丢掉 ⇒ computed 回 "none"，
+      于是"第 0 帧一个字都没露"变成"第 0 帧全亮"，而 SVG 那侧一切正常，肉眼要到抽帧才发现。 */
+function wedge(a0,a1){
+  var s=DCX+'px '+DCY+'px', i, a, steps=10;
+  for(i=0;i<=steps;i++){
+    a=(a0+(a1-a0)*i/steps)*Math.PI/180;
+    s+=','+(DCX+Math.cos(a)*2600).toFixed(1)+'px '+(DCY+Math.sin(a)*2600).toFixed(1)+'px';
+  }
+  return 'polygon('+s+')';
+}
+
+/* ============================== 逐帧渲染（纯函数） ============================== */
+function render(f){
+  var i, p;
+  /* ① 唱片落位：淡入 + 极轻微的回弹缩放（0.965→1）。缩放挂在 #discSys，
+        用 transform-origin 语义的 rotate/scale 组合 ⇒ 必须显式给圆心。 */
+  var ap=easeOut(seg(f,0,14));
+  var sc=0.965+0.035*ap;
+  els.discSys.setAttribute('opacity', ap.toFixed(3));
+  els.discSys.setAttribute('transform',
+    'translate('+DCX+' '+DCY+') scale('+sc.toFixed(4)+') translate('+(-DCX)+' '+(-DCY)+')');
+  els.discShadow.setAttribute('opacity',(0.9*ap).toFixed(3));
+
+  /* ② ★ 旋转：整组绕圆心转，角度 = spinDeg(f)（闭式积分，seek 可逆） */
+  var ang=spinDeg(f);
+  els.discSpin.setAttribute('transform','rotate('+ang.toFixed(3)+' '+DCX+' '+DCY+')');
+  window.__spin=ang;
+
+  /* ③ Part / 副标题 / 固定串 */
+  var pp=easeOut(seg(f,8,46));
+  els.partTxt.style.opacity=pp.toFixed(3);
+  els.partRule.style.transform='scaleX('+pp.toFixed(3)+')';
+  var sp=easeOut(seg(f,150,182));
+  els.subTxt.style.opacity=sp.toFixed(3);
+  els.subRule.style.transform='scaleX('+sp.toFixed(3)+')';
+  els.tagline.style.opacity=(0.66*easeOut(seg(f,168,196))).toFixed(3);
+
+  /* ④ 唱臂：ARM_REST°（外圈停针位）→ 0°（落点），带一次极小的过冲余振。
+        lift = 抬起量：摆入途中"高"，落地归零；影子偏移跟着 lift 走，
+        这是 2D 俯视图里唯一能把"落下"演出来的手段（否则只是平移）。 */
+  var am=seg(f,40,92), aa=ARM_REST*(1-easeInOut(am));
+  var land=seg(f,92,130);
+  var jitter=Math.sin(land*Math.PI*2.5)*Math.exp(-land*4.2)*1.5;
+  var lift=Math.sin(Math.min(1,am)*Math.PI)*0.9*(1-land);
+  var armA=aa+jitter;
+  var armOp=easeOut(seg(f,34,52));
+  els.arm.setAttribute('transform','rotate('+armA.toFixed(3)+' '+APX+' '+APY+')');
+  els.arm.setAttribute('opacity',armOp.toFixed(3));
+  els.armSh.setAttribute('transform','rotate('+armA.toFixed(3)+' '+APX+' '+APY+') translate('+(13*lift).toFixed(1)+' '+(19*lift).toFixed(1)+')');
+  /* 🔴 影子必须乘【唱臂自己的淡入量】。第一版只写 0.20*(1-lift*.5) ⇒ 第 0 帧臂体是 0、
+        影子却是 0.20 —— 一张空首帧上凭空一根斜棍，而几何判据看不见（它在画框内、不越界）。 */
+  els.armSh.setAttribute('opacity',(0.20*armOp*(1-lift*0.5)).toFixed(3));
+  /* 落点随臂一起转 ⇒ 涟漪圆心必须跟着算，不能写死 TIPX/TIPY */
+  var tp=polar(APX,APY,Math.sqrt((TIPX-APX)*(TIPX-APX)+(TIPY-APY)*(TIPY-APY)),
+              Math.atan2(TIPY-APY,TIPX-APX)*180/Math.PI+armA);
+  for(i=0;i<3;i++){
+    var rp=seg(f,94+i*13,148+i*10);
+    els.ripple.childNodes[i].setAttribute('cx',tp[0].toFixed(1));
+    els.ripple.childNodes[i].setAttribute('cy',tp[1].toFixed(1));
+    els.ripple.childNodes[i].setAttribute('r',(8+118*easeOut(rp)).toFixed(1));
+    els.ripple.childNodes[i].setAttribute('opacity',(rp>0&&rp<1?0.42*(1-rp):0).toFixed(3));
+  }
+
+  /* ⑤ ★ 招牌：刻印扇形。针落定之后，扇形自圆心顺时针扫过标题，把字"刻"出来。
+        两层标题共用同一个多边形 ⇒ 换色边界（盘缘）和揭示边界（扇形边）互不干扰。 */
+  var sw=easeInOut(seg(f,92,172));
+  window.__reveal=sw;          /* ★ 冒烟判据取样：本引擎的标题不是逐字淡入，
+                                  第 0 帧"没有字亮着"只能由这个揭示进度来证。 */
+  var aEdge=A0+(A1-A0)*sw;
+  var poly=wedge(A0,aEdge);
+  els.tBase.style.clipPath=poly; els.tPie.style.clipPath=poly;
+  els.tDisc.style.clipPath='circle('+DR+'px at '+DCX+'px '+DCY+'px)';
+  window.__sweep=aEdge;
+  if(sw>0.001&&sw<0.999){
+    var e0=polar(DCX,DCY,LR+6,aEdge), e1=polar(DCX,DCY,DR-8,aEdge);
+    var so=(0.62*Math.sin(sw*Math.PI)).toFixed(3);
+    els.sweepLine.setAttribute('x1',e0[0].toFixed(1)); els.sweepLine.setAttribute('y1',e0[1].toFixed(1));
+    els.sweepLine.setAttribute('x2',e1[0].toFixed(1)); els.sweepLine.setAttribute('y2',e1[1].toFixed(1));
+    els.sweepLine.setAttribute('opacity',so);
+    els.sweepDot.setAttribute('cx',e1[0].toFixed(1)); els.sweepDot.setAttribute('cy',e1[1].toFixed(1));
+    els.sweepDot.setAttribute('r',(3.2+3.4*Math.abs(Math.sin(f*0.55))).toFixed(2));
+    els.sweepDot.setAttribute('opacity',so);
+  } else { els.sweepLine.setAttribute('opacity','0'); els.sweepDot.setAttribute('opacity','0'); }
+
+  /* ⑥ 标签说明淡入 */
+  els.prodTag.style.opacity=easeOut(seg(f,158,190)).toFixed(3);
+  els.prodSub.style.opacity=(0.82*easeOut(seg(f,166,196))).toFixed(3);
+
+  /* ⑦ 声波：针落定之后才有；相位直接吃旋转角 ⇒ "声音是被这张盘读出来的"。
+        🔴 第一版是【连续填充轮廓】⇒ 肉眼看是一条撕坏的纸条，不是音频。
+           改成离散竖条（一个 path 里 N 个矩形子路径，仍然只 setAttribute 一次）：
+           条与条之间的缝是"采样"这个动作的视觉特征，没有缝就不像声音。
+           （顺带抓到一个真错：上半支 *34、下半支还留着旧值 *22 ⇒ 波形上下不对称，
+             而这是"改一处忘改对偶处"的典型，连续轮廓下肉眼也难发现。） */
+  var wv=easeOut(seg(f,96,150));
+  if(wv>0){
+    var d='', step=(WAVE_X1-WAVE_X0)/(WAVE_N-1), bw=step*0.46;
+    for(i=0;i<WAVE_N;i++){
+      var m=0.40+0.60*Math.abs(Math.sin(ang*0.055+i*0.42));
+      var h=Math.max(1.6, WAVEBASE[i]*30*m*wv);
+      var x=WAVE_X0+i*step-bw/2;
+      d+='M'+x.toFixed(1)+' '+(WAVE_Y-h).toFixed(1)+'h'+bw.toFixed(1)+
+         'v'+(2*h).toFixed(1)+'h-'+bw.toFixed(1)+'z';
+    }
+    els.wave.setAttribute('d',d);
+    els.wave.setAttribute('opacity',(0.62*wv).toFixed(3));
+  } else els.wave.setAttribute('opacity','0');
+  void p;
+}
+
+/* ============================== 主循环 ============================== */
+var rafId=0, startAt=performance.now();
+function tick(){
+  var now=performance.now();
+  var t=((now-startAt)/1000)%CYCLE;
+  render(Math.min(DUR, t*FPS));
+  rafId=requestAnimationFrame(tick);
+}
+function restart(){ startAt=performance.now(); }
+function fit(){
+  /* ⚠️ 无放大上限（导出高清链路要求）。#stage 的 transform 归这里独占 ——
+     本引擎盘面/唱臂的运动全写在 SVG 组上，文字层只挂 clip-path，都不碰 #stage。 */
+  var s=Math.min(innerWidth/1920, innerHeight/1080);
+  var st=$('stage'), wr=$('wrap');
+  st.style.transform='scale('+s+')';
+  wr.style.width=(1920*s)+'px'; wr.style.height=(1080*s)+'px';
+}
+window.addEventListener('resize',fit);
+
+/* ============================== 配色 ============================== */
+var VAR_NAMES=['--vt-bark','--vt-rust','--vt-khaki','--vt-sky','--vt-cream','--vt-paper'];
+function applyColors(vars){
+  var root=document.documentElement.style, k;
+  for(k in vars){ if(k.indexOf('--vt-')===0) root.setProperty(k,vars[k]); }
+}
+
+/* ============================== 自定义字体（cyber 协议） ============================== */
+function applyFont(d){
+  var name=d.family, url=d.dataURL;
+  if(!name){ var old=document.getElementById('__vtFont'); if(old) old.remove(); return; }
+  var st=document.getElementById('__vtFont')||document.createElement('style');
+  st.id='__vtFont';
+  st.textContent = url ? '@font-face{font-family("__vtfont");src:url('+url+') format("truetype");font-display:block;}' : '';
+  if(!st.parentNode) document.head.appendChild(st);
+  var fam = url ? '__vtfont' : name;
+  $('stage').style.fontFamily='"'+fam+'","Noto Sans SC","Microsoft YaHei",sans-serif';
+}
+
+/* ============================== postMessage 桥（与 gold-seam / liquid-chrome 同协议） ============================== */
+window.addEventListener('message',function(e){
+  var d=e.data||{};
+  if(d.source!=='host')return;
+  try{
+    if(d.type==='cyber-embed'){ document.body.classList.add('embed'); fit(); }
+    else if(d.type==='cyber-unembed'){ document.body.classList.remove('embed'); fit(); }
+    else if(d.type==='cyber-cfg'){ applyCfg(d); if(d.replay)restart(); }
+    else if(d.type==='cyber-color'){ applyColors(d.vars||{}); }
+    else if(d.type==='cyber-img'){ setProdImg(d.img||''); applyCfg({}); }
+    else if(d.type==='cyber-font'){ applyFont(d); }
+    else if(d.type==='cyber-play'){ restart(); if(!rafId) rafId=requestAnimationFrame(tick); }
+    else if(d.type==='cyber-seek'){
+      if(rafId){ try{ cancelAnimationFrame(rafId); }catch(err){} rafId=0; }
+      /* ⚠️ d.t 单位是【秒】 */
+      if(typeof d.t==='number'){ try{ render(Math.min(DUR, d.t*FPS)); void document.documentElement.offsetHeight; }catch(err){} }
+    }
+    else if(d.type==='cyber-resume'){
+      startAt=performance.now(); if(!rafId) rafId=requestAnimationFrame(tick);
+    }
+    else if(d.type==='cyber-get-html'){
+      var ovr='',k2;
+      var cs=getComputedStyle(document.documentElement);
+      for(k2=0;k2<VAR_NAMES.length;k2++){ ovr+=VAR_NAMES[k2]+':'+cs.getPropertyValue(VAR_NAMES[k2]).trim()+';'; }
+      ovr=':root{'+ovr+'}';
+      /* ⚠️ 本注释里不能写 script 闭合标签的字面量 —— 它会先把自己所在的 script 截断 */
+      var boot='<script>window.__VTLY_BOOT='+JSON.stringify({part:cfg.part,title:cfg.title,sub:cfg.sub,img:cfg.img||''}).replace(/</g,'\\u003c')+'<\/script>';
+      var html=PRISTINE.replace('</head>','<style id="vtly-override">'+ovr+'</style>'+boot+'</head>');
+      parent.postMessage({source:'cyber',type:'cyber-html',reqId:d.reqId,html:html},'*');
+    }
+  }catch(err){ parent.postMessage({source:'cyber',type:'cyber-status',err:err.message},'*'); }
+});
+
+/* ============================== 独立面板 ============================== */
+$('pPart').addEventListener('input',function(){ applyCfg({part:this.value}); restart(); });
+$('pTitle').addEventListener('input',function(){ applyCfg({title:this.value}); restart(); });
+$('pSub').addEventListener('input',function(){ applyCfg({sub:this.value}); restart(); });
+$('pPlay').addEventListener('click',function(){ restart(); });
+$('pImg').addEventListener('change',function(){
+  var f=this.files&&this.files[0]; if(!f) return;
+  if(!/^image\//i.test(f.type||'')) return;
+  var r=new FileReader();
+  r.onload=function(){ setProdImg(r.result); applyCfg({}); restart(); };
+  r.readAsDataURL(f); this.value='';
+});
+
+/* ============================== 启动 ============================== */
+buildDisc();
+buildStatic();
+buildRipple();
+buildWave();
+/* ⚠️ 顺序不能反：applyCfg 只认「传了的键」，__VTLY_BOOT 里带的是固化时的用户值，
+   必须先铺默认再拿 boot 覆盖，否则固化 HTML 打开永远是模板默认字。 */
+applyCfg(cfg);
+if(window.__VTLY_BOOT){ applyCfg(window.__VTLY_BOOT); }
+fit();
+render(0);
+/* ★ 必须自启主循环：漏掉的后果不是报错，是【预览永远停在第 0 帧】—— 版式全对、数值全绿，就是不动。 */
+rafId=requestAnimationFrame(tick);
+parent.postMessage({source:'cyber',type:'cyber-ready'},'*');
+</script>
+</body>
+</html>
