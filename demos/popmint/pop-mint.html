@@ -1,0 +1,546 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>Pop Mint · 薄荷撞色（对角斜轴 + 弹性 pop + 硬阴影贴纸）</title>
+<!--
+  风格方向（老板 2026-10-02：任意主题/配色，只求高级配色 + 高级动效；元素与构图都必须与既有引擎区分）
+  配色真源 = 本地 110 组高级配色库 #41「玫红 × 薄荷」（原图已人眼核过：高饱和撞色 + 奶油底压住）
+    --pm-cream #F4EFE2 奶油底   --pm-mint  #88E7D2 薄荷主块
+    --pm-mint2 #4FC3A8 深薄荷描边 --pm-rose #A92F51 玫红主字/胶囊
+    --pm-rose2 #E0567F 亮玫红硬阴影 --pm-ink #16211D 墨（描边/贴纸阴影）
+  ★ 构图 = 【对角斜轴】（老板点名「不用一直都是一个左右设计」）：
+    整幅沿 -6° 斜轴组织 —— 薄荷色块带从左下扫到右上，Part 章在左上、主标题压在斜轴中段、
+    副标题胶囊在左下、产品贴纸甩到【右上】并反向 +7° 倾斜（与斜轴对撞）。画面没有中轴对称，
+    也没有「左文右图」的竖向分栏线。
+  母题 = 贴纸 / 四角星芒 / 胶囊 / 硬阴影色块（现有引擎没有的语汇：无霓虹、无网格、无蓝图纸、
+    无竹窗、无街机；产品位是【圆角贴纸 + 偏移硬阴影】，不是圆环/圆窗/六边形剖面）。
+  动效动词 = backOut 弹性 overshoot 逐件 pop-in + 色块沿斜轴滑擦 + 星芒自旋呼吸 + 阴影分离。
+    （moss-window = 视差 dolly + 竖条遮罩；hell-dive = 逐字 power-up + 子弹时间；本引擎全程无 dolly。）
+  字体 = 超粗黑（Noto Sans SC 900）+ 紧字距 + 玫红压印错位副本。
+  本文件为零依赖单文件 HTML 引擎, 挂 cyber 同款 postMessage 桥:
+    host→iframe: cyber-embed / cyber-unembed / cyber-cfg{part,title,sub,replay} / cyber-color{vars}
+                 / cyber-img{img} / cyber-play / cyber-seek{t} / cyber-resume / cyber-get-html{reqId} / cyber-font
+    iframe→host: cyber-ready / cyber-html{reqId,html} / cyber-status{err}  (source 均为 'cyber')
+  铁律: 所有视觉量 = 帧号 f 的纯函数；无 Math.random（抖动走 hash1）；禁 CSS animation/transition。
+  ⚠️ 已付过学费的硬约束（BUG 库 R151/R152/R158 + R165~R172）全部落实：
+    ① 描边件 class .ln{fill:none}，实心件一律内联 style="fill:…"；
+    ② 几何只在 build*/measure* 里量一次，不进 render()；
+    ③ 「无产品图」= href 属性缺省（href="" 会变成永不结束的请求 ⇒ 导出第 0 帧抓屏挂死）；
+    ④ 禁一次性闩；只允许「当前值 ≠ 目标值才写」的幂等写法；
+    ⑤ SVG transform 只写裸数字，不写单位也不写 none；
+    ⑥ 同权重按书写顺序翻盘 ⇒ 覆盖用复合选择器；HTML 文字层显式 z-index 高于 SVG；
+    ⑦ seg() 段前 = 0 ⇒ 不许拿 (1-p)*k 当入场前暗度；
+    ⑧ 可编辑文字按【最坏输入】设计：超行压字号，单行缩宽时字号与字距同乘 k；
+    ⑨ ★ 主循环必须开机自启（rafId=requestAnimationFrame(tick)），漏掉的后果是预览停在第 0 帧，
+       不报错、数值全绿 —— moss-window 刚踩过。
+-->
+<style>
+  /* 🔴 六个配色变量必须在这里给【默认值】：JS 里 setAttribute('style','fill:var(--pm-x)') 不带 CSS 回退，
+     宿主没发色时整棵树解析成 black（moss-window 实测：描边件直接消失）。 */
+  :root{
+    --pm-cream:#F4EFE2; --pm-mint:#88E7D2; --pm-mint2:#4FC3A8;
+    --pm-rose:#A92F51;  --pm-rose2:#E0567F; --pm-ink:#16211D;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{width:100%;height:100%;background:#e7e0cf;overflow:hidden;}
+  body{font-family:"Noto Sans SC","Microsoft YaHei","PingFang SC",sans-serif;}
+  #wrap{position:absolute;left:50%;top:50%;width:1920px;height:1080px;margin:-540px 0 0 -960px;}
+  #stage{position:relative;width:1920px;height:1080px;overflow:hidden;transform-origin:0 0;
+    background:var(--pm-cream,#F4EFE2);}
+  #hud{position:absolute;inset:0;width:1920px;height:1080px;z-index:5;}
+  #hud .ln{fill:none;}
+  /* 🔴 开机斜倾回正写在 #tiltAll 上，不写 #stage —— #stage 的 transform 归 fit() 的等比缩放独占，
+     两处都写同一个属性会互相覆盖（谁后跑谁赢，表现为「缩放丢了」或「动画不动」）。 */
+  #tiltAll{position:absolute;inset:0;width:1920px;height:1080px;transform-origin:50% 50%;}
+  #txt{position:absolute;inset:0;z-index:9;pointer-events:none;}
+  #txt > *{position:absolute;}
+
+  /* ---------- Part 章（左上胶囊，斜轴上） ---------- */
+  #badge{left:150px;top:104px;padding:0 30px;height:64px;display:flex;align-items:center;
+    transform:rotate(-6deg);transform-origin:50% 50%;}
+  #badgeBg{position:absolute;inset:0;border-radius:32px;background:var(--pm-rose);}
+  #partTxt{position:relative;white-space:pre;font-size:29px;font-weight:900;letter-spacing:5px;
+    color:var(--pm-cream);line-height:1;}
+
+  /* ---------- 主标题（斜轴中段，逐字弹性 pop） ----------
+     🔴 top=218 不是随手定的。bandC（斜轴细线，SVG y=392）在 x=150 处落到屏幕 y≈477；
+     标题框转 -6° 后【左下角】= 中心y + (W/2)·|sin6| + (H/2)·cos6 ≈ 304+63+85 = 452。
+     top=300 时这个角是 534 ⇒ 细线正好从字符 55%~65% 高度处横穿整行，肉眼读成【一杠删掉的字】。
+     上移 82px 后全程留 ≥26 缝（含 18.75 半行距 ⇒ 字形实距 ≈40）。 */
+  #titleBox{left:150px;top:218px;width:1200px;transform:rotate(-6deg);transform-origin:50% 50%;}
+  .tline{display:block;white-space:pre;position:relative;font-weight:900;letter-spacing:-3px;}
+  /* .tw 里必须留一个【在流里】的字撑宽度；压印副本 absolute。两层都 absolute ⇒ 行宽恒 0，整行叠成一坨。 */
+  .tw{position:relative;display:inline-block;white-space:pre;}
+  .tf{position:relative;display:inline-block;color:var(--pm-rose);}
+  .td{position:absolute;left:0;top:0;white-space:pre;color:var(--pm-ink);opacity:.22;pointer-events:none;}
+
+  /* ---------- 副标题胶囊（左下） ---------- */
+  #capsule{left:150px;top:690px;padding:0 40px;height:78px;display:flex;align-items:center;
+    transform:rotate(-6deg);transform-origin:50% 50%;}
+  #capBg{position:absolute;inset:0;border-radius:39px;background:var(--pm-mint);
+    border:3px solid var(--pm-mint2);}
+  #subTxt{position:relative;white-space:pre;font-size:31px;font-weight:900;letter-spacing:8px;
+    color:var(--pm-ink);line-height:1;}
+  /* 标语压在玫红斜条【正中】：bandB 中心线 y=907-(x-158)·0.10453，取 x=333（文本中心）⇒ 888.7，
+     字高 19 ⇒ top=879。同斜率（都 -6°）所以整条不会一头压上一头悬空。 */
+  #tagline{left:158px;top:879px;white-space:pre;transform:rotate(-6deg);transform-origin:50% 50%;
+    font-size:15px;font-weight:800;letter-spacing:7px;color:var(--pm-cream);}
+
+  /* ---------- 产品贴纸标签（右上，反向倾斜） ----------
+     🔴 这两行落在薄荷色带【里面】（x=1500 处色带跨 396~730）：
+     原 rose / mint2 上色带 = 同族色撞色，肉眼读成糊字。改成墨 / 玫红 = 深底深字 + 深底亮字，
+     两条都能读。top 从 676/708 上移到 640/672，避开色带下沿（730）与贴纸下缘（≈596）。 */
+  #prodTag{left:1290px;top:640px;width:420px;text-align:center;transform:rotate(7deg);transform-origin:50% 50%;
+    font-size:19px;font-weight:900;letter-spacing:7px;color:var(--pm-ink);}
+  #prodSub{left:1290px;top:672px;width:420px;text-align:center;transform:rotate(7deg);transform-origin:50% 50%;
+    font-size:12px;font-weight:800;letter-spacing:4px;color:var(--pm-rose);}
+
+  /* ---------- 独立面板 ---------- */
+  #panel{position:fixed;left:14px;top:14px;z-index:50;display:flex;gap:8px;align-items:center;}
+  #panel input[type=text],#panel input:not([type=file]){background:rgba(255,255,255,.9);color:#16211D;
+    border:1px solid #c9c0aa;border-radius:6px;padding:6px 9px;font-size:13px;width:150px;}
+  #panel button{background:#A92F51;color:#F4EFE2;border:0;border-radius:6px;padding:7px 12px;font-size:13px;cursor:pointer;}
+  body.embed #panel{display:none;}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="stage">
+   <div id="tiltAll">
+    <svg id="hud" viewBox="0 0 1920 1080" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <clipPath id="stickerClip"><rect id="stkClipRect" x="1290" y="150" width="420" height="420" rx="46"/></clipPath>
+        <linearGradient id="gBand" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%"   style="stop-color:var(--pm-mint);stop-opacity:1"/>
+          <stop offset="100%" style="stop-color:var(--pm-mint2);stop-opacity:1"/>
+        </linearGradient>
+        <linearGradient id="gShine" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%"   style="stop-color:var(--pm-cream);stop-opacity:.55"/>
+          <stop offset="46%"  style="stop-color:var(--pm-cream);stop-opacity:0"/>
+        </linearGradient>
+      </defs>
+
+      <rect id="bg" x="0" y="0" width="1920" height="1080" style="fill:var(--pm-cream)"/>
+
+      <!-- 斜轴层：整组绕画面中心转 -6°，组内 x 方向位移 = 沿斜轴滑擦 -->
+      <g id="tilt" transform="rotate(-6 960 540)">
+        <rect id="bandA" x="-260" y="452" width="2440" height="336" fill="url(#gBand)"/>
+        <rect id="bandB" x="-260" y="812" width="2440" height="26" style="fill:var(--pm-rose)"/>
+        <rect id="bandC" x="-260" y="392" width="2440" height="8"  style="fill:var(--pm-ink);opacity:.16"/>
+        <!-- ★ 幽灵星：把主母题放大 3 倍压进色带留白里（描边不填充）。
+             斜轴大色块是本项目最「空」的一处，纯色块撑不住 7.5s；同形放大 = 层级，不是新元素。 -->
+        <path id="ghostStar" class="ln" stroke-width="9" stroke="var(--pm-cream)"/>
+        <g id="dots"></g>
+      </g>
+
+      <!-- 星芒 / 小圆点（散在斜轴上下，不随 tilt 组滑，独立弹入后自旋） -->
+      <g id="sparks"></g>
+
+      <!-- 产品贴纸：反向 +7° 倾斜，硬阴影与贴纸本体分离 -->
+      <g id="prodG">
+        <rect id="stkShadow" x="1290" y="150" width="420" height="420" rx="46" style="fill:var(--pm-ink)"/>
+        <rect id="stkBack" x="1290" y="150" width="420" height="420" rx="46" style="fill:var(--pm-mint)"/>
+        <g id="prodVec"></g>
+        <image id="prodImg" x="1290" y="150" width="420" height="420" clip-path="url(#stickerClip)" preserveAspectRatio="xMidYMid slice"/>
+        <rect id="stkShine" x="1290" y="150" width="420" height="420" rx="46" fill="url(#gShine)"/>
+        <rect id="stkEdge" class="ln" x="1290" y="150" width="420" height="420" rx="46"
+          stroke-width="5" stroke="var(--pm-rose2)"/>
+      </g>
+    </svg>
+
+    <div id="txt">
+      <div id="badge"><span id="badgeBg"></span><span id="partTxt"></span></div>
+      <div id="titleBox"></div>
+      <div id="capsule"><span id="capBg"></span><span id="subTxt"></span></div>
+      <div id="tagline"></div>
+      <div id="prodTag"></div>
+      <div id="prodSub"></div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<div id="panel">
+  <input id="pPart" placeholder="Part" value="Part.01" />
+  <input id="pTitle" placeholder="主标题" value="薄荷撞色首发" />
+  <input id="pSub" placeholder="副标题" value="POP MINT" />
+  <button id="pPlay">重播</button>
+  <input id="pImg" type="file" accept="image/*" />
+</div>
+
+<script>
+"use strict";
+/* ============================== 工具 ============================== */
+var $ = function(id){ return document.getElementById(id); };
+function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
+function seg(f,a,b){ return clamp((f-a)/(b-a),0,1); }                 /* 段前严格 0 */
+function easeOut(p){ return 1-Math.pow(1-p,3); }
+function easeInOut(p){ return p<0.5?4*p*p*p:1-Math.pow(-2*p+2,3)/2; }
+function smoother(p){ return p*p*p*(p*(p*6-15)+10); }
+/* 弹性 overshoot：尾部冲到 1.12 再落回 —— 本引擎的主动词 */
+function backOut(p){ var c1=1.70158, c3=c1+1; return 1+c3*Math.pow(p-1,3)+c1*Math.pow(p-1,2); }
+function hash1(n){ var x=Math.sin(n*127.1+311.7)*43758.5453; return x-Math.floor(x); }
+function mk(parent,tag,attrs){
+  var e=document.createElementNS('http://www.w3.org/2000/svg',tag),k;
+  for(k in attrs){ if(Object.prototype.hasOwnProperty.call(attrs,k)) e.setAttribute(k,attrs[k]); }
+  parent.appendChild(e); return e;
+}
+
+/* ============================== 常量 ============================== */
+var FPS=30, DUR=225, HOLD=0.9, CYCLE=DUR/FPS+HOLD;
+var TILT=-6, CX=960, CY=540;
+var TITX=150, TITY=218, TITW=1200, TITMAXFS=134, TITMINFS=40;
+var STK={x:1290,y:150,w:420,h:420};
+var GHOST={x:760,y:612,r:152};
+
+var els={
+  stage:$('stage'), tiltAll:$('tiltAll'), bg:$('bg'), tilt:$('tilt'), bandA:$('bandA'), bandB:$('bandB'), bandC:$('bandC'),
+  ghostStar:$('ghostStar'),
+  dots:$('dots'), sparks:$('sparks'), prodG:$('prodG'), stkShadow:$('stkShadow'), stkBack:$('stkBack'),
+  stkEdge:$('stkEdge'), stkShine:$('stkShine'), prodImg:$('prodImg'), prodVec:$('prodVec'),
+  badge:$('badge'), partTxt:$('partTxt'), titleBox:$('titleBox'),
+  capsule:$('capsule'), subTxt:$('subTxt'), tagline:$('tagline'),
+  prodTag:$('prodTag'), prodSub:$('prodSub')
+};
+/* 🔴 必须在任何 build* 往 DOM 里塞生成件【之前】抓原始快照，否则固化件里带着上一轮的节点，
+   重新打开会翻倍（moss-window 同位置同口径）。 */
+var PRISTINE = '<!doctype html>\n' + document.documentElement.outerHTML;
+
+/* ============================== 静态构建（只跑一次，几何不进 render） ============================== */
+var DOTS=[], SPARKS=[], PRODV=null;
+
+function buildDots(){
+  /* 斜轴下方一排圆点：沿 x 均布，半径走 hash1 ⇒ 有节奏但不随机。
+     ⚠️ 每颗点包一层 <g translate> 再缩放：circle 直接 scale 会把 cx 一起乘掉（点会横着跑），
+        而 SVG 的 transform-origin 表现属性在 Chromium 里不可靠。 */
+  for(var i=0;i<16;i++){
+    var r=6+hash1(31+i)*9;
+    var g=mk(els.dots,'g',{});
+    var c=mk(g,'circle',{cx:0, cy:0, r:r.toFixed(1)});
+    c.setAttribute('style','fill:var(--pm-rose);opacity:'+(0.35+hash1(77+i)*0.5).toFixed(2)+';');
+    DOTS.push({el:g, x:(-140+i*152), i:i, r:r});
+  }
+}
+function starPath(cx,cy,r,thin){
+  /* 四角星（sparkle）：四个尖 + 四个内凹点，纯几何自绘，不借任何外部素材 */
+  var ri=r*thin, p='', i, a, rr, x, y;
+  for(i=0;i<8;i++){
+    a=i*Math.PI/4; rr=(i%2===0)?r:ri;
+    x=(cx+Math.cos(a)*rr).toFixed(1); y=(cy+Math.sin(a)*rr).toFixed(1);
+    p+=(i===0?'M':'L')+x+' '+y;
+  }
+  return p+'Z';
+}
+function buildSparks(){
+  /* 位置刻意压在斜轴两端与留白角，形成【斜向视觉动线】而不是四角均衡 */
+  var P=[[1642,116,54],[1806,300,30],[1180,196,26],[214,986,44],[452,1042,26],[1042,962,34],[1748,884,50],[860,168,22]];
+  for(var i=0;i<P.length;i++){
+    var g=mk(els.sparks,'g',{});
+    var body=mk(g,'path',{d:starPath(0,0,P[i][2],0.34)});
+    body.setAttribute('style','fill:'+(i%3===0?'var(--pm-rose)':(i%3===1?'var(--pm-mint2)':'var(--pm-ink)'))+';opacity:'+(i%3===2?'.3':'.9')+';');
+    SPARKS.push({g:g, x:P[i][0], y:P[i][1], r:P[i][2], ph:hash1(140+i)*6.283, sp:0.5+hash1(200+i)*0.9});
+  }
+}
+function buildGhost(){
+  els.ghostStar.setAttribute('d', starPath(GHOST.x, GHOST.y, GHOST.r, 0.30));
+}
+function buildProdVec(){
+  /* 无产品图时的占位：一枚【自绘四角星爆 + 圆角框 + 十字准线】（与 moss-window 的竹笋、
+     hell-dive 的六边形剖面都不同形）。 */
+  var g=mk(els.prodVec,'g',{}), cx=STK.x+STK.w/2, cy=STK.y+STK.h/2;
+  var big=mk(g,'path',{d:starPath(cx,cy,148,0.30)});
+  big.setAttribute('style','fill:var(--pm-rose);opacity:.9;');
+  var mid=mk(g,'path',{d:starPath(cx,cy,86,0.34)});
+  mid.setAttribute('style','fill:var(--pm-cream);opacity:.95;');
+  var ln1=mk(g,'line',{x1:(cx-176),y1:cy,x2:(cx+176),y2:cy,'stroke-width':2.4});
+  ln1.setAttribute('class','ln'); ln1.setAttribute('stroke','var(--pm-mint2)'); ln1.setAttribute('opacity','.75');
+  var ln2=mk(g,'line',{x1:cx,y1:(cy-176),x2:cx,y2:(cy+176),'stroke-width':2.4});
+  ln2.setAttribute('class','ln'); ln2.setAttribute('stroke','var(--pm-mint2)'); ln2.setAttribute('opacity','.75');
+  var cir=mk(g,'circle',{cx:cx,cy:cy,r:34,'stroke-width':3});
+  cir.setAttribute('class','ln'); cir.setAttribute('stroke','var(--pm-ink)'); cir.setAttribute('opacity','.5');
+  PRODV=g;
+}
+
+/* ============================== 文字构建 + 最坏输入预算 ============================== */
+var cfg={part:'Part.01', title:'薄荷撞色首发', sub:'POP MINT', img:''};
+var CAPMAX=980, CAPFS=31, CAPLS=8, BADGEMAX=520, BADGEFS=29, BADGELS=5;
+var SUBW=240, TAGW=0;
+
+/* 单行缩到宽度上限：字号与字距【同乘 k】（letter-spacing 是绝对 px，只缩字号宽度不按比例降） */
+function fitOneLine(t, fs, ls, max){
+  t.style.fontSize=''; t.style.letterSpacing='';
+  var w=Math.max(t.scrollWidth, t.offsetWidth)||1;
+  if(w>max){
+    var k=max/w;
+    t.style.fontSize=(fs*k).toFixed(1)+'px'; t.style.letterSpacing=(ls*k).toFixed(1)+'px';
+    w=Math.max(t.scrollWidth, t.offsetWidth);
+    if(w>max){ k=k*max/w; t.style.fontSize=(fs*k).toFixed(1)+'px'; t.style.letterSpacing=(ls*k).toFixed(1)+'px'; w=max; }
+  }
+  return w;
+}
+function measureOne(){
+  /* 胶囊/章的宽度要贴着文字走（斜轴构图里定宽容器会露出一截空色块） */
+  SUBW = fitOneLine(els.subTxt, CAPFS, CAPLS, CAPMAX) || 240;
+  var pw = fitOneLine(els.partTxt, BADGEFS, BADGELS, BADGEMAX) || 120;
+  els.capsule.style.width = (SUBW + 80) + 'px';
+  els.badge.style.width   = (pw + 60) + 'px';
+}
+var TITLE={chars:[], lines:1, fs:120, lh:138};
+function buildTitle(){
+  els.titleBox.textContent=''; TITLE={chars:[], lines:1, fs:120, lh:138};
+  var raw=(cfg.title||'').replace(/\s+$/,'');
+  var lines=raw.split('\n');
+  if(lines.length===1 && raw.length>9){            /* 单行过长 ⇒ 先按空格切词再硬切两行 */
+    var sp=raw.lastIndexOf(' ', Math.ceil(raw.length/2));
+    if(sp<0) sp=Math.floor(raw.length/2);
+    lines=[raw.slice(0,sp), raw.slice(sp+1)];
+  }
+  lines=lines.slice(0,3);                          /* 竖向预算只给 3 行 */
+  var maxLen=Math.max.apply(null, lines.map(function(s){return s.length;}));
+  var fs=clamp(TITW/Math.max(1,maxLen), TITMINFS, TITMAXFS);
+  /* 🔴 竖向预算：标题块被 CSS 转了 -6°，所以不能按「盒子底边」算落点 ——
+     转过的矩形最低点 = top + (W/2)·|sinθ| + H·cosθ ≈ TITY + 63 + H（W=1200, θ=6°）。
+     要求它停在胶囊顶（690）之上再留 24 缝 ⇒ 可用高度只剩 303，不是 706-TITY。 */
+  var VB=690-24-63-TITY;
+  if(lines.length*fs*1.16>VB) fs=Math.max(26, VB/(lines.length*1.16));
+  var lh=fs*1.16, li, ci, idx=0;
+  for(li=0;li<lines.length;li++){
+    var ln=document.createElement('div'); ln.className='tline';
+    ln.style.fontSize=fs+'px'; ln.style.lineHeight=lh+'px';
+    var t=lines[li];
+    for(ci=0;ci<t.length;ci++){
+      var w=document.createElement('span'); w.className='tw';
+      var d=document.createElement('span'); d.className='td'; d.textContent=t.charAt(ci);
+      var f=document.createElement('span'); f.className='tf'; f.textContent=t.charAt(ci);
+      w.appendChild(d); w.appendChild(f); ln.appendChild(w);
+      TITLE.chars.push({w:w, d:d, f:f, i:idx++, ln:li});
+    }
+    if(!t.length){ var nb=document.createElement('span'); nb.className='tw'; nb.innerHTML='&nbsp;';
+      TITLE.chars.push({w:nb,d:null,f:null,i:idx++,ln:li}); }
+    els.titleBox.appendChild(ln);
+  }
+  TITLE.n=idx; TITLE.fs=fs; TITLE.lh=lh; TITLE.lines=lines.length;
+  /* 压印错位量随字号走（大标题厚、小标题薄） */
+  var off=Math.max(3, fs*0.075).toFixed(1), i2;
+  for(i2=0;i2<TITLE.chars.length;i2++){ if(TITLE.chars[i2].d) TITLE.chars[i2].d.style.transform='translate('+off+'px,'+off+'px)'; }
+}
+function setProdImg(src){
+  cfg.img=src||'';
+  /* ⚠️ 无图 = 属性缺省（不是空串）：空串会被解析成文档 URL ⇒ 永不结束的请求 ⇒ 导出第 0 帧抓屏挂死 */
+  if(cfg.img) els.prodImg.setAttribute('href', cfg.img);
+  else els.prodImg.removeAttribute('href');
+}
+function applyCfg(d){
+  var dirty=false;
+  if(d.part!==undefined){ cfg.part=d.part; dirty=true; }
+  if(d.title!==undefined){ cfg.title=d.title; dirty=true; }
+  if(d.sub!==undefined){ cfg.sub=d.sub; dirty=true; }
+  els.partTxt.textContent=cfg.part||'';
+  els.subTxt.textContent=cfg.sub||'';
+  /* ★ 固定串里不许出现副标题的默认文本（撞词会看着像重复排版）：
+     副标题默认值 = `POP MINT`，而甲方十有八九不改它 ⇒ 屏上同词两次。 */
+  els.tagline.textContent='FRESH STOCK · STICKER 015';
+  measureOne();
+  if(dirty||!TITLE.chars.length) buildTitle();
+  var has=!!cfg.img;
+  els.prodTag.textContent = has ? 'STICKER LOCKED' : 'NO STICKER';
+  els.prodSub.textContent = has ? 'DROP IMAGE TO REPLACE' : 'DROP IMAGE HERE';
+}
+
+/* ============================== 逐帧渲染（纯函数） ============================== */
+function render(f){
+  var i, p, k;
+
+  /* ① 整幅开机：轻微斜倾回正（-3.2°→0）+ 1.05→1 落位。
+        ★ 这是「tilt settle」不是 dolly-in —— 不做持续推进，避免和 moss-window 撞动词。 */
+  var settle=easeOut(seg(f,0,34));
+  els.tiltAll.style.transform='rotate('+((1-settle)*-3.2).toFixed(3)+'deg) scale('+(fitScale*(1+0.05*(1-settle))).toFixed(4)+')';
+
+  /* ② 斜轴色块带：沿自身轴从左下滑擦进来（backOut 带一点过冲 ⇒ 撞色块会「甩」到位） */
+  var bandP=backOut(seg(f,2,44));
+  els.tilt.setAttribute('transform','rotate('+TILT+' '+CX+' '+CY+') translate('+( -2400*(1-bandP) ).toFixed(1)+' 0)');
+  els.bandA.setAttribute('opacity', (0.18+0.82*seg(f,2,30)).toFixed(3));
+
+  /* ③ 细线带比主带晚一档进场，宽度从 0 抽出 */
+  var b2=easeOut(seg(f,26,60));
+  els.bandB.setAttribute('transform','translate('+(-1500*(1-b2)).toFixed(1)+' 0)');
+  els.bandB.setAttribute('opacity', b2.toFixed(3));
+  els.bandC.setAttribute('opacity', (0.16*easeOut(seg(f,34,70))).toFixed(3));
+
+  /* ③b 幽灵星：慢旋（每帧 0.42°，纯帧号函数）+ 随色带淡入 */
+  els.ghostStar.setAttribute('transform','rotate('+((f*0.42)%360).toFixed(2)+' '+GHOST.x+' '+GHOST.y+')');
+  els.ghostStar.setAttribute('opacity', (0.42*easeOut(seg(f,20,64))).toFixed(3));
+
+  /* ④ 圆点：沿斜轴逐个弹出（stagger 走序号，不走随机） */
+  for(i=0;i<DOTS.length;i++){
+    var dp=backOut(seg(f, 40+i*2.2, 40+i*2.2+16));
+    DOTS[i].el.setAttribute('transform','translate('+DOTS[i].x+' 884) scale('+dp.toFixed(3)+')');
+  }
+
+  /* ⑤ Part 章：弹入 + 过冲，之后持续轻微浮动（不停死） */
+  var bp=backOut(seg(f,18,46));
+  els.badge.style.opacity=seg(f,18,34).toFixed(3);
+  els.badge.style.transform='rotate(-6deg) scale('+bp.toFixed(3)+') translateY('+((1-bp)*-22).toFixed(1)+'px)';
+
+  /* ⑥ 主标题：逐字 backOut 弹出（字号级过冲 + 上移 + 微旋），逐字间隔 4.2 帧 */
+  var n=TITLE.chars.length||1;
+  for(i=0;i<TITLE.chars.length;i++){
+    var c=TITLE.chars[i];
+    var st=46 + c.ln*10 + i*4.2;
+    var q=backOut(seg(f, st, st+20));
+    var wob=Math.sin(f*0.06 + c.i*0.7)*1.6*seg(f, st+20, st+52);   /* 落位后继续呼吸 */
+    if(c.w){
+      c.w.style.opacity=seg(f,st,st+9).toFixed(3);
+      c.w.style.transform='translateY('+((1-q)*46+wob).toFixed(2)+'px) scale('+q.toFixed(3)+') rotate('+((1-q)*-7).toFixed(2)+'deg)';
+    }
+  }
+
+  /* ⑦ 副标题胶囊：从画面左外沿斜轴滑进来（和标题的「弹」不同动词） */
+  var cp=easeOut(seg(f,120,152));
+  els.capsule.style.opacity=seg(f,120,138).toFixed(3);
+  els.capsule.style.transform='rotate(-6deg) translate('+((1-cp)*-620).toFixed(1)+'px,0)';
+
+  /* ⑧ 标语：字距从紧到开（现有引擎没有的收尾小动作） */
+  var tp=seg(f,142,176);
+  els.tagline.style.opacity=(0.95*tp).toFixed(3);
+  els.tagline.style.letterSpacing=(2+5*easeOut(tp)).toFixed(2)+'px';
+
+  /* ⑨ 产品贴纸：反向倾斜 +7°，弹入时阴影与本体分离（硬阴影从贴合甩到 22px 偏移） */
+  var pp=backOut(seg(f,96,132));
+  var sh=Math.max(0, 22*pp);
+  els.prodG.setAttribute('transform',
+    'translate('+(STK.x+STK.w/2).toFixed(1)+' '+(STK.y+STK.h/2).toFixed(1)+') '+
+    'rotate(7) scale('+pp.toFixed(3)+') '+
+    'translate('+(-(STK.x+STK.w/2)).toFixed(1)+' '+(-(STK.y+STK.h/2)).toFixed(1)+')');
+  els.prodG.setAttribute('opacity', seg(f,96,112).toFixed(3));
+  els.stkShadow.setAttribute('transform','translate('+sh.toFixed(1)+' '+sh.toFixed(1)+')');
+
+  /* 矢量占位 vs 上传图：互不闩住，每帧按目标态写（幂等比较省写） */
+  var has=!!cfg.img;
+  var pvOp=has?0:easeOut(seg(f,128,160)).toFixed(3);
+  if(PRODV.getAttribute('opacity')!==String(pvOp)) PRODV.setAttribute('opacity', String(pvOp));
+  var piOp=has?easeOut(seg(f,128,160)).toFixed(3):0;
+  if(els.prodImg.getAttribute('opacity')!==String(piOp)) els.prodImg.setAttribute('opacity', String(piOp));
+  els.prodTag.style.opacity=envIn(f,150,182).toFixed(3);
+  els.prodSub.style.opacity=(0.85*envIn(f,158,190)).toFixed(3);
+
+  /* ⑩ 星芒：进场后持续自旋 + 缩放脉动（纯 f 函数，永不停死） */
+  for(i=0;i<SPARKS.length;i++){
+    var s=SPARKS[i];
+    var inP=backOut(seg(f, 60+i*5, 60+i*5+18));
+    var ang=(f*0.9*s.sp + s.ph*57.2957795)*inP;
+    var pulse=1+0.16*Math.sin(f*0.075 + s.ph);
+    s.g.setAttribute('transform','translate('+s.x+' '+s.y+') rotate('+ang.toFixed(2)+') scale('+(inP*pulse).toFixed(3)+')');
+    s.g.setAttribute('opacity', seg(f,60+i*5,60+i*5+12).toFixed(3));
+  }
+
+  /* ⑪ 收尾：斜轴带上的高光条缓慢横扫（让最后一秒仍在动，不留定版死帧） */
+  var tail=seg(f,176,225);
+  els.stkShine.setAttribute('opacity', (0.35+0.4*Math.abs(Math.sin(f*0.035))).toFixed(3));
+  els.bandA.setAttribute('transform','translate('+(smoother(tail)*40).toFixed(1)+' 0)');
+}
+/* 入场包络：段前严格为 0（R169 —— 不许写成 (1-p) 让第 0 帧最亮） */
+function envIn(f,a,b){ return easeOut(seg(f,a,b)); }
+
+/* ---------- 主循环 ---------- */
+var rafId=0, startAt=performance.now();
+function tick(){
+  var now=performance.now();
+  var t=((now-startAt)/1000)%CYCLE;
+  render(Math.min(DUR, t*FPS));
+  rafId=requestAnimationFrame(tick);
+}
+function restart(){ startAt=performance.now(); }
+var fitScale=1;
+function fit(){
+  /* ⚠️ 无放大上限（导出高清链路要求） */
+  var s=Math.min(innerWidth/1920, innerHeight/1080);
+  var wr=$('wrap');
+  wr.style.width=(1920*s)+'px'; wr.style.height=(1080*s)+'px';
+  /* 🔴 #stage 的 transform 不能同时被两处写：fit 的等比缩放 与 render 的斜倾回正会互相覆盖
+     （谁后跑谁赢 ⇒ 表现为「缩放丢了」或「动画不动」）。所以 fit 只记账，缩放由 render 合进
+     #tiltAll 的同一次写入。 */
+  fitScale=s;
+}
+window.addEventListener('resize',fit);
+
+/* ---------- 配色 ---------- */
+var VAR_NAMES=['--pm-cream','--pm-mint','--pm-mint2','--pm-rose','--pm-rose2','--pm-ink'];
+function applyColors(vars){
+  var root=document.documentElement.style, k;
+  for(k in vars){ if(k.indexOf('--pm-')===0) root.setProperty(k,vars[k]); }
+}
+
+/* ---------- 自定义字体（cyber 协议） ---------- */
+function applyFont(d){
+  var name=d.family, url=d.dataURL;
+  if(!name){ var old=document.getElementById('__pmintFont'); if(old) old.remove(); return; }
+  var st=document.getElementById('__pmintFont')||document.createElement('style');
+  st.id='__pmintFont';
+  st.textContent = url ? '@font-face{font-family("__pmintfont");src:url('+url+') format("truetype");font-display:block;}' : '';
+  if(!st.parentNode) document.head.appendChild(st);
+  var fam = url ? '__pmintfont' : name;
+  $('stage').style.fontFamily='"'+fam+'","Noto Sans SC","Microsoft YaHei",sans-serif';
+}
+
+/* ---------- postMessage 桥（与 moss-window / hell-dive 同协议） ---------- */
+window.addEventListener('message',function(e){
+  var d=e.data||{};
+  if(d.source!=='host')return;
+  try{
+    if(d.type==='cyber-embed'){ document.body.classList.add('embed'); fit(); }
+    else if(d.type==='cyber-unembed'){ document.body.classList.remove('embed'); fit(); }
+    else if(d.type==='cyber-cfg'){ applyCfg(d); if(d.replay)restart(); }
+    else if(d.type==='cyber-color'){ applyColors(d.vars||{}); }
+    else if(d.type==='cyber-img'){ setProdImg(d.img||''); applyCfg({}); }
+    else if(d.type==='cyber-font'){ applyFont(d); }
+    else if(d.type==='cyber-play'){ restart(); if(!rafId) rafId=requestAnimationFrame(tick); }
+    else if(d.type==='cyber-seek'){
+      if(rafId){ try{ cancelAnimationFrame(rafId); }catch(err){} rafId=0; }
+      /* ⚠️ d.t 单位是【秒】 */
+      if(typeof d.t==='number'){ try{ render(Math.min(DUR, d.t*FPS)); void document.documentElement.offsetHeight; }catch(err){} }
+    }
+    else if(d.type==='cyber-resume'){
+      startAt=performance.now(); if(!rafId) rafId=requestAnimationFrame(tick);
+    }
+    else if(d.type==='cyber-get-html'){
+      var ovr='',k2;
+      var cs=getComputedStyle(document.documentElement);
+      for(k2=0;k2<VAR_NAMES.length;k2++){ ovr+=VAR_NAMES[k2]+':'+cs.getPropertyValue(VAR_NAMES[k2]).trim()+';'; }
+      ovr=':root{'+ovr+'}';
+      /* ⚠️ 本注释里不能写 script 闭合标签的字面量 —— 它会先把自己所在的 script 截断 */
+      var boot='<script>window.__PMINT_BOOT='+JSON.stringify({part:cfg.part,title:cfg.title,sub:cfg.sub,img:cfg.img||''}).replace(/</g,'\\u003c')+'<\/script>';
+      var html=PRISTINE.replace('</head>','<style id="pmint-override">'+ovr+'</style>'+boot+'</head>');
+      parent.postMessage({source:'cyber',type:'cyber-html',reqId:d.reqId,html:html},'*');
+    }
+  }catch(err){ parent.postMessage({source:'cyber',type:'cyber-status',err:err.message},'*'); }
+});
+
+/* ---------- 独立面板 ---------- */
+$('pPart').addEventListener('input',function(){ applyCfg({part:this.value}); restart(); });
+$('pTitle').addEventListener('input',function(){ applyCfg({title:this.value}); restart(); });
+$('pSub').addEventListener('input',function(){ applyCfg({sub:this.value}); restart(); });
+$('pPlay').addEventListener('click',function(){ restart(); });
+$('pImg').addEventListener('change',function(){
+  var f=this.files&&this.files[0]; if(!f) return;
+  if(!/^image\//i.test(f.type||'')) return;
+  var r=new FileReader();
+  r.onload=function(){ setProdImg(r.result); applyCfg({}); restart(); };
+  r.readAsDataURL(f); this.value='';
+});
+
+/* ---------- 启动 ---------- */
+buildDots(); buildSparks(); buildGhost(); buildProdVec();
+/* ⚠️ 顺序不能反：applyCfg 只认「传了的键」，__PMINT_BOOT 里带的是固化时的用户值，
+   必须先铺默认再拿 boot 覆盖，否则固化 HTML 打开永远是模板默认字。 */
+applyCfg(cfg);
+if(window.__PMINT_BOOT){ applyCfg(window.__PMINT_BOOT); }
+fit();
+render(0);
+/* ★ 必须自启主循环：漏掉的后果不是报错，是【预览永远停在第 0 帧】—— 版式全对、数值全绿，就是不动。 */
+rafId=requestAnimationFrame(tick);
+parent.postMessage({source:'cyber',type:'cyber-ready'},'*');
+</script>
+</body>
+</html>
