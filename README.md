@@ -38,7 +38,7 @@
 **云朵弹跳**（`demos/cloudpop/cloud-pop.html`）：
 
 ```js
-let cfg={title:'BEYOND\nCLOUD',sub:'',part:'启明云端',partTag:'Part.01',br:'星角萌萌'};
+let cfg={title:'BEYOND\nCLOUD',sub:'',part:'名称1',partTag:'Part.01',br:'名称2'};
 ```
 
 **黄铜表**（`demos/bz/brass-gauge.html`）：
