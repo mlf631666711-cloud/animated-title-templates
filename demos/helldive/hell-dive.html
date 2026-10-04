@@ -1,0 +1,1024 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>Hell Dive Arcade · 黑金街机突击标题（手绘电流板 + 掌机 + 摇杆台）</title>
+<!--
+  风格方向（老板 2026-09-29 指定）= 黑金酷炫 + **游戏元素**：手绘掌机 / 街机摇杆台 /
+    电流走线（PCB 折线 + 电子流脉冲 + 过孔）/ 像素心 / 能量槽 / PRESS START。
+    参考绝地潜兵 2 的**语汇**（空投舱砸地、圆形锁定环、全大写宽字距 HUD 标签、黑金），
+    ⚠️ 不取用任何外部游戏的图、logo、角色或专有名词；装饰英文一律通用街机词。
+  本版已剔除上一版残留的「制图 / 简报」语汇：描空心字 + 落墨双层字、终端光标、
+    尺寸标注线、橡皮章、CLASSIFIED 斜章、四角取景括号、打字机 clip、虚构机号（无出处的数字不上屏）。
+  本文件为零依赖单文件 HTML 引擎, 挂 cyber 同款 postMessage 桥:
+    host→iframe: cyber-embed / cyber-unembed / cyber-cfg{part,title,sub,replay} / cyber-color{vars}
+                 / cyber-img{img} / cyber-play / cyber-seek{t} / cyber-resume / cyber-get-html{reqId} / cyber-font
+    iframe→host: cyber-ready / cyber-html{reqId,html} / cyber-status{err}  (source 均为 'cyber')
+  配色变量: --hd-bg 黑底, --hd-yellow 主黄, --hd-gold 暗金, --hd-ink 暖白字,
+            --hd-line 网格线, --hd-alert 警示橙
+  铁律: 所有视觉量 = 帧号 f 的纯函数；无 Math.random（抖动走 hash1）；禁 CSS animation/transition。
+  ⚠️ 四条本库已付过学费的硬约束（BUG 库 R151 / R152 / R158 + 本轮新增）：
+    ① #hud 里有一条 `fill:none` 的通用规则 ⇒ **要实色的图元必须内联 style="fill:…"**，写 fill="…" 会被静默吃掉；
+    ② 几何只在 buildTitle / measureSub 里量一次，**不许进 render()**（逐帧强制布局会拖垮导出节奏）；
+    ③ 「没有产品图」= **href 属性缺省**，写 `href=""` 会被解析成文档 URL ⇒ 永不结束的请求 ⇒ 导出抓屏挂死在第 0 帧；
+    ④ 🔴 **不许用「写过一次就不写」的一次性闩（__xxOff / __xxDone）**：那会让 render(f) 依赖历史，
+       seek 回退或播完循环时元素卡在末态。实测「同一帧渲染两次」差 15202 px。要省写只能走
+       「当前值 ≠ 本帧目标值才写」的幂等比较（见 grid 的 clipPath）。
+  ⚠️ SVG 的 transform **属性**不认单位也不认 'none'：`translate(0 90px)` / `setAttribute('transform','none')`
+     都会让整条属性解析失败（Chrome 每帧刷一条 console error）⇒ 只写裸数字，收手用 `translate(0 0)`。
+  ⚠️ 本轮眼审新付的三条学费（数值判据全盲，只有肉眼看得到）：
+    ⑤ **同一个元素挂两个类时，单类规则的顺序会翻车**：投影层 class="tg td"，而 `.tg{opacity:0}` 写在 `.td{…}` 之后
+       ⇒ 同权重后者胜，整层被静抹。修法：抬权重写 `.tg.td{…}`，别写 `.td{opacity:…}`。
+    ⑥ **DOM 层标签的 z-index 必须 > `#hud`(5)**，否则产品/开始标签会被 SVG 线稿层整片盖住。
+    ⑦ **`seg()` 段前 = 0，凡是写成 `(1-p)*k` 的「消散」在段前反而最亮** ⇒ 必须 `p>0?…:0` 补一刀
+       （冲击环第 0 帧挂两个甜甜圈就是这个）。同类：任何「按进度衰减」的表达式都要问「进度为 0 时我想要什么」。
+  版面分区（走线/机件不许压进文字带）：
+    文字带 x150..1150 / y330..736（标题按行数【压字号】进预算，不是夹下游位置）；左轨 x44..140；顶带 y<310；
+    摇杆台 x300..668 / y758..955（杆左 x400、六键右 x496..596）；掌机 x1178..1516 / y728..1010；
+    产品环心 (1560,540)，环上标签 y254/282。
+  时间轴：DUR=225 帧 / 30fps = **7.5s**（宿主 presetDuration() 必须同步 7.5）。
+-->
+<style>
+  :root{
+    --hd-bg:#07080a; --hd-yellow:#ffc81a; --hd-gold:#8a6a12;
+    --hd-ink:#f4f1e8; --hd-line:#26292f; --hd-alert:#ff5a3c;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:#000;font-family:"Noto Sans SC","Microsoft YaHei",sans-serif;}
+  body{display:flex;align-items:center;justify-content:center;overflow:hidden;}
+  #wrap{position:relative;}
+  #stage{position:relative;width:1920px;height:1080px;overflow:hidden;background:var(--hd-bg);}
+  /* 整体位移层（空投舱砸地那几帧震屏）。⚠️ 不能直接抖 #stage —— 它身上挂着 fit() 的 scale() */
+  #world{position:absolute;inset:0;}
+
+  /* ===== 底图层 ===== */
+  #bg{position:absolute;inset:0;opacity:0;
+    background:radial-gradient(ellipse 62% 52% at 50% 46%, rgba(46,40,22,.55), transparent 68%),
+               radial-gradient(ellipse 100% 100% at 50% 120%, rgba(24,26,30,.9), transparent 70%);}
+  /* 细网格：一次性写死，逐帧只改 clip-path（从中心向四边揭开） */
+  #grid{position:absolute;inset:0;opacity:0;pointer-events:none;
+    background-image:linear-gradient(var(--hd-line) 1px, transparent 1px),
+                     linear-gradient(90deg, var(--hd-line) 1px, transparent 1px);
+    background-size:60px 60px;}
+  #scan{position:absolute;inset:0;opacity:0;pointer-events:none;
+    background:repeating-linear-gradient(to bottom, rgba(0,0,0,0) 0 3px, rgba(0,0,0,.42) 3px 4px);}
+  #vig{position:absolute;inset:0;pointer-events:none;opacity:0;
+    background:radial-gradient(ellipse 78% 70% at 50% 50%, transparent 52%, rgba(0,0,0,.82) 100%);}
+  #sweep{position:absolute;top:-8%;height:116%;width:220px;left:-400px;opacity:0;transform:skewX(-8deg);
+    pointer-events:none;
+    background:linear-gradient(90deg, transparent, rgba(255,200,26,.05) 42%, rgba(255,224,140,.16) 88%, rgba(255,255,255,.22) 100%);}
+  /* CRT 开机虹光：一条细亮线张开再收掉（刻意做细做暗，粗亮带会被当成画面故障） */
+  #crt{position:absolute;inset:0;opacity:0;pointer-events:none;
+    background:radial-gradient(ellipse 90% 2.2% at 50% 46%, rgba(255,246,220,.92), rgba(255,200,26,.28) 40%, transparent 72%);}
+
+  /* ===== HUD 线稿层 ===== */
+  #hud{position:absolute;inset:0;pointer-events:none;z-index:5;}
+  /* ⚠️ 见文件头 ①：这条会吃掉所有图元的 fill 呈现属性，实色件一律内联 style */
+  #hud path,#hud line,#hud circle,#hud rect,#hud ellipse,#hud polygon{fill:none;stroke-linecap:round;stroke-linejoin:round;}
+
+  /* ===== 顶 / 底条带（街机状态栏，只放通用词，不放编造数值） ===== */
+  .bar{position:absolute;height:34px;display:flex;align-items:center;gap:18px;opacity:0;
+    font-size:15px;font-weight:800;letter-spacing:5px;color:var(--hd-gold);white-space:pre;}
+  #topbar{left:150px;top:96px;}
+  #botbar{left:150px;bottom:44px;}
+  .bar b{color:var(--hd-yellow);font-weight:900;}
+  #dots{display:flex;align-items:center;gap:6px;height:14px;}
+  #dots i{display:block;width:9px;height:9px;background:var(--hd-gold);}
+  #blink{display:inline-block;width:14px;height:19px;vertical-align:-3px;opacity:0;}
+
+  /* ===== Part：像素切角块（不做描边框 ⇒ 不留制图痕迹） ===== */
+  #stamp{position:absolute;left:150px;top:226px;opacity:0;transform-origin:50% 50%;}
+  #partTag{position:absolute;left:2px;top:-32px;font-size:14px;font-weight:800;letter-spacing:7px;
+    color:var(--hd-gold);opacity:0;white-space:pre;}
+  #partTxt{display:block;white-space:pre;width:max-content;max-width:560px;position:relative;z-index:1;
+    font-size:34px;font-weight:900;letter-spacing:6px;color:var(--hd-yellow);line-height:1.28;
+    padding:13px 26px 15px;margin:-13px -26px -15px;
+    background:linear-gradient(180deg, rgba(255,200,26,.26), rgba(255,200,26,.06));
+    clip-path:polygon(0 0,calc(100% - 17px) 0,100% 17px,100% 100%,17px 100%,0 calc(100% - 17px));}
+
+  /* ===== 主标题：逐字 power-up（drop-in + squash&stretch + 两枚 glitch 残影） ===== */
+  #titleBox{position:absolute;left:150px;top:330px;width:1000px;}
+  /* pre（不是 pre-wrap）：断行由 buildTitle 自己管，隐式换行会让能量槽 / 副标题错位（R150） */
+  .tline{display:block;white-space:pre;position:relative;}
+  .tw{position:relative;display:inline-block;white-space:pre;color:transparent;opacity:0;}
+  /* ⚠️ -webkit-text-stroke-width 是【继承】属性，每一层都显式清零（文件头 ②族） */
+  .tf,.td,.tg{position:absolute;left:0;top:0;white-space:pre;-webkit-text-stroke-width:0;pointer-events:none;}
+  .tf{color:var(--hd-ink);transform-origin:50% 62%;}
+  .td{transform:translate(6px,7px);}   /* 街机贴片字的硬投影 */
+  .tg{opacity:0;} .tg.m{color:#ff3f6c} .tg.c{color:#39d7e6}  /* glitch 双残影 */
+  /* 🔴 .td 同时带 .tg 类 ⇒ 必须用【双类选择器】把 opacity 抢回来（同权重且 .tg 在后，单写 .td 会被压成 0，整层静默消失）*/
+  .tg.td{color:var(--hd-gold);opacity:.92}
+
+  /* ===== 副标题 / 标语 ===== */
+  #subBox{position:absolute;left:150px;top:0;width:900px;opacity:0;display:flex;align-items:center;gap:12px;}
+  #subBox b{font-size:26px;font-weight:900;color:var(--hd-yellow);line-height:1;}
+  /* white-space:pre（不是 pre-wrap）：长副标题**不许自动折行** —— 折行后 flex 居中的 [ ] 会
+     分别贴到两行的不同高度上，看着像坏标点。甲方要换行请自己敲回车（pre 保留 \n）。 */
+  #subTxt{display:block;white-space:pre;width:max-content;max-width:824px;
+    font-size:25px;font-weight:800;letter-spacing:9px;color:color-mix(in srgb,var(--hd-ink) 58%,var(--hd-yellow));line-height:1.4;}
+  #tagline{position:absolute;left:150px;top:0;width:900px;opacity:0;
+    font-size:15px;font-weight:800;letter-spacing:8px;color:var(--hd-gold);white-space:pre;}
+
+  /* ===== 产品区标签（🔴 必须 z-index > #hud 的 5，否则被掌机/环线的 SVG 层压掉） ===== */
+  #prodTag{position:absolute;width:400px;left:1360px;text-align:center;opacity:0;z-index:8;
+    font-size:15px;font-weight:900;letter-spacing:6px;color:var(--hd-yellow);white-space:pre;}
+  #prodSub{position:absolute;width:400px;left:1360px;text-align:center;opacity:0;z-index:8;
+    font-size:12px;font-weight:700;letter-spacing:4px;color:var(--hd-gold);white-space:pre;}
+
+  /* ===== PRESS START 闪字 ===== */
+  #pressStart{position:absolute;left:680px;top:888px;width:480px;text-align:center;opacity:0;z-index:8;
+    font-size:26px;font-weight:900;letter-spacing:11px;color:var(--hd-ink);white-space:pre;
+    text-shadow:0 0 22px rgba(255,200,26,.5);}
+
+  /* ===== 独立预览小面板 ===== */
+  #panel{position:fixed;left:14px;top:14px;z-index:50;display:flex;gap:8px;align-items:center;}
+  #panel input{border:1px solid #3a3d44;border-radius:8px;padding:7px 10px;font-size:13px;background:#101216;color:#f4f1e8;outline:none;}
+  #panel input:focus{border-color:var(--hd-yellow);}
+  #panel button{border:1px solid var(--hd-yellow);background:rgba(255,200,26,.14);color:var(--hd-yellow);
+    border-radius:8px;padding:7px 14px;font-size:13px;cursor:pointer;}
+  body.embed #panel{display:none;}
+</style>
+</head>
+<body>
+<div id="wrap">
+<div id="stage">
+  <div id="world">
+    <div id="bg"></div>
+    <div id="grid"></div>
+    <div id="crt"></div>
+    <div id="scan"></div>
+
+    <svg id="hud" width="1920" height="1080" viewBox="0 0 1920 1080">
+      <defs>
+        <!-- 产品光圈：半径逐帧写（锁定后张开），初值 r=0 -->
+        <clipPath id="pclip" clipPathUnits="userSpaceOnUse"><circle id="pclipC" cx="1560" cy="540" r="0"/></clipPath>
+        <!-- 掌机屏幕：内容裁在这块屏里，逐帧只写 scrIn 的 opacity -->
+        <clipPath id="scrclip" clipPathUnits="userSpaceOnUse"><rect id="scrclipR" x="1206" y="756" width="268" height="168" rx="6"/></clipPath>
+        <!-- 能量槽：一格一个 clipPath，逐帧写 width -->
+        <clipPath id="ec0" clipPathUnits="userSpaceOnUse"><rect x="150" y="4" width="0" height="18"/></clipPath>
+        <clipPath id="ec1" clipPathUnits="userSpaceOnUse"><rect x="150" y="4" width="0" height="18"/></clipPath>
+        <clipPath id="ec2" clipPathUnits="userSpaceOnUse"><rect x="150" y="4" width="0" height="18"/></clipPath>
+        <clipPath id="ec3" clipPathUnits="userSpaceOnUse"><rect x="150" y="4" width="0" height="18"/></clipPath>
+        <clipPath id="ec4" clipPathUnits="userSpaceOnUse"><rect x="150" y="4" width="0" height="18"/></clipPath>
+        <clipPath id="ec5" clipPathUnits="userSpaceOnUse"><rect x="150" y="4" width="0" height="18"/></clipPath>
+        <clipPath id="ec6" clipPathUnits="userSpaceOnUse"><rect x="150" y="4" width="0" height="18"/></clipPath>
+        <clipPath id="ec7" clipPathUnits="userSpaceOnUse"><rect x="150" y="4" width="0" height="18"/></clipPath>
+        <clipPath id="ec8" clipPathUnits="userSpaceOnUse"><rect x="150" y="4" width="0" height="18"/></clipPath>
+        <clipPath id="ec9" clipPathUnits="userSpaceOnUse"><rect x="150" y="4" width="0" height="18"/></clipPath>
+        <clipPath id="ec10" clipPathUnits="userSpaceOnUse"><rect x="150" y="4" width="0" height="18"/></clipPath>
+        <clipPath id="ec11" clipPathUnits="userSpaceOnUse"><rect x="150" y="4" width="0" height="18"/></clipPath>
+      </defs>
+
+      <!-- ① 手绘电流走线（PCB 45° 折线）：逐条拉通 → 过孔落定 → 电子流脉冲常驻跑 -->
+      <g id="traces"></g>
+      <g id="pulses"></g>
+
+      <!-- ② 中轴电流总线（两条主母线从中心向两端拉）+ 中心节点 -->
+      <line id="axisV" x1="960" y1="540" x2="960" y2="540" stroke="var(--hd-line)" stroke-width="2"/>
+      <line id="axisH" x1="960" y1="540" x2="960" y2="540" stroke="var(--hd-line)" stroke-width="2"/>
+      <rect id="busA" x="952" y="532" width="16" height="16" style="fill:var(--hd-yellow)" stroke="none" opacity="0"/>
+
+      <!-- ③ 空投锁定环：圆心初值挂在 OX0（先当掌机上的小光环），后段滑到落点变产品环 -->
+      <g id="orbit">
+        <circle id="ring1" cx="1220" cy="540" r="190" stroke="var(--hd-yellow)" stroke-width="3"/>
+        <circle id="ring2" cx="1220" cy="540" r="152" stroke="var(--hd-gold)" stroke-width="2"/>
+        <g id="azim"></g>
+        <path id="cross1" d="M1220 300 L1220 380 M1220 700 L1220 780 M980 540 L1060 540 M1380 540 L1460 540"
+              stroke="var(--hd-yellow)" stroke-width="2.6"/>
+        <path id="cross2" d="M1078 398 L1122 442 M1362 398 L1318 442 M1078 682 L1122 638 M1362 682 L1318 638"
+              stroke="var(--hd-gold)" stroke-width="2.2"/>
+      </g>
+
+      <!-- ④ 手绘掌机：机身 → 屏幕（像素小人 + 地形）→ 十字键 / A·B / SELECT·START -->
+      <g id="padG" opacity="0">
+        <path id="padBody" d="M1178 746 L1498 728 L1516 992 L1196 1010 Z" style="fill:#101319" stroke="var(--hd-yellow)" stroke-width="3.4"/>
+        <path id="padInner" d="M1196 764 L1480 748 L1496 974 L1212 990 Z" stroke="var(--hd-gold)" stroke-width="2"/>
+        <rect x="1230" y="718" width="44" height="12" rx="4" style="fill:var(--hd-gold)" stroke="none" opacity=".85"/>
+        <rect x="1400" y="718" width="44" height="12" rx="4" style="fill:var(--hd-gold)" stroke="none" opacity=".85"/>
+        <rect id="scrBg" x="1206" y="756" width="268" height="168" rx="6" style="fill:#04050a" stroke="var(--hd-yellow)" stroke-width="2.4"/>
+        <g clip-path="url(#scrclip)">
+          <rect id="scrFlash" x="1206" y="756" width="268" height="168" style="fill:var(--hd-yellow)" opacity="0"/>
+          <g id="scrIn" opacity="0">
+            <path id="scrGround" d="M1206 898 L1474 898" stroke="var(--hd-gold)" stroke-width="3"/>
+            <path id="scrHills" d="M1206 898 L1246 862 L1286 898 M1330 898 L1372 870 L1414 898" stroke="var(--hd-gold)" stroke-width="2"/>
+            <!-- 🔴 父 <g> 上的 style fill 会被 `#hud rect{fill:none}` 直接击穿（子元素自己的规则赢过继承）⇒ 每个 rect 各自内联 -->
+            <g id="sprite" transform="translate(1268 884)" stroke="none">
+              <rect x="-8" y="-30" width="16" height="12" style="fill:var(--hd-yellow)"/>
+              <rect x="-14" y="-18" width="28" height="18" style="fill:var(--hd-yellow)"/>
+              <rect x="-14" y="0" width="10" height="12" style="fill:var(--hd-yellow)"/>
+              <rect x="4" y="0" width="10" height="12" style="fill:var(--hd-yellow)"/>
+              <rect x="-10" y="-14" width="6" height="6" style="fill:#04050a"/>
+              <rect x="4" y="-14" width="6" height="6" style="fill:#04050a"/>
+              <rect x="-2" y="-42" width="4" height="8" style="fill:var(--hd-alert)"/>
+            </g>
+            <g id="pxbars">
+              <rect x="1218" y="770" width="34" height="5" style="fill:var(--hd-yellow)" stroke="none" opacity=".85"/>
+              <rect x="1218" y="780" width="22" height="5" style="fill:var(--hd-gold)" stroke="none" opacity=".85"/>
+              <rect x="1428" y="770" width="34" height="5" style="fill:var(--hd-yellow)" stroke="none" opacity=".85"/>
+            </g>
+          </g>
+        </g>
+        <g id="padCtrl" opacity="0">
+          <g id="dpad" stroke="none" opacity=".9">
+            <rect x="1242" y="942" width="12" height="36" style="fill:var(--hd-ink)"/>
+            <rect x="1230" y="954" width="36" height="12" style="fill:var(--hd-ink)"/>
+          </g>
+          <circle cx="1428" cy="952" r="11" stroke="var(--hd-gold)" stroke-width="2.4"/>
+          <circle cx="1466" cy="934" r="11" stroke="var(--hd-yellow)" stroke-width="2.8"/>
+          <rect x="1300" y="962" width="26" height="8" rx="4" style="fill:var(--hd-gold)" stroke="none"/>
+          <rect x="1346" y="960" width="26" height="8" rx="4" style="fill:var(--hd-gold)" stroke="none"/>
+        </g>
+      </g>
+      <!-- 供电线：掌机顶 → 产品环（在 padG 之后入栈 ⇒ 压在机壳上） -->
+      <path id="padCable" pathLength="1" d="M1346 734 L1346 648 L1436 558 L1556 558" stroke="var(--hd-gold)" stroke-width="3"/>
+
+      <!-- ⑤ 手绘街机摇杆台：跑马灯 + 台体 + 摇杆摆臂 + 六键连击 -->
+      <g id="cabG" opacity="0">
+        <path id="marquee" d="M316 758 L656 758 L656 794 L316 794 Z" style="fill:#161a22" stroke="var(--hd-gold)" stroke-width="2.4"/>
+        <rect id="marqLite" x="322" y="763" width="330" height="26" style="fill:var(--hd-yellow)" opacity=".1"/>
+        <text id="marqTxt" x="487" y="783" text-anchor="middle" font-size="18" font-weight="900" letter-spacing="7" style="fill:var(--hd-yellow)" stroke="none">GAME ON</text>
+        <path id="cabTop" d="M300 800 L646 800 L668 828 L322 828 Z" style="fill:#12151b" stroke="var(--hd-yellow)" stroke-width="3"/>
+        <path id="cabBase" d="M322 828 L668 828 L668 954 L322 954 Z" style="fill:#0c0e13" stroke="var(--hd-yellow)" stroke-width="3"/>
+        <!-- 台面指示灯挪到右侧（摇杆在左，球头会把 356/378/400 三颗灯全盖掉） -->
+        <circle cx="580" cy="813" r="5" style="fill:var(--hd-alert)" stroke="none"/>
+        <circle cx="602" cy="813" r="5" style="fill:var(--hd-yellow)" stroke="none"/>
+        <circle cx="624" cy="813" r="5" style="fill:var(--hd-gold)" stroke="none"/>
+        <!-- 摇杆在【左】、六键在【右】= 标准街机台布局；球头收在跑马灯下方，不再压字 -->
+        <ellipse cx="400" cy="846" rx="30" ry="10" style="fill:#05070a" stroke="var(--hd-gold)" stroke-width="2.4"/>
+        <g id="stick" transform="rotate(0 400 846)">
+          <path d="M400 840 L400 812" stroke="var(--hd-ink)" stroke-width="7"/>
+          <circle cx="400" cy="806" r="15" style="fill:var(--hd-alert)" stroke="#0a0c10" stroke-width="3"/>
+          <circle cx="395" cy="800" r="4.5" style="fill:#ffb3a0" stroke="none" opacity=".8"/>
+        </g>
+        <g id="cbtn"></g>
+      </g>
+
+      <!-- ⑥ 空投舱砸地：地面亮线 + 两圈冲击环 + 落点十字标 + 黄色轨道锥 -->
+      <line id="ground" x1="1560" y1="540" x2="1560" y2="540" stroke="var(--hd-yellow)" stroke-width="3"/>
+      <path id="crossMark" d="M1544 540 h32 M1560 524 v32" stroke="var(--hd-yellow)" stroke-width="3"/>
+      <circle id="imp1" cx="1560" cy="540" r="0" stroke="var(--hd-yellow)" stroke-width="4"/>
+      <circle id="imp2" cx="1560" cy="540" r="0" stroke="var(--hd-gold)" stroke-width="2.4"/>
+      <g id="coneG" opacity="0">
+        <path id="coneBody" d="M-62 -232 L62 -232 L0 0 Z" style="fill:var(--hd-yellow)" stroke="var(--hd-yellow)" stroke-width="3"/>
+        <path id="coneCap" d="M-62 -232 Q0 -256 62 -232" stroke="#07080a" stroke-width="5"/>
+        <path id="coneRib" d="M-31 -232 L0 0 M31 -232 L0 0" stroke="#07080a" stroke-width="3" opacity=".75"/>
+        <path id="coneBand" d="M-46 -172 L46 -172" stroke="#07080a" stroke-width="6"/>
+      </g>
+
+      <!-- ⑦ 产品：底衬 matte 必须在【占位矢量与上传图之前】入栈，否则深色方块会把矢量埋掉 -->
+      <circle id="prodMatte" cx="1560" cy="540" r="182" style="fill:#0b0d10" stroke="none" opacity="0"/>
+      <g id="prodVec" opacity="0">
+        <path id="hex" d="M1560 424 L1660 482 L1660 598 L1560 656 L1460 598 L1460 482 Z"
+              stroke="var(--hd-yellow)" stroke-width="3"/>
+        <path id="dia" d="M1560 486 L1606 540 L1560 594 L1514 540 Z" style="fill:var(--hd-gold)" stroke="var(--hd-yellow)" stroke-width="2.4"/>
+      </g>
+      <g id="prodG" style="opacity:0">
+        <image id="prodImg" x="1395" y="375" width="330" height="330" preserveAspectRatio="xMidYMid meet" clip-path="url(#pclip)"/>
+      </g>
+      <g id="lock">
+        <path class="lbk" d="M1352 372 L1352 332 L1392 332" stroke="var(--hd-yellow)" stroke-width="4"/>
+        <path class="lbk" d="M1768 372 L1768 332 L1728 332" stroke="var(--hd-yellow)" stroke-width="4"/>
+        <path class="lbk" d="M1768 708 L1768 748 L1728 748" stroke="var(--hd-yellow)" stroke-width="4"/>
+        <path class="lbk" d="M1352 708 L1352 748 L1392 748" stroke="var(--hd-yellow)" stroke-width="4"/>
+      </g>
+
+      <!-- ⑧ 能量槽（12 格像素条，替代前作的黄色高亮条）+ 电火花 -->
+      <g id="ebar"></g>
+      <g id="spark" opacity="0"></g>
+
+      <!-- ⑨ HUD 像素心 ×3 -->
+      <g id="hearts"></g>
+    </svg>
+
+    <div class="bar" id="topbar"><span>PLAYER</span><b>ONE</b><span>CO-OP</span><b>READY</b><span id="dots"></span></div>
+    <div class="bar" id="botbar"><span>MODE</span><b>ARCADE</b><span>SIDE</span><b>ONE</b><span>INSERT COIN</span><i id="blink"></i></div>
+
+    <div id="content">
+      <div id="stamp">
+        <div id="partTag">PLAYER 1</div>
+        <div id="partTxt">Part.01</div>
+      </div>
+      <div id="titleBox"></div>
+      <div id="subBox"><b>[</b><span id="subTxt">READY TO DROP</span><b>]</b></div>
+      <div id="tagline">CO-OP READY · HIGH-VALUE ASSET · PRESS ANY KEY</div>
+    </div>
+
+    <div id="prodTag">NO ASSET · DROP IMAGE</div>
+    <div id="prodSub">INSERT IMAGE TO PLAY</div>
+    <div id="pressStart">PRESS START</div>
+    <div id="sweep"></div>
+    <div id="vig"></div>
+  </div>
+</div>
+</div>
+
+<div id="panel">
+  <input id="pPart" placeholder="Part" value="Part.01" />
+  <input id="pTitle" placeholder="主标题" value="重新定义随身影像" />
+  <input id="pSub" placeholder="副标题" value="READY TO DROP" />
+  <input id="pImg" type="file" accept="image/*" />
+  <button id="pPlay">▶ 重播</button>
+</div>
+
+<script>
+"use strict";
+/* 捕获 pristine DOM（引擎任何 mutation 之前）—— 导出固化 HTML 用 */
+var PRISTINE = '<!doctype html>\n' + document.documentElement.outerHTML;
+
+/* ---------- 缓动 / 插值（动效内核） ---------- */
+function clamp(v,a,b){ a=a===undefined?0:a; b=b===undefined?1:b; return Math.max(a,Math.min(b,v)); }
+function lerp(a,b,k){ return a+(b-a)*k; }
+function seg(t,a,b){ return clamp((t-a)/(b-a)); }
+function smoother(k){ return k*k*k*(k*(k*6-15)+10); }
+function easeOut(k){ return 1-Math.pow(1-k,3); }
+function easeIn(k){ return k*k; }
+function hash1(s){ var h=Math.imul(s|0,2246822519); h=Math.imul(h^(h>>>13),3266489917); return ((h^(h>>>16))>>>0)/4294967296; }
+function env(f,a,b){ return easeOut(seg(f,a,b)); }
+/* ⚠️ 不用关键帧查表 tab()：段内 smootherstep 在每个节点把速度打到 0 ⇒ 肉眼看到的卡顿（R144） */
+
+/* ---------- 时间轴 / 版面常量 ---------- */
+var FPS=30, DUR=225, HOLD=0.9, CYCLE=DUR/FPS+HOLD;
+var LX=150;                    /* 版面左边距 */
+var PCX=1560, PCY=540;         /* 空投落点 / 产品环圆心 */
+var OX0=1220;                  /* 锁定环起始中心（先挂在掌机一侧） */
+var SPRING_X=400, SPRING_Y=846;   /* 摇杆支点（台体左侧，标准街机布局：左杆右键） */
+var PAD_CX=1347, PAD_CY=869;   /* 掌机几何中心（滑入/旋转支点） */
+var HPX=150, HPY=142, HPS=6, HPG=68;   /* 像素心：位 / 格径 / 间距 */
+/* 锁定四角的合拢方向：上/右/下/左（对应 markup 里 .lbk 的入栈顺序） */
+var LDIR=[[0,-1],[1,0],[0,1],[-1,0]];
+
+/* ---------- DOM ---------- */
+function $(id){return document.getElementById(id);}
+var NS='http://www.w3.org/2000/svg';
+function mk(parent, tag, attrs){
+  var e=document.createElementNS(NS,tag), k;
+  for(k in attrs) e.setAttribute(k,attrs[k]);
+  parent.appendChild(e); return e;
+}
+var els={
+  world:$('world'), bg:$('bg'), grid:$('grid'), scan:$('scan'), vig:$('vig'), sweep:$('sweep'), crt:$('crt'),
+  axisV:$('axisV'), axisH:$('axisH'), busA:$('busA'), dots:$('dots'), blink:$('blink'),
+  topbar:$('topbar'), botbar:$('botbar'),
+  stamp:$('stamp'), partTxt:$('partTxt'), partTag:$('partTag'),
+  titleBox:$('titleBox'), subBox:$('subBox'), subTxt:$('subTxt'), tagline:$('tagline'),
+  pressStart:$('pressStart'),
+  orbit:$('orbit'), ring1:$('ring1'), ring2:$('ring2'), azim:$('azim'), cross1:$('cross1'), cross2:$('cross2'),
+  ground:$('ground'), imp1:$('imp1'), imp2:$('imp2'), crossMark:$('crossMark'),
+  coneG:$('coneG'),
+  padG:$('padG'), scrIn:$('scrIn'), scrFlash:$('scrFlash'), sprite:$('sprite'), padCtrl:$('padCtrl'),
+  cabG:$('cabG'), stick:$('stick'), marqLite:$('marqLite'),
+  tracesG:$('traces'), pulsesG:$('pulses'), padCable:$('padCable'),
+  prodG:$('prodG'), prodImg:$('prodImg'), prodMatte:$('prodMatte'), prodVec:$('prodVec'), pclipC:$('pclipC'),
+  lock:$('lock'), prodTag:$('prodTag'), prodSub:$('prodSub'),
+  ebar:$('ebar'), hearts:$('hearts'), spark:$('spark')
+};
+var lbks=[].slice.call(document.querySelectorAll('#hud .lbk'));
+
+/* ---------- 手绘电流走线表（全部轴对齐折线；直角转折处自动补 45° 斜切） ---------- */
+var TR=[
+  {pts:[[1160,178],[1360,178],[1360,540]],              w:2.6, y:'y', a:14},
+  {pts:[[1080,1032],[1080,996],[1240,996]],             w:2.2, y:'g', a:16},
+  {pts:[[1516,860],[1660,860],[1660,780],[1740,780],[1740,620]], w:2.2, y:'y', a:18},
+  {pts:[[44,486],[110,486],[110,300],[300,300]],        w:2.2, y:'g', a:15},
+  {pts:[[44,860],[120,860],[120,900],[300,900]],        w:2.2, y:'g', a:17},
+  {pts:[[620,60],[1020,60],[1020,120],[1150,120]],      w:2.2, y:'g', a:19},
+  {pts:[[110,988],[110,540],[54,540],[54,300]],         w:2.6, y:'y', a:21}
+];
+var traces=[], ebarCells=[], heartEls=[];
+function tracePath(i){
+  var t=TR[i], d='M'+t.pts[0][0]+' '+t.pts[0][1], j;
+  for(j=1;j<t.pts.length;j++){
+    var p0=t.pts[j-1], p1=t.pts[j];
+    if(p1[0]!==p0[0] && p1[1]!==p0[1]){
+      var dx=(p1[0]>p0[0]?1:-1)*14, dy=(p1[1]>p0[1]?1:-1)*14;
+      d+=' L'+(p1[0]-dx)+' '+p0[1]+' L'+p1[0]+' '+(p1[1]-dy);
+    }
+    d+=' L'+p1[0]+' '+p1[1];
+  }
+  return d;
+}
+(function buildTraces(){
+  var i,j;
+  for(i=0;i<TR.length;i++){
+    var st = TR[i].y==='y' ? 'var(--hd-yellow)' : 'var(--hd-gold)';
+    var d=tracePath(i);
+    var line=mk(els.tracesG,'path',{d:d,pathLength:'1',stroke:st,'stroke-width':TR[i].w});
+    line.style.opacity='0';
+    /* 过孔 = 走线两端的实心小方块（内联 style 才不被 fill:none 吃掉，见文件头 ①） */
+    var ends=[TR[i].pts[0], TR[i].pts[TR[i].pts.length-1]], via=[];
+    for(j=0;j<2;j++){
+      var v=mk(els.tracesG,'rect',{x:ends[j][0]-4.5,y:ends[j][1]-4.5,width:9,height:9,
+        style:'fill:'+(j===0?'var(--hd-gold)':'var(--hd-yellow)'),stroke:'none'});
+      v.style.opacity='0'; via.push(v);
+    }
+    /* 两个电子流脉冲（短亮段沿线跑；周期走 f 的模 ⇒ 纯函数，永远有电） */
+    var pl=[];
+    for(j=0;j<2;j++){
+      var p=mk(els.pulsesG,'path',{d:d,pathLength:'1',stroke:'var(--hd-yellow)','stroke-width':(TR[i].w+2.4)});
+      p.style.opacity='0'; pl.push(p);
+    }
+    traces.push({line:line,via:via,viaPts:ends,pulses:pl});
+  }
+})();
+function traceEndPt(i){ var p=TR[i].pts; return {x:p[p.length-1][0], y:p[p.length-1][1]}; }
+
+/* ---------- 锁定环方位刻度 ---------- */
+(function buildAzim(){
+  var g='', i;
+  for(i=0;i<24;i++){
+    var a=i*15*Math.PI/180, big=(i%6===0), r0=big?168:178, r1=190;
+    g+='<line class="az" x1="'+(Math.cos(a)*r0+OX0).toFixed(1)+'" y1="'+(Math.sin(a)*r0+PCY).toFixed(1)+
+       '" x2="'+(Math.cos(a)*r1+OX0).toFixed(1)+'" y2="'+(Math.sin(a)*r1+PCY).toFixed(1)+
+       '" stroke="'+(big?'var(--hd-yellow)':'var(--hd-gold)')+'" stroke-width="'+(big?3.4:2)+'"/>';
+  }
+  els.azim.innerHTML=g;
+})();
+var azEls=[].slice.call(els.azim.children);
+
+/* ---------- 顶栏像素信号格 ---------- */
+(function buildDots(){
+  var g='', i;
+  for(i=0;i<8;i++) g+='<i style="opacity:'+(0.35+hash1(i*11+9)*0.6).toFixed(2)+'"></i>';
+  els.dots.innerHTML=g;
+})();
+
+/* ---------- 街机六键（ABXYLBRT）：装在已存在的 #cbtn 里，⚠️ 不能再新建同名节点 ---------- */
+(function buildStick(){
+  var g='', i;
+  for(i=0;i<6;i++){
+    var x=496+(i%3)*50, y=888+Math.floor(i/3)*40;
+    g+='<circle class="cbg" cx="'+x+'" cy="'+y+'" r="13" style="fill:#191d25" stroke="var(--hd-gold)" stroke-width="2"/>'+
+       '<circle class="cbl" cx="'+x+'" cy="'+y+'" r="9" style="fill:var(--hd-yellow)" stroke="none" opacity="0"/>';
+  }
+  els.cbtn=$('cbtn'); els.cbtn.innerHTML=g;
+})();
+var cbg=[].slice.call(document.querySelectorAll('#cbtn .cbg'));
+var cbl=[].slice.call(document.querySelectorAll('#cbtn .cbl'));
+
+/* ---------- HUD 像素心（rect 拼网格，不用 path ⇒ 边缘就是像素味） ---------- */
+var HEART=['0110110','1111111','1111111','0111110','0011100','0001000'];
+(function buildHearts(){
+  var g='', h, i, j;
+  for(h=0;h<3;h++){
+    for(i=0;i<HEART.length;i++){
+      for(j=0;j<HEART[i].length;j++){
+        if(HEART[i][j]!=='1') continue;
+        g+='<rect class="hp" data-h="'+h+'" x="'+(HPX+h*HPG+j*HPS)+'" y="'+(HPY+i*HPS)+'" width="'+(HPS-0.6)+'" height="'+(HPS-0.6)+'" style="fill:var(--hd-alert)" stroke="none"/>';
+      }
+    }
+  }
+  els.hearts.innerHTML=g;
+  heartEls=[].slice.call(els.hearts.children);
+})();
+var HPPER=heartEls.length/3, HW=HEART[0].length*HPS, HH=HEART.length*HPS;
+
+/* ---------- 能量槽：外框 + 12 格（每格一个 clipPath 逐帧写 width） ---------- */
+(function buildEbar(){
+  els.ebarFrame=mk(els.ebar,'rect',{x:LX,y:0,width:460,height:26,rx:2,stroke:'var(--hd-gold)','stroke-width':2});
+  for(var i=0;i<12;i++){
+    mk(els.ebar,'rect',{x:LX+i*38+3,y:5,width:32,height:16,style:'fill:#141821',stroke:'none'});
+    var bar=mk(els.ebar,'rect',{x:LX+i*38+3,y:5,width:32,height:16,style:'fill:var(--hd-yellow)',stroke:'none','clip-path':'url(#ec'+i+')'});
+    ebarCells.push({bar:bar,clip:$('ec'+i).querySelector('rect')});
+  }
+})();
+
+/* ---------- 电火花（四尖 + 扩张圈） ---------- */
+var sparkParts=null;
+function ensureSpark(){
+  if(sparkParts) return;
+  els.spark.innerHTML='<path class="s1" d="M0 -16 L0 16 M-16 0 L16 0" stroke="var(--hd-yellow)" stroke-width="3"/>'+
+    '<path class="s2" d="M-9 -11 L9 11 M9 -11 L-9 11" stroke="var(--hd-gold)" stroke-width="3"/>'+
+    '<circle class="s3" cx="0" cy="0" r="0" stroke="var(--hd-yellow)" stroke-width="4"/>';
+  sparkParts={c:els.spark.querySelector('.s3')};
+}
+function drawSpark(x,y,p){
+  ensureSpark();
+  if(p<=0||p>=1){ els.spark.style.opacity='0'; return; }
+  els.spark.setAttribute('transform','translate('+x.toFixed(1)+' '+y.toFixed(1)+') rotate('+(p*74).toFixed(1)+') scale('+(0.4+p*1.5).toFixed(3)+')');
+  els.spark.style.opacity=Math.sin(p*Math.PI).toFixed(3);
+  sparkParts.c.setAttribute('r',(p*30).toFixed(1));
+  sparkParts.c.style.opacity=((1-p)*0.8).toFixed(3);
+}
+function hideSpark(){ ensureSpark(); els.spark.style.opacity='0'; }
+
+/* ---------- 配置 / 标题构建 ---------- */
+var cfg={part:"Part.01", title:"重新定义随身影像", sub:"READY TO DROP", img:""};
+var charEls=[], ghostM=[], ghostC=[], SCH=null, EW=460, UY=560;
+var MAXW=1000, MAXLINE=12;
+
+function buildTitle(){
+  els.titleBox.innerHTML='';
+  charEls=[]; ghostM=[]; ghostC=[];
+  var raw=(cfg.title||'').replace(/\r/g,'');
+  var hard=raw.split('\n').filter(function(s,i,a){ return s.length||a.length===1; });
+  if(!hard.length) hard=[' '];
+  /* 超长行按【词边界】断（有空格先切词），无空格退回硬切 */
+  var lines=[];
+  hard.forEach(function(s){
+    if(s.length<=MAXLINE){ lines.push(s); return; }
+    var cur='';
+    s.split(/(\s+)/).filter(function(w){return w.length;}).forEach(function(w){
+      if(cur && (cur+w).replace(/\s+$/,'').length>MAXLINE){ lines.push(cur.replace(/\s+$/,'')); cur=''; }
+      if(w.length>MAXLINE){ for(var k=0;k<w.length;k+=MAXLINE) lines.push(w.slice(k,k+MAXLINE)); return; }
+      cur+=w;
+    });
+    if(cur.replace(/\s+$/,'').length) lines.push(cur.replace(/\s+$/,''));
+  });
+  var maxLen=Math.max.apply(null,lines.map(function(s){return s.length;}));
+  var fs=clamp(880/Math.max(1,maxLen),44,122);
+  /* 🔴 竖向预算：整条文字带（标题 → 能量条 → 副标题 → 标语）必须停在摇杆台 marquee(y758) 之上。
+     只给 subBox/tagline 写 min(...,700/730) 是错的方向 —— 3 行标题的【本体】会穿过那两个夹值
+     一路压到 marquee 上（实测文字带下沿 796 vs marquee 763 = −33px），而 #hud 画在文字层之上，
+     结果不是「挤」而是【整行字被机台遮掉】，副标题还会叠进标题最后一行。
+     ⇒ 反过来治：先按行数把字号/行高压进预算，下游位置一律顺推，夹值只留作超长兜底。 */
+  var VB=Math.max(90, 304-SUBH);                // 标题可用高度 = 330..736 扣除下方三段（副标题按实测高，长文案换行会撑）
+  if(lines.length*fs*1.3>VB) fs=Math.max(30, VB/(lines.length*1.3));
+  var lh=fs*1.3;
+  for(var li=0;li<lines.length;li++){
+    var ld=document.createElement('div'); ld.className='tline';
+    ld.style.fontSize=fs+'px'; ld.style.lineHeight=lh+'px'; ld.style.fontWeight='900';
+    ld.style.letterSpacing=(fs>74?4:7)+'px';
+    var s=lines[li];
+    for(var i=0;i<s.length;i++){
+      var sp=document.createElement('span'); sp.className='tw'; sp.textContent=s[i];
+      /* 层级顺序 = 硬投影 → 两枚 glitch 残影 → 正文 */
+      var gd=document.createElement('span'); gd.className='tg td'; gd.textContent=s[i];
+      var gm=document.createElement('span'); gm.className='tg m'; gm.textContent=s[i];
+      var gc=document.createElement('span'); gc.className='tg c'; gc.textContent=s[i];
+      var fl=document.createElement('span'); fl.className='tf'; fl.textContent=s[i];
+      sp.appendChild(gd); sp.appendChild(gm); sp.appendChild(gc); sp.appendChild(fl);
+      ld.appendChild(sp);
+      charEls.push(sp); ghostM.push(gm); ghostC.push(gc);
+    }
+    els.titleBox.appendChild(ld);
+  }
+  /* 几何只在这里量。⚠️ 用 offsetLeft/offsetTop（未缩放的 stage 坐标）；
+     不能用 getBoundingClientRect —— #stage 上有 fit() 的 scale()（R153）。 */
+  var boxT=els.titleBox.offsetTop;
+  UY = boxT + lines.length*lh + 22;
+  var lastLen=lines[lines.length-1].replace(/\s+$/,'').length||1;
+  EW = clamp(fs*lastLen*1.02, 240, 460);
+  els.ebar.setAttribute('transform','translate(0 '+(UY-13).toFixed(1)+')');
+  els.ebarFrame.setAttribute('width',EW.toFixed(1));
+  /* 兜底夹值：正常输入永远走不到（上面已按行数压进预算），只有 7 行以上才可能触发 */
+  els.subBox.style.top   = Math.min(UY+30, 700)+'px';
+  els.tagline.style.top  = Math.min(UY+SUBH+51, 730)+'px';
+  /* 排期：文字链按字数自适应并 clamp ⇒ 后面的固定段永远接得上 */
+  var n=charEls.length;
+  var span=clamp(n*3,24,96), step=n?span/n:3;
+  var t0=68, end=t0+span+9;
+  SCH={t0:t0, step:step, end:end, n:n, fs:fs,
+       ebar:end+4, ebarEnd:end+26, sub:end+30, tag:end+44,
+       prodTag:end+58, ps:end+80};
+  layoutEbar();
+}
+/* 12 格的 x / clip 起点随 EW 重排（只在文字变化时算，不进 render） */
+function layoutEbar(){
+  var cw=(EW-6)/12;
+  for(var i=0;i<12;i++){
+    var x=LX+i*cw+3;
+    ebarCells[i].bar.setAttribute('x',x.toFixed(1));
+    ebarCells[i].bar.setAttribute('width',Math.max(1,cw-6).toFixed(1));
+  }
+}
+var SUBW=420, SUBH=35, SUBMAX=824, SUBFS=25, SUBLS=9;
+/* 单行标签的通用「缩字号装进带宽」：字号和 letter-spacing 必须【一起】缩 —— 字距是绝对 px，
+   只缩字号时宽度不按比例下降（实测 60 字副标题缩到 13.7px 仍冲到 1270px，把 ] 埋在字中间）。
+   一次比例不够就按残差再补一次。⚠️ 只在文字变化时调用，不许进 render()。 */
+function fitOneLine(t, fs, ls, max){
+  t.style.fontSize=''; t.style.letterSpacing='';        // 先复位再量，否则量的是上一轮的缩字号
+  var w=Math.max(t.scrollWidth, t.offsetWidth)||1;
+  if(w>max){
+    var k=max/w;
+    t.style.fontSize=(fs*k).toFixed(1)+'px'; t.style.letterSpacing=(ls*k).toFixed(1)+'px';
+    w=Math.max(t.scrollWidth, t.offsetWidth);
+    if(w>max){ k=k*max/w; t.style.fontSize=(fs*k).toFixed(1)+'px'; t.style.letterSpacing=(ls*k).toFixed(1)+'px'; w=max; }
+  }
+  return w;
+}
+function measureSub(){
+  SUBW = fitOneLine(els.subTxt, SUBFS, SUBLS, SUBMAX) || 420;
+  SUBH = els.subBox.offsetHeight || 35;
+}
+function buildStamp(){
+  els.partTxt.textContent=cfg.part||'';
+  /* 长 Part 一律缩字号，不许自动折行（折出来第二行会顶穿色块压到主标题） */
+  fitOneLine(els.partTxt, 34, 6, 560);
+  els.partTag.textContent='PLAYER 1';
+}
+function applyCfg(c){
+  if(c.part!=null){ cfg.part=c.part; buildStamp(); }
+  if(c.sub!=null){ cfg.sub=c.sub; els.subTxt.textContent=c.sub; }
+  measureSub();          // 先量副标题实际高度（长文案会换行撑高）⇒ buildTitle 拿它扣竖向预算
+  if(c.title!=null){ cfg.title=c.title; buildTitle(); }
+  if(c.img!=null){ setProdImg(c.img); }
+  var has=!!cfg.img;
+  els.prodTag.textContent = has ? 'ASSET LOCKED' : 'NO ASSET · DROP IMAGE';
+  els.prodTag.style.opacity='';
+}
+/* ---------- 产品图：空 = 属性【缺省】（不是空串，见文件头 ③） ---------- */
+function setProdImg(src){
+  cfg.img = src || '';
+  if(!cfg.img){
+    els.prodImg.removeAttribute('href');
+    els.prodG.style.opacity='0';
+    return;
+  }
+  var probe=new Image();
+  probe.onload=function(){ els.prodImg.setAttribute('href',cfg.img); };
+  probe.onerror=function(){ els.prodImg.removeAttribute('href'); };
+  probe.src=cfg.img;
+}
+
+/* ---------- 逐帧渲染：整幅画面 = f 的纯函数 ---------- */
+function render(f){
+  var hasImg=!!cfg.img, i;
+
+  /* ① 底：黑场 + 细网格从中心揭开 + 暗角 + CRT 开机虹光 */
+  els.bg.style.opacity=clamp(seg(f,0,8));
+  els.scan.style.opacity=clamp(seg(f,0,14))*0.5;
+  els.vig.style.opacity=clamp(seg(f,0,10));
+  var gk=smoother(seg(f,4,26));
+  els.grid.style.opacity=0.55*Math.min(gk,1);
+  /* 省写只走幂等比较（文件头 ④）：当前值 ≠ 本帧目标才写 */
+  var gcp='none';
+  if(gk<1){ var ins=(50*(1-gk)).toFixed(2)+'%'; gcp='inset('+ins+' '+ins+' '+ins+' '+ins+')'; }
+  if(els.grid.style.clipPath!==gcp) els.grid.style.clipPath=gcp;
+  els.crt.style.opacity=(Math.sin(clamp(seg(f,24,36))*Math.PI)*0.55).toFixed(3);
+
+  /* 震屏：空投舱落地那几帧（其余帧一律写 none ⇒ 无历史依赖） */
+  if(f>=57&&f<64){
+    var sa=clamp(1-(f-57)/7)*9;
+    els.world.style.transform='translate('+((hash1(f*13)-0.5)*sa).toFixed(2)+'px,'+((hash1(f*29+5)-0.5)*sa).toFixed(2)+'px)';
+  } else els.world.style.transform='none';
+
+  /* ② 中轴电流母线（从中心向两端拉）+ 菱形总线节点 */
+  els.axisV.setAttribute('y1', 540-440*gk); els.axisV.setAttribute('y2', 540+440*gk);
+  els.axisH.setAttribute('x1', 960-820*gk); els.axisH.setAttribute('x2', 960+820*gk);
+  els.axisV.style.opacity=els.axisH.style.opacity=gk>0?0.7:0;
+  els.busA.style.opacity=(gk*0.9).toFixed(3);
+  els.busA.setAttribute('transform','rotate(45 960 540)');
+
+  /* ③ 电流走线：逐条拉通 + 过孔弹入 + 电子流脉冲（拉通后常驻） */
+  for(i=0;i<traces.length;i++){
+    var t=traces[i], tp=smoother(seg(f, TR[i].a, TR[i].a+20));
+    t.line.style.strokeDasharray='1';
+    t.line.style.strokeDashoffset=(1-tp).toFixed(4);
+    t.line.style.opacity=tp>0?0.8:0;
+    for(var v=0;v<2;v++){
+      var vt = v===0 ? env(f, TR[i].a, TR[i].a+8) : env(f, TR[i].a+15, TR[i].a+24);
+      var vp=t.viaPts[v], vs=0.5+0.5*vt;
+      t.via[v].style.opacity=(vt*0.9).toFixed(3);
+      t.via[v].setAttribute('transform','translate('+vp[0]+' '+vp[1]+') scale('+vs.toFixed(3)+') translate('+(-vp[0])+' '+(-vp[1])+')');
+    }
+    var on=seg(f, TR[i].a+13, TR[i].a+22);
+    for(var p=0;p<2;p++){
+      var k=((f-(TR[i].a+13))*0.0062+p*0.53)%1;
+      if(k<0) k+=1;
+      t.pulses[p].style.strokeDasharray='0.05 1';
+      t.pulses[p].style.strokeDashoffset=(-k).toFixed(4);
+      t.pulses[p].style.opacity=(on*0.9).toFixed(3);
+    }
+  }
+  /* 供电线：掌机 → 产品环 */
+  var cpg=smoother(seg(f,32,52));
+  els.padCable.style.strokeDasharray='1';
+  els.padCable.style.strokeDashoffset=(1-cpg).toFixed(4);
+  els.padCable.style.opacity=cpg>0?0.8:0;
+
+  /* ④ 顶 / 底条带：两侧滑入 + 信号格逐格点亮 + 光标闪烁（走 f 的模，禁 setInterval） */
+  var tb=env(f,12,30), bb=env(f,16,34);
+  els.topbar.style.opacity=tb; els.topbar.style.transform='translateX('+((1-tb)*-46).toFixed(1)+'px)';
+  els.botbar.style.opacity=bb; els.botbar.style.transform='translateX('+((1-bb)*46).toFixed(1)+'px)';
+  var dts=els.dots.children;
+  for(i=0;i<dts.length;i++){
+    var dn=seg(f,20+i*1.2,23+i*1.2);
+    dts[i].style.transform='scaleY('+(0.2+0.8*dn).toFixed(3)+')';
+    dts[i].style.background = dn>0.85?'var(--hd-yellow)':'var(--hd-gold)';
+  }
+  els.blink.style.opacity=(bb*(f>200?(Math.floor(f/14)%2?0.9:0.15):0.9)).toFixed(3);
+  els.blink.style.background='var(--hd-yellow)';
+
+  /* ⑤ HUD 像素心：逐颗充能（替代前作的取景括号与边刻度） */
+  var hp=seg(f,26,44);
+  for(i=0;i<heartEls.length;i++){
+    var hi=Math.floor(i/HPPER);
+    var on=clamp(hp*3-hi);
+    var cx0=HPX+hi*HPG+HW/2, cy0=HPY+HH/2;
+    heartEls[i].style.opacity=(on*0.95).toFixed(3);
+    var bs=0.35+0.65*easeOut(on);
+    heartEls[i].setAttribute('transform','translate('+cx0+' '+cy0+') scale('+bs.toFixed(3)+') translate('+(-cx0)+' '+(-cy0)+')');
+  }
+
+  /* ⑥ Part 角标：切角块落下（压扁回弹）+ PLAYER 1 标签滑入 */
+  var kp=env(f,30,44);
+  els.stamp.style.opacity=clamp(seg(f,30,38));
+  var ksq=(kp>0&&kp<0.55)?1-0.14*Math.sin(kp/0.55*Math.PI):1;
+  els.stamp.style.transform='translateY('+((1-kp)*-16).toFixed(1)+'px) scale('+lerp(1.16,1,kp).toFixed(3)+','+(ksq*lerp(1.16,1,kp)).toFixed(3)+')';
+  var tg=env(f,44,58);
+  els.partTag.style.opacity=tg*0.9;
+  els.partTag.style.transform='translateX('+((1-tg)*-12).toFixed(1)+'px)';
+
+  /* ⑦ 锁定环：先当掌机一侧的小光环 → 滑到落点变大产品环（一个元素演两角） */
+  var r1=smoother(seg(f,16,44));
+  setCirc(els.ring1,190,r1,0.95);
+  setCirc(els.ring2,152,smoother(seg(f,20,48)),0.7);
+  for(i=0;i<azEls.length;i++){
+    azEls[i].style.opacity=(env(f,22+i*0.6,28+i*0.6)*0.85).toFixed(3);
+  }
+  var slide=smoother(seg(f,44,58)), kk=lerp(0.18,1,slide);
+  els.orbit.setAttribute('transform',
+    'translate('+lerp(OX0,PCX,slide).toFixed(1)+' '+PCY+') scale('+kk.toFixed(3)+') '+
+    'rotate('+(Math.max(0,f-16)*0.30).toFixed(2)+') translate('+(-OX0)+' '+(-PCY)+')');
+  els.orbit.style.opacity=r1>0?1:0;
+  var c1=smoother(seg(f,20,40));
+  els.cross1.style.opacity=c1*0.9; els.cross2.style.opacity=c1*0.55;
+  els.cross1.setAttribute('transform','rotate('+(f*0.6)+' '+OX0+' '+PCY+')');
+  els.cross2.setAttribute('transform','rotate('+(-f*0.42)+' '+OX0+' '+PCY+')');
+
+  /* ⑧ 掌机：沿走线滑入 → 屏幕开机闪 → 像素小人跑跳 */
+  var pi=smoother(seg(f,30,52)), pe=easeOut(seg(f,52,72));
+  var end1=traceEndPt(1);
+  els.padG.style.opacity=clamp(seg(f,30,36));
+  els.padG.setAttribute('transform',
+    'translate('+((1-pi)*(end1.x-PAD_CX)).toFixed(1)+' '+((1-pi)*(end1.y-PAD_CY)).toFixed(1)+') '+
+    'rotate('+((1-pi)*-8).toFixed(2)+' '+PAD_CX+' '+PAD_CY+')');
+  els.scrIn.style.opacity=pe.toFixed(3);
+  /* 开机闪：峰值只到 .42、窗口只给 10 帧 —— 满幅纯黄块会把整台掌机糊成一块色板（f58 实测翻车） */
+  els.scrFlash.style.opacity=(Math.sin(clamp(seg(f,52,62))*Math.PI)*0.42).toFixed(3);
+  var bob=Math.abs(Math.sin((f-58)*0.14));
+  els.sprite.setAttribute('transform','translate('+(1268+Math.sin((f-58)*0.07)*30).toFixed(1)+' '+(884-bob*16).toFixed(1)+')');
+  els.padCtrl.style.opacity=env(f,56,70).toFixed(3);
+
+  /* ⑨ 摇杆台：台体升起 → 摇杆画弧摆动 → 六键连击 + 跑马灯呼吸 */
+  var cb=smoother(seg(f,44,62));
+  els.cabG.style.opacity=clamp(seg(f,44,52));
+  /* 升起幅度 40（不是 90）：台体底 954+90=1044 会在升起途中把 botbar 的 INSERT COIN 整段切掉 */
+  els.cabG.setAttribute('transform','translate(0 '+((1-cb)*40).toFixed(1)+')');   /* ⚠️ SVG transform 属性不带单位 */
+  var swg=seg(f,58,86), rot;
+  if(swg>0&&swg<1){ rot=Math.sin(swg*3.2*Math.PI*2)*15*(1-clamp(swg*3.2/3.2)); }
+  else if(cb>=1){ rot=Math.sin((f-90)*0.055)*3.4; }
+  else rot=0;
+  els.stick.setAttribute('transform','rotate('+rot.toFixed(2)+' '+SPRING_X+' '+SPRING_Y+')');
+  els.marqLite.style.opacity=(0.08+0.45*Math.abs(Math.sin((f-48)*0.22))*env(f,48,66)).toFixed(3);
+  for(i=0;i<6;i++){
+    var bt=150+i*5, bp=seg(f,bt,bt+5);
+    var lit=(bp>0&&bp<1)?Math.sin(bp*Math.PI):0;
+    if(f>200){ lit=Math.max(lit, (Math.floor((f-200)/11)%6)===i?0.8:0); }
+    cbl[i].style.opacity=lit.toFixed(3);
+    /* ⚠️ SVG transform【属性】不认 'none'（那是 CSS 的写法），一律写恒等位移 */
+    cbg[i].setAttribute('transform', lit>0.5?'translate(0 2)':'translate(0 0)');
+  }
+
+  /* ⑩ 空投舱砸地：f40 画外 nose-down 落下 → f58 落点 → f58-70 淡出
+     ⚠️ 分支必须【全覆盖 + 每帧都写】，f<40 也要显式收手（一次性闩会卡末态，见文件头 ④）
+     ⚠️ 拖尾也走同一规则：每帧按 f 算自己的目标值，不用 trailShow 记「上一次有没有画过」 */
+  var drop=seg(f,40,58);
+  if(drop>0&&drop<1){
+    var dy=lerp(-560,0,easeIn(drop));
+    var sq=drop>0.86?1+0.10*Math.sin((drop-0.86)/0.14*Math.PI):1;
+    els.coneG.setAttribute('transform','translate('+PCX+' '+(PCY+dy).toFixed(1)+') scale(1,'+sq.toFixed(3)+')');
+    els.coneG.style.opacity='1';
+    trailSet(PCY+dy-232, 0.5*easeIn(drop));
+  } else if(f>=58&&f<70){
+    var fo=seg(f,58,70);
+    els.coneG.setAttribute('transform','translate('+PCX+' '+(PCY-fo*26).toFixed(1)+') scale('+(1-fo*0.18).toFixed(3)+','+(1-fo*0.18).toFixed(3)+')');
+    els.coneG.style.opacity=(1-fo).toFixed(3);
+    trailSet(0,0);
+  } else coneOff();
+
+  /* 落地冲击：地面亮线两端撑开 + 两圈扩散环 + 落点十字标 */
+  var gp=smoother(seg(f,56,74));
+  els.ground.setAttribute('x1',PCX-620*gp); els.ground.setAttribute('x2',PCX+620*gp);
+  els.ground.style.opacity=gp>0?((1-seg(f,64,86))*0.9).toFixed(3):0;
+  /* 🔴 冲击环必须在落地前收手：seg 在段前=0，而 (1-0)*0.9=0.9 会让第 0 帧就挂两个甜甜圈 */
+  var i1=seg(f,56,80), i2=seg(f,58,88);
+  ringR(els.imp1,lerp(10,430,easeOut(i1)),i1>0?(1-i1)*0.9:0);
+  ringR(els.imp2,lerp(10,300,easeOut(i2)),i2>0?(1-i2)*0.55:0);
+  els.crossMark.style.opacity=(f>=56&&f<92)?0.9:0;
+
+  /* ⑪ 主标题：逐字 power-up（drop-in + squash&stretch + glitch 残影） */
+  for(i=0;i<SCH.n;i++){
+    var dt=f-(SCH.t0+i*SCH.step);
+    if(dt<0){
+      charEls[i].style.opacity='0'; ghostM[i].style.opacity='0'; ghostC[i].style.opacity='0';
+      charEls[i].style.transform='none'; continue;
+    }
+    var a=clamp(dt/9), e=1-Math.pow(1-a,3);
+    var wob=(1-a)*Math.sin(a*Math.PI*2.1)*0.26;
+    charEls[i].style.opacity=clamp(a/0.55).toFixed(3);
+    charEls[i].style.transform='translate(0px,'+((1-e)*-24).toFixed(2)+'px) scale('+(1-wob*0.6).toFixed(3)+','+(1+wob).toFixed(3)+')';
+    var go=(a>0.05&&a<0.92)?(0.6*(1-a)).toFixed(3):'0';
+    var gx=((1-a)*7).toFixed(2);
+    ghostM[i].style.opacity=go; ghostC[i].style.opacity=go;
+    ghostM[i].style.transform='translate('+(-gx)+'px,0)';
+    ghostC[i].style.transform='translate('+gx+'px,0)';
+  }
+
+  /* ⑫ 能量槽：逐格充能（替代前作的黄色高亮条）+ 充满电火花 + 持期电涌 */
+  var ep=smoother(seg(f,SCH.ebar,SCH.ebarEnd));
+  var cw=(EW-6)/12;
+  for(i=0;i<12;i++){
+    var local=clamp(ep*12-i);
+    ebarCells[i].clip.setAttribute('x',(LX+i*cw+3).toFixed(1));
+    ebarCells[i].clip.setAttribute('width',(local*(cw-6)).toFixed(1));
+  }
+  els.ebar.style.opacity=ep>0?1:0;
+  var SPX=LX+EW-6, SPY=UY;
+  var full=seg(f,SCH.ebarEnd-1,SCH.ebarEnd+7);
+  if(full>0&&full<1) drawSpark(SPX,SPY,full);
+  else if(f>=SCH.ebarEnd+7 && (f-(SCH.ebarEnd+7))%28<7) drawSpark(SPX,SPY,((f-(SCH.ebarEnd+7))%28)/7);
+  else hideSpark();
+
+  /* ⑬ 副标题 + 标语：整块 reveal（不是打字机 clip） */
+  var s0=SCH.sub, s1k=clamp(seg(f,s0,s0+12));
+  els.subBox.style.opacity=s1k;
+  els.subBox.style.transform='translateX('+((1-s1k)*-18).toFixed(1)+'px)';
+  var tg2=env(f,SCH.tag,SCH.tag+16);
+  els.tagline.style.opacity=(tg2*0.72).toFixed(3);
+  els.tagline.style.transform='translateY('+((1-tg2)*8).toFixed(1)+'px)';
+
+  /* ⑭ 产品锁定：4 个 L 角括号沿【四边垂直】合拢 → 光圈张开 → 出图 / 矢量占位
+     ⚠️ 不能用 45° 对角进场：左下那枚会沿对角线穿过掌机屏幕（x1206..1474 / y756..924），在屏里留一个游离 L */
+  var lk=smoother(seg(f,66,104));
+  var ino=lerp(150,0,lk);
+  for(i=0;i<lbks.length;i++){
+    lbks[i].style.opacity=lk>0?0.9:0;
+    lbks[i].setAttribute('transform','translate('+(LDIR[i][0]*ino).toFixed(1)+' '+(LDIR[i][1]*ino).toFixed(1)+')');
+  }
+  /* 到位后冻结（原来 (f-66)*0.28 无上限地转，片尾歪到 44° 且左上括号一路转进产品标签里） */
+  els.lock.setAttribute('transform','rotate('+(8*smoother(seg(f,66,140))).toFixed(2)+' '+PCX+' '+PCY+')');
+  var ir=easeOut(seg(f,96,118));
+  els.pclipC.setAttribute('r',(ir*176).toFixed(1));
+  els.prodMatte.style.opacity=ir*0.9;
+  /* 有图：亮图 + 收掉矢量占位；无图：亮矢量占位。⚠️ 两支都要每帧写自己的目标值 */
+  if(hasImg){
+    els.prodG.style.opacity='1';
+    els.prodVec.style.opacity='0';
+  } else {
+    els.prodG.style.opacity='0';
+    els.prodVec.style.opacity=env(f,100,120).toFixed(3);
+    $('hex').setAttribute('transform','rotate('+((f-100)*0.16).toFixed(2)+' '+PCX+' '+PCY+')');
+    $('dia').setAttribute('transform','rotate('+((f-100)*0.5).toFixed(2)+' '+PCX+' '+PCY+')');
+  }
+  /* 标签放在瞄准环【上方空白带】y254/282：环顶 350、锁定框左上角转 8° 后最高到 y305 ⇒ 三层互不打架。
+     （挂在产品下方 y750 会被 x1178..1516 的掌机吃掉一半字；挂在 y278 会被左上角括号压住） */
+  var pt=env(f,118,134);
+  els.prodTag.style.opacity=(pt*0.95).toFixed(3);
+  els.prodTag.style.top=(PCY-286)+'px';
+  els.prodTag.style.transform='translateY('+((1-pt)*10).toFixed(1)+'px)';
+  els.prodSub.style.opacity=(env(f,126,142)*0.8).toFixed(3);
+  els.prodSub.style.top=(PCY-258)+'px';
+  els.prodSub.textContent = hasImg ? 'PRESS ANY KEY' : 'INSERT IMAGE TO PLAY';
+
+  /* ⑮ 扫光：掠过一次（f180-206） */
+  var sw2=seg(f,180,206);
+  if(sw2>0&&sw2<1){
+    els.sweep.style.opacity=(Math.sin(sw2*Math.PI)*0.85).toFixed(3);
+    els.sweep.style.transform='translateX('+(lerp(-200,2260,sw2)+400).toFixed(0)+'px) skewX(-8deg)';
+  } else els.sweep.style.opacity='0';
+
+  /* ⑯ PRESS START + 持期「活着的静止」（line boil / 离散 glitch / 呼吸） */
+  els.pressStart.style.opacity=(clamp(seg(f,SCH.ps,SCH.ps+12))*(Math.floor(f/11)%2?0.95:0.25)).toFixed(3);
+  var bo=clamp(seg(f,200,208));
+  if(bo>0){
+    var gj=Math.floor(f/4), boil=Math.floor(f/3);
+    var gx2=(hash1(gj*31)-0.5)*7*bo, gy2=(hash1(gj*57+3)-0.5)*3*bo;
+    for(i=0;i<SCH.n;i++){
+      ghostM[i].style.opacity=(0.18*bo).toFixed(3);
+      ghostC[i].style.opacity=(0.18*bo).toFixed(3);
+      ghostM[i].style.transform='translate('+(-2+gx2).toFixed(2)+'px,'+gy2.toFixed(2)+'px)';
+      ghostC[i].style.transform='translate('+(2-gx2).toFixed(2)+'px,'+(-gy2).toFixed(2)+'px)';
+    }
+    els.ring1.style.opacity=((0.9+0.1*Math.sin((f-200)*0.12))*0.95).toFixed(3);
+    els.stamp.style.transform='translate('+((hash1(boil*17+1)-0.5)*0.9*bo).toFixed(2)+'px,0)';
+    els.subBox.style.transform='translate('+((hash1(boil*23+5)-0.5)*0.8*bo).toFixed(2)+'px,0)';
+  }
+}
+/* 圆环描线（半径固定，只写 dash） */
+function setCirc(el,r,p,om){
+  var C=2*Math.PI*r;
+  el.style.strokeDasharray=(p*C).toFixed(1)+' '+(C*2).toFixed(1);
+  el.style.opacity=p>0?(0.95*(om===undefined?1:om)).toFixed(3):0;
+}
+function ringR(el,r,om){
+  el.setAttribute('r',Math.max(0.1,r).toFixed(1));
+  el.style.opacity=om>0?om:0;
+}
+/* 空投舱下落拖尾 */
+function trailSet(y,op){
+  if(!window.__trail){
+    var ln=document.createElementNS(NS,'line');
+    ln.setAttribute('id','coneTrail'); ln.setAttribute('x1',PCX); ln.setAttribute('x2',PCX);
+    ln.setAttribute('stroke','var(--hd-yellow)'); ln.setAttribute('stroke-width','2');
+    document.getElementById('hud').insertBefore(ln, els.coneG);
+    window.__trail=ln;
+  }
+  window.__trail.setAttribute('y1',Math.min(-40,y-300).toFixed(0));
+  window.__trail.setAttribute('y2',Math.max(-20,y).toFixed(0));
+  window.__trail.style.opacity=op;
+}
+/* 锥体「本帧不该出现」：每帧显式写，不用一次性闩（见文件头 ④） */
+function coneOff(){
+  els.coneG.style.opacity='0';
+  trailSet(0,0);
+}
+
+/* ---------- 播放循环 ---------- */
+var startAt=performance.now(), rafId=0;
+function tick(now){
+  var t=((now-startAt)/1000)%CYCLE;
+  render(Math.min(DUR, t*FPS));
+  rafId=requestAnimationFrame(tick);
+}
+function restart(){ startAt=performance.now(); }
+function fit(){
+  /* ⚠️ 无放大上限（导出高清链路要求） */
+  var s=Math.min(innerWidth/1920, innerHeight/1080);
+  var st=document.getElementById('stage'), wr=document.getElementById('wrap');
+  st.style.transform='scale('+s+')';
+  wr.style.width=(1920*s)+'px'; wr.style.height=(1080*s)+'px';
+}
+window.addEventListener('resize',fit);
+
+/* ---------- 配色 ---------- */
+var VAR_NAMES=['--hd-bg','--hd-yellow','--hd-gold','--hd-ink','--hd-line','--hd-alert'];
+function applyColors(vars){
+  var root=document.documentElement.style, k;
+  for(k in vars){ if(k.indexOf('--hd-')===0) root.setProperty(k,vars[k]); }
+}
+
+/* ---------- 自定义字体（cyber 协议） ---------- */
+function applyFont(d){
+  var name=d.family, url=d.dataURL;
+  if(!name){ var old=document.getElementById('__hdFont'); if(old) old.remove(); return; }
+  var st=document.getElementById('__hdFont')||document.createElement('style');
+  st.id='__hdFont';
+  st.textContent = url ? '@font-face{font-family("__hdfont");src:url('+url+') format("truetype");font-display:block;}' : '';
+  if(!st.parentNode) document.head.appendChild(st);
+  var fam = url ? '__hdfont' : name;
+  document.getElementById('stage').style.fontFamily='"'+fam+'","Noto Sans SC","Microsoft YaHei",sans-serif';
+}
+
+/* ---------- postMessage 桥（与 draft-desk 同协议） ---------- */
+window.addEventListener('message',function(e){
+  var d=e.data||{};
+  if(d.source!=='host')return;
+  try{
+    if(d.type==='cyber-embed'){ document.body.classList.add('embed'); fit(); }
+    else if(d.type==='cyber-unembed'){ document.body.classList.remove('embed'); fit(); }
+    else if(d.type==='cyber-cfg'){ applyCfg(d); if(d.replay)restart(); }
+    else if(d.type==='cyber-color'){ applyColors(d.vars||{}); }
+    else if(d.type==='cyber-img'){ setProdImg(d.img||''); applyCfg({}); }
+    else if(d.type==='cyber-font'){ applyFont(d); }
+    else if(d.type==='cyber-play'){ restart(); if(!rafId) rafId=requestAnimationFrame(tick); }
+    else if(d.type==='cyber-seek'){
+      if(rafId){ try{ cancelAnimationFrame(rafId); }catch(err){} rafId=0; }
+      /* ⚠️ d.t 单位是【秒】 */
+      if(typeof d.t==='number'){ try{ render(Math.min(DUR, d.t*FPS)); void document.documentElement.offsetHeight; }catch(err){} }
+    }
+    else if(d.type==='cyber-resume'){
+      startAt=performance.now(); if(!rafId) rafId=requestAnimationFrame(tick);
+    }
+    else if(d.type==='cyber-get-html'){
+      var ovr='',k2;
+      var cs=getComputedStyle(document.documentElement);
+      for(k2=0;k2<VAR_NAMES.length;k2++){ ovr+=VAR_NAMES[k2]+':'+cs.getPropertyValue(VAR_NAMES[k2]).trim()+';'; }
+      ovr=':root{'+ovr+'}';
+      /* ⚠️ 本注释里不能写 script 闭合标签的字面量 —— 它会先把自己所在的 script 截断 */
+      var boot='<script>window.__HD_BOOT='+JSON.stringify({part:cfg.part,title:cfg.title,sub:cfg.sub,img:cfg.img||''}).replace(/</g,'\\u003c')+'<\/script>';
+      var html=PRISTINE.replace('</head>','<style id="hd-override">'+ovr+'</style>'+boot+'</head>');
+      parent.postMessage({source:'cyber',type:'cyber-html',reqId:d.reqId,html:html},'*');
+    }
+  }catch(err){ parent.postMessage({source:'cyber',type:'cyber-status',err:err.message},'*'); }
+});
+
+/* ---------- 独立面板 ---------- */
+$('pPart').addEventListener('input',function(){ applyCfg({part:this.value}); restart(); });
+$('pTitle').addEventListener('input',function(){ applyCfg({title:this.value}); restart(); });
+$('pSub').addEventListener('input',function(){ applyCfg({sub:this.value}); restart(); });
+$('pPlay').addEventListener('click',function(){ restart(); });
+$('pImg').addEventListener('change',function(){
+  var f=this.files&&this.files[0]; if(!f) return;
+  if(!/^image\//i.test(f.type||'')) return;
+  var r=new FileReader();
+  r.onload=function(){ setProdImg(r.result); applyCfg({}); restart(); };
+  r.readAsDataURL(f); this.value='';
+});
+
+/* ---------- 启动 ---------- */
+/* ⚠️ 顺序不能反：applyCfg 只认「传了的键」，__HD_BOOT 里带的是固化时的用户值，
+   必须先铺默认再拿 boot 覆盖，否则固化 HTML 打开永远是模板默认字。 */
+applyCfg(cfg);
+if(window.__HD_BOOT){ applyCfg(window.__HD_BOOT); }
+fit();
+render(0);
+rafId=requestAnimationFrame(tick);
+parent.postMessage({source:'cyber',type:'cyber-ready'},'*');
+/* 调试暴露 */
+window.seek=function(sec){ startAt=performance.now()-sec*1000; };
+window.play=restart;
+window.__hdRender=render; window.__hdDUR=DUR; window.__hdApply=applyCfg;
+</script>
+</body>
+</html>
