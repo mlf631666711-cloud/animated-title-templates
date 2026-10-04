@@ -1,0 +1,908 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>Liquid Chrome · 液态铬（中轴夹心 · 产品正中 · 标题上下各一行 · 镜面地平线带倒影）</title>
+<!--
+  风格方向（老板 2026-10-02：任意主题/配色，只求高级配色 + 高级动效；元素/动效/字体/构图都必须与既有引擎区分）
+  配色真源 = 本地 110 组高级配色库 **#88**（墨黑→钢灰→冷灰蓝→藕粉，权重 0.163/0.024/0.044/0.234/0.126/0.074）
+    与 **#76** 的 高光白 #E8E6E6（权重 0.869 = 该组主色）+ 亮冰蓝 #BAD6E6 合成：
+    --lc-void   #0D0D0D 墨黑（画面底 · 镜面暗部）   --lc-steel #5E5D5F 钢灰（金属中调）
+    --lc-chrome #E8E6E6 高光白（铬字 · 扫光核心）   --lc-mist  #8899A7 冷灰蓝（小字 · 轨道虚线）
+    --lc-ice    #BAD6E6 亮冰蓝（冷过渡 · 倒影尾）   --lc-rose  #DC939E 藕粉（唯一暖色：地平下沿 · 轮廓光）
+    ★ 六个变量全部有真实消费点，配色盘上没有摆设变量。
+  ★ 构图 = 【中轴夹心】（老板点名「不用一直都是一个左右设计」）：
+    产品/液态铬块【正居中】(x 725→1195, y 345→745)，主标题【拆成上下两半各占一条水平带】，
+    Part 在顶中、副标题与说明在底中，一条贯穿画面的地平线把画面切成上下两半，下半是倒影。
+    ⇒ 与 14 的左文右图、15 的对角斜置、16 的报头通栏+右下出血、17 的下 1/3 重心全部不同形；
+      这是本库里唯一一张【左右镜像 + 中轴】构图。
+  母题 = 液态铬块（液面凸起吞入）/ 环绕落滴 / 各向异性横向扫光带 / 镜面地平线 + 倒影 / 铬球占位。
+    （13 是电流走线与街机，14 是混凝土窗框与竹，15 是星芒贴纸，16 是网点与套准十字，17 是柔焦 blob 与圆拱窗。
+     本引擎的招牌是【一滴铬撞进液面、液面鼓起来把它吞掉】，不是淡入的圆团。）
+  动效动词 = ① 液滴【飞入→径向拉伸→落面消失】+ 液面【局部高斯凸起 + 外传涟漪】
+    （轮廓 r(θ) 是 f 的纯函数，两阶常驻微涟漪 ⇒ 全片不停）
+    ② specular【扫光带】在剪出来的液体内横扫两次 ③ 主标题【逐字纵向挤出】scaleY 0.02→1
+    ④ 铬字【高光游移】（background-position 沿竖向渐变跑，光带穿过字形） ⑤ 倒影带涟漪。
+    （14 = dolly + 竖条遮罩；15 = backOut 弹跳；16 = 三版套印 + 遮罩上推；17 = 拉焦 blur→sharp + 路径描绘。
+     本引擎【无弹跳、无拉焦、无套印副本、无遮罩上推】。）
+  字体 = 宽体无衬线 800/900 + 正字距 + scaleX(1.15) + 竖向铬渐变字面 ——
+    与 16 的 900 负字距工业黑体（字距方向相反）、15 的压印错位黑体（无渐变字面）、17 的细斜体衬线全部相反。
+  ★ 屏上零数字：固定串全是性质描述（MELT · MERGE · SPECULAR），没有任何编造出来的规格数字。
+  本文件为零依赖单文件 HTML 引擎, 挂 cyber 同款 postMessage 桥:
+    host→iframe: cyber-embed / cyber-unembed / cyber-cfg{part,title,sub,replay} / cyber-color{vars}
+                 / cyber-img{img} / cyber-play / cyber-seek{t} / cyber-resume / cyber-get-html{reqId} / cyber-font
+    iframe→host: cyber-ready / cyber-html{reqId,html} / cyber-status{err}  (source 均为 'cyber')
+  铁律: 所有视觉量 = 帧号 f 的纯函数；无 Math.random；禁 CSS animation/transition。
+  ⚠️ 已付过学费的硬约束（R151/R152/R158 + R165~R172 + 17 号那轮的两条）全部落实：
+    ① 描边件 class .ln{fill:none}，实心件一律内联 style="fill:…"；
+    ② 几何只在 build*/measure* 里量一次，不进 render()；
+    ③ 「无产品图」= href 属性缺省（href="" 会变成永不结束的请求 ⇒ 导出第 0 帧抓屏挂死）；
+    ④ 禁一次性闩；只允许「当前值 ≠ 目标值才写」的幂等写法；
+    ⑤ SVG transform 只写裸数字，不写单位也不写 none；
+    ⑥ 同权重按书写顺序翻盘 ⇒ 覆盖用复合选择器；HTML 文字层显式 z-index 高于 SVG；
+    ⑦ seg() 段前 = 0 ⇒ 不许拿 (1-p)*k 当入场前暗度；
+    ⑧ 可编辑文字按【最坏输入】设计：超行压字号，单行缩宽时字号与字距同乘 k；
+    ⑨ 主循环必须开机自启（漏掉 = 预览死在第 0 帧，不报错、数值全绿）；
+    ⑩ PRISTINE 必须在任何 build* 塞生成件【之前】抓；
+    ⑪ 柔焦/光晕一律用【径向渐变透明衰减】做，不用 feGaussianBlur —— 225 帧逐帧重栅格化大模糊层会拖死导出；
+    ⑫ ★（17 号轮的学费）入场件必须在 render 里逐个被【点亮】：CSS 里给了样式、render 里没写 opacity 的件
+       会从第 0 帧一直亮着 —— 不报错、判据全绿，只是开场脏。
+    ⑬ ★（同上）一个【淡入进去却里面没东西】的组是空操作：撑住画面的是「第一个可见事件」，不是组的 opacity。
+       本引擎因此让【地平线 f=4 起、液面 f=8 起】，不等主标题。
+    ⑭ ★ scaleX(1.15) 的字面宽【不进布局】：offsetWidth 量不到它 ⇒ 宽度判据必须自己乘上 TYPE_SX，
+       否则定版帧的字会溢出到中轴两侧的安全区外而判据照样绿。
+-->
+<style>
+  /* 🔴 六个配色变量必须在这里给【默认值】：JS 里 setAttribute('style','fill:var(--lc-x)') 不带 CSS 回退，
+     宿主没发色时整棵树解析成 black。 */
+  :root{
+    --lc-void:#0D0D0D; --lc-steel:#5E5D5F; --lc-chrome:#E8E6E6;
+    --lc-mist:#8899A7; --lc-ice:#BAD6E6;  --lc-rose:#DC939E;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{width:100%;height:100%;background:#08080a;overflow:hidden;}
+  body{font-family:"Helvetica Neue",Helvetica,Arial,"Source Han Sans SC","Microsoft YaHei",sans-serif;}
+  #wrap{position:absolute;left:50%;top:50%;width:1920px;height:1080px;margin:-540px 0 0 -960px;}
+  #stage{position:relative;width:1920px;height:1080px;overflow:hidden;transform-origin:0 0;
+    background:var(--lc-void,#0D0D0D);}
+  #hud{position:absolute;inset:0;width:1920px;height:1080px;z-index:5;}
+  #hud .ln{fill:none;}
+  #txt{position:absolute;inset:0;z-index:9;pointer-events:none;}
+  #txt > *{position:absolute;}
+
+  /* ---------- 顶带：Part 居中（第 1 行）· 元信息左上角（第 2 行，不同水平带 ⇒ 永不互撞） ---------- */
+  #partTxt{left:660px;top:44px;width:600px;text-align:center;white-space:pre;
+    font-size:24px;font-weight:700;letter-spacing:12px;color:var(--lc-chrome);}
+  #meta{left:210px;top:92px;width:460px;white-space:pre;
+    font-size:13px;font-weight:500;letter-spacing:5px;color:var(--lc-mist);}
+
+  /* ---------- 中轴夹心的两条标题带 ----------
+     #t1 底边锚在 308（往下朝产品挤出），#t2 顶边锚在 782（往上朝产品挤出）。
+     两条带的竖向预算各 176 ⇒ 2 行仍给到大字号，3 行才压到 75 —— 见 buildTitle。
+     🔴 .tl 不许 overflow:hidden：字面被 scaleX 撑宽、又无遮罩上推动词，裁切只会削掉边。 */
+  #titleBox{left:0;top:0;width:1920px;height:1080px;}
+  /* 🔴 #t1/#t2 是 #titleBox 的孙辈，拿不到 `#txt > *{position:absolute}` ⇒ 必须自己写；
+     漏了就变成两张静态流里的块，top 赋值全无效。 */
+  #t1,#t2{position:absolute;left:210px;width:1500px;}
+  .tl{display:block;position:relative;white-space:nowrap;text-align:center;font-weight:800;}
+  .ch{display:inline-block;white-space:pre;line-height:inherit;font-weight:800;letter-spacing:5px;
+    /* 竖向铬渐变字面：background-size 100% 300% ⇒ 有 200% 的行程可以给 render 跑「高光游移」 */
+    background-image:linear-gradient(180deg,
+      var(--lc-chrome) 0%, var(--lc-ice) 12%, var(--lc-mist) 30%, var(--lc-steel) 46%,
+      var(--lc-chrome) 58%, var(--lc-ice) 74%, var(--lc-mist) 88%, var(--lc-steel) 100%);
+    background-size:100% 300%;background-repeat:no-repeat;
+    -webkit-background-clip:text;background-clip:text;
+    color:transparent;-webkit-text-fill-color:transparent;}
+  #t1 .ch{transform-origin:50% 0%;}      /* 上带：顶边钉住，往下长 */
+  #t2 .ch{transform-origin:50% 100%;}    /* 下带：底边钉住，往上长 */
+
+  /* ---------- 底带 + 产品标签（左侧指线，不抢中轴） ---------- */
+  #subTxt{left:510px;top:978px;width:900px;text-align:center;white-space:pre;
+    font-size:26px;font-weight:600;letter-spacing:9px;color:var(--lc-mist);}
+  #caption{left:510px;top:1030px;width:900px;text-align:center;white-space:pre;
+    font-size:13px;font-weight:500;letter-spacing:7px;color:var(--lc-steel);}
+  #prodTag{left:302px;top:502px;width:380px;text-align:right;white-space:pre;
+    font-size:14px;font-weight:600;letter-spacing:5px;color:var(--lc-rose);}
+
+  /* ---------- 独立面板 ---------- */
+  #panel{position:fixed;left:14px;top:14px;z-index:50;display:flex;gap:8px;align-items:center;}
+  #panel input[type=text],#panel input:not([type=file]){background:rgba(255,255,255,.9);color:#1b1b1f;
+    border:1px solid #56565c;border-radius:6px;padding:6px 9px;font-size:13px;width:150px;}
+  #panel button{background:#E8E6E6;color:#0D0D0D;border:0;border-radius:6px;padding:7px 12px;font-size:13px;cursor:pointer;}
+  body.embed #panel{display:none;}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="stage">
+    <svg id="hud" viewBox="0 0 1920 1080" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <!-- 液体内壁：镜面竖切。
+             ★ gradientUnits=userSpaceOnUse：整块液体 + 每颗液滴【共用同一套全局光照】，
+               否则每个形状各自的 objectBoundingBox 渐变会在接缝处对不上，液滴看着像贴上去的贴纸。
+             🔴 暗部从「15%~60% 一整段 void」改成【亮-暗-亮-暗-亮】五段：
+               抽帧实测 f040~f132 整块液体是「一个黑窟窿底下挂一道亮月牙」，读成【地上的洞】
+               而不是【一块铬】。铬球之所以是铬，靠的是【中间那条环境地平线亮带】(46%~62%)，
+               不是靠边缘高光 —— 少了它，任何轮廓都是黑洞。
+               同一份渐变被液滴复用 ⇒ 这一条也顺手治好了「液滴是黑饼」。 -->
+        <!-- 本体色带 = 影棚铬球的标准四段：天光(亮) → 相机位(暗) → 地面反光(最亮) → 脚底(暗)。
+             🔴 只许【两条亮带 + 两条暗带】。上一版给了三条亮带（0/54/90），
+               缩到 1080 预览时肉眼读成「条形码 / 条纹球」而不是液体（f066~f098 眼审判红）。
+             gradientUnits=userSpaceOnUse 钉在 345→745：卡片呼吸时色带不跟着缩，
+             亮带在画面里是【固定】的 ⇒ 看起来像液体在灯下流动。 -->
+        <linearGradient id="gBody" gradientUnits="userSpaceOnUse" x1="0" y1="345" x2="0" y2="745">
+          <stop offset="0%"   style="stop-color:var(--lc-chrome);stop-opacity:.95"/>
+          <stop offset="7%"   style="stop-color:var(--lc-chrome);stop-opacity:.78"/>
+          <stop offset="16%"  style="stop-color:var(--lc-steel)"/>
+          <stop offset="28%"  style="stop-color:var(--lc-void)"/>
+          <stop offset="42%"  style="stop-color:var(--lc-void)"/>
+          <stop offset="52%"  style="stop-color:var(--lc-steel)"/>
+          <stop offset="62%"  style="stop-color:var(--lc-mist)"/>
+          <stop offset="70%"  style="stop-color:var(--lc-chrome);stop-opacity:.95"/>
+          <stop offset="78%"  style="stop-color:var(--lc-mist)"/>
+          <stop offset="88%"  style="stop-color:var(--lc-steel)"/>
+          <stop offset="96%"  style="stop-color:var(--lc-void)"/>
+          <stop offset="100%" style="stop-color:var(--lc-void)"/>
+        </linearGradient>
+        <!-- 环境光（上方向后打）：径向 alpha 衰减，零滤镜成本。
+             🔴 亮度翻倍（.30→.44 / .13→.22）：本引擎底色是 #0D0D0D 近乎全黑，
+               抽帧实测前 2 秒「除了中间一小坨暗东西整屏是死的」。数值判据量不到「暗」，
+               只有肉眼会把它读成「还没加载完」。 -->
+        <radialGradient id="gGlow"><stop offset="0%"   style="stop-color:var(--lc-mist);stop-opacity:.44"/>
+          <stop offset="55%" style="stop-color:var(--lc-steel);stop-opacity:.22"/>
+          <stop offset="100%" style="stop-color:var(--lc-steel);stop-opacity:0"/></radialGradient>
+        <!-- 地面渐变（地平线以下） -->
+        <linearGradient id="gFloor" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%"   style="stop-color:var(--lc-steel);stop-opacity:.34"/>
+          <stop offset="100%" style="stop-color:var(--lc-void);stop-opacity:0"/>
+        </linearGradient>
+        <!-- 扫光带：横向芯亮、两边透明；整条被液滴轮廓 clip 住 ⇒ 只在铬块内可见 -->
+        <linearGradient id="gSpec" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%"   style="stop-color:var(--lc-ice);stop-opacity:0"/>
+          <stop offset="38%"  style="stop-color:var(--lc-ice);stop-opacity:.30"/>
+          <stop offset="52%"  style="stop-color:var(--lc-chrome);stop-opacity:.88"/>
+          <stop offset="66%"  style="stop-color:var(--lc-ice);stop-opacity:.26"/>
+          <stop offset="100%" style="stop-color:var(--lc-ice);stop-opacity:0"/>
+        </linearGradient>
+        <!-- 各向异性横条（电影宽幅耀斑）：贯穿整幅，把中轴两侧的空档撑住 -->
+        <linearGradient id="gStreak" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%"   style="stop-color:var(--lc-chrome);stop-opacity:0"/>
+          <stop offset="30%"  style="stop-color:var(--lc-ice);stop-opacity:.30"/>
+          <stop offset="50%"  style="stop-color:var(--lc-chrome);stop-opacity:.85"/>
+          <stop offset="70%"  style="stop-color:var(--lc-ice);stop-opacity:.30"/>
+          <stop offset="100%" style="stop-color:var(--lc-chrome);stop-opacity:0"/>
+        </linearGradient>
+        <radialGradient id="gStreakGlow"><stop offset="0%"   style="stop-color:var(--lc-ice);stop-opacity:.46"/>
+          <stop offset="60%" style="stop-color:var(--lc-mist);stop-opacity:.16"/>
+          <stop offset="100%" style="stop-color:var(--lc-mist);stop-opacity:0"/></radialGradient>
+        <!-- 占位铬球：亮点偏左上、大部落在暗部 —— 刻意【比液体暗】，
+             否则球和液体两条高光带互相抢，抽帧实测会看成两个叠在一起的球。 -->
+        <radialGradient id="gOrb" cx="32%" cy="24%" r="80%">
+          <stop offset="0%"   style="stop-color:var(--lc-chrome)"/>
+          <stop offset="16%"  style="stop-color:var(--lc-ice)"/>
+          <stop offset="34%"  style="stop-color:var(--lc-mist)"/>
+          <stop offset="56%"  style="stop-color:var(--lc-steel)"/>
+          <stop offset="78%"  style="stop-color:var(--lc-void)"/>
+          <stop offset="94%"  style="stop-color:var(--lc-void)"/>
+          <stop offset="100%" style="stop-color:var(--lc-steel)"/>
+        </radialGradient>
+        <!-- 倒影专用色带：🔴 不许复用 #gBody。gBody 的行程写在【本体】的局部坐标里
+               (y 345→745)，而倒影组套了 matrix(1 0 0 -1 0 2H) 上下翻 ⇒ 复用会让【最亮】的
+               赤道带落到离地平线 185px 的深处，贴地那一条反而是全暗 —— 肉眼读作
+               「液体下面有个黑影」而不是「一块反射」。这里把行程反过来：
+               offset 0 = 局部 y745 = 屏幕地平线 ⇒ 接触处最亮，往下按反射衰减。 -->
+        <linearGradient id="gRefl" gradientUnits="userSpaceOnUse" x1="0" y1="745" x2="0" y2="420">
+          <stop offset="0%"   style="stop-color:var(--lc-chrome);stop-opacity:.80"/>
+          <stop offset="14%"  style="stop-color:var(--lc-mist);stop-opacity:.72"/>
+          <stop offset="30%"  style="stop-color:var(--lc-steel)"/>
+          <stop offset="48%"  style="stop-color:var(--lc-void)"/>
+          <stop offset="64%"  style="stop-color:var(--lc-steel)"/>
+          <stop offset="82%"  style="stop-color:var(--lc-mist);stop-opacity:.60"/>
+          <stop offset="100%" style="stop-color:var(--lc-void)"/>
+        </linearGradient>
+        <!-- 倒影遮罩：贴地平线处最亮，往下 286px 死掉（= 透视收束，不做真模糊）。
+             🔴 四段 stops 而不是两段线性：两段直线下「刚离开地平线那 60px」掉得太快，
+               倒影只剩贴边一条，肉眼审 f168~f224 判「根本没有倒影」。中段抬到 .72/.34 才读得出「一块液体」。
+             ★ 遮罩只允许灰度渐变，不许用 feGaussianBlur（225 帧逐帧重栅格化会拖死导出）。 -->
+        <linearGradient id="gReflMask" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%"   stop-color="#fff" stop-opacity="1"/>
+          <stop offset="20%"  stop-color="#fff" stop-opacity=".72"/>
+          <stop offset="52%"  stop-color="#fff" stop-opacity=".34"/>
+          <stop offset="100%" stop-color="#fff" stop-opacity="0"/>
+        </linearGradient>
+        <mask id="reflMask" maskUnits="userSpaceOnUse" x="480" y="745" width="960" height="262">
+          <rect x="480" y="745" width="960" height="262" fill="url(#gReflMask)"/>
+        </mask>
+        <!-- 液滴专用球面光：objectBoundingBox ⇒ 每一颗都自带「左上亮、右下暗」的体积感。
+             🔴 不许复用 #gBody：那是 userSpaceOnUse 钉在 y 345→745 的行程，
+               液滴在 y≈300 时整颗落在行程【之上】⇒ 全部取第一档 chrome .95 = 一张【平涂白片】，
+               抽帧读成贴纸而不是水珠。 -->
+        <radialGradient id="gBead" cx="34%" cy="26%" r="80%">
+          <stop offset="0%"   style="stop-color:var(--lc-chrome)"/>
+          <stop offset="20%"  style="stop-color:var(--lc-ice)"/>
+          <stop offset="44%"  style="stop-color:var(--lc-mist)"/>
+          <stop offset="68%"  style="stop-color:var(--lc-steel)"/>
+          <stop offset="88%"  style="stop-color:var(--lc-void)"/>
+          <stop offset="100%" style="stop-color:var(--lc-steel)"/>
+        </radialGradient>
+        <clipPath id="liqClip"><path id="liqClipPath"/></clipPath>
+        <!-- 产品图【羽化遮罩】：照片是矩形，液体轮廓比它窄 ⇒ 淡入途中（约 1.5s）照片的暗底
+             在铬面上显成一块【半透明长方形板】，读成"贴了张截图"而不是"沉进液态金属"。
+             遮罩盒 = 图片盒（不是外扩），让径向羽化【咬进图内】⇒ 任何一帧都没有直边。 -->
+        <radialGradient id="gImgMask" cx="50%" cy="50%" r="56%">
+          <stop offset="0%"   stop-color="#fff"/>
+          <stop offset="58%"  stop-color="#fff"/>
+          <stop offset="80%"  stop-color="#fff" stop-opacity=".78"/>
+          <stop offset="100%" stop-color="#fff" stop-opacity="0"/>
+        </radialGradient>
+        <mask id="imgMask" maskUnits="userSpaceOnUse" x="725" y="345" width="470" height="400">
+          <rect x="725" y="345" width="470" height="400" fill="url(#gImgMask)"/>
+        </mask>
+      </defs>
+
+      <rect id="bg" x="0" y="0" width="1920" height="1080" style="fill:var(--lc-void)"/>
+      <ellipse id="envGlow" cx="960" cy="420" rx="880" ry="430" fill="url(#gGlow)"/>
+      <rect id="floor" x="0" y="745" width="1920" height="335" fill="url(#gFloor)"/>
+
+      <!-- 轨道虚线（液滴走轨）：dashoffset 每帧负向跑 ⇒ 全片在动 -->
+      <g id="orbits"></g>
+
+      <!-- 地平线：从中心向两侧拉开 + 藕粉下沿（唯一的暖色） -->
+      <path id="horizon"  class="ln" stroke-width="1.4" stroke="var(--lc-chrome)"/>
+      <path id="horizon2" class="ln" stroke-width="1"   stroke="var(--lc-rose)"/>
+
+      <!-- 倒影：同一块液体的镜像 + 涟漪扰动，被 mask 收束 -->
+      <g id="reflG" mask="url(#reflMask)">
+        <path id="reflPath" style="fill:url(#gRefl)"/>
+      </g>
+
+      <!-- 各向异性横条：一条硬芯 + 一片软光晕，从中心横向拉开。
+           🔴 文档序必须在液块【之前】—— SVG 越靠后越压在上层。原来放在液体之后时，
+             亮芯正好压在铬块的大暗部上（gBody 15%~60% 全是 void），抽帧实测 f132 读成
+             「一根白条码贴在液体表面」，跟主体毫无从属关系。挪到液体【背后】后
+             中段被本体挡住 ⇒ 光带只从铬块两侧穿出来 = 真实耀斑的读法。 -->
+      <g id="streakG">
+        <ellipse id="streakGlow" cx="960" cy="545" rx="700" ry="34" fill="url(#gStreakGlow)"/>
+        <rect id="streakLine" x="260" y="543" width="1400" height="3.2" fill="url(#gStreak)"/>
+      </g>
+
+      <!-- 液态铬块本体（轮廓逐帧 morph，落点处液面鼓起把液滴吞掉） -->
+      <g id="liqG">
+        <g id="liqInner" clip-path="url(#liqClip)">
+          <path id="liqFill" style="fill:url(#gBody)"/>
+          <g id="liqArt"></g>
+          <image id="prodImg" x="725" y="345" width="470" height="400" preserveAspectRatio="xMidYMid slice" mask="url(#imgMask)"/>
+          <g id="specG" clip-path="url(#liqClip)">
+            <rect id="specBar" x="0" y="-60" width="360" height="1200" fill="url(#gSpec)"/>
+          </g>
+        </g>
+        <path id="liqEdge" class="ln" stroke-width="1.2" stroke="var(--lc-mist)"/>
+      </g>
+
+      <!-- 落滴（独立椭圆）：必须排在液块【之后】= 压在液体上面。
+           🔴 两轮才修对。① 原来挂在 #liqInner 的 clip-path 里 ⇒ 液滴永远被裁在液体内部，
+                「从外面飞进来」这个招牌动作整个看不见，而 opacity/坐标判据全绿。
+              ② 挪到 clip 外但放在液体【背后】后，f150 实测液滴被本体咬掉左半边、
+                留一条【竖直硬切口】（落点处液面正鼓起 ⇒ 轮廓在那一点几乎是垂直的），
+                肉眼读成"一块撕破的贴纸"。液滴是靠 opacity 在末段【溶进】液面的，
+                不是靠遮挡沉下去的 ⇒ 必须让它完整地盖在表面之上再淡出。 -->
+      <g id="beads"></g>
+
+      <!-- 副标题上方细线：从中心向两侧描绘出来 -->
+      <path id="subRule" class="ln" stroke-width="1.2" stroke="var(--lc-steel)"/>
+      <!-- 产品指线：左侧短横，标签贴在地平线上方 -->
+      <path id="tagRule" class="ln" stroke-width="1" stroke="var(--lc-rose)"/>
+    </svg>
+
+    <div id="txt">
+      <div id="meta"></div>
+      <div id="partTxt"></div>
+      <div id="prodTag"></div>
+      <div id="titleBox"><div id="t1"></div><div id="t2"></div></div>
+      <div id="subTxt"></div>
+      <div id="caption"></div>
+    </div>
+  </div>
+</div>
+
+<div id="panel">
+  <input id="pPart" placeholder="Part" value="Part.01" />
+  <input id="pTitle" placeholder="主标题" value="液态金属" />
+  <input id="pSub" placeholder="副标题" value="LIQUID CHROME" />
+  <button id="pPlay">重播</button>
+  <input id="pImg" type="file" accept="image/*" />
+</div>
+
+<script>
+"use strict";
+/* ============================== 工具 ============================== */
+var $ = function(id){ return document.getElementById(id); };
+function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
+function seg(f,a,b){ return clamp((f-a)/(b-a),0,1); }                 /* 段前严格 0 */
+function lerp(a,b,p){ return a+(b-a)*p; }
+function easeOut(p){ return 1-Math.pow(1-p,3); }
+function easeInOut(p){ return p<0.5?4*p*p*p:1-Math.pow(-2*p+2,3)/2; }
+/* 🔴 这里【不再】有 metaball 的 smax()：上一版用「极坐标单值轮廓 + 平滑最大」去长合并颈，
+   三轮参数都救不回铁片/耳朵（详见 DROP_DEF 上方那段）。现在的合并手感由
+   「独立液滴 + 液面局部高斯凸起」给，数学上表达不了铁片，也就没有对应的调参黑洞。
+   hash1() 同批删除 —— 它原来只服务液滴相位抖动，新模型不需要。 */
+function mk(parent,tag,attrs){
+  var e=document.createElementNS('http://www.w3.org/2000/svg',tag),k;
+  for(k in attrs){ if(Object.prototype.hasOwnProperty.call(attrs,k)) e.setAttribute(k,attrs[k]); }
+  parent.appendChild(e); return e;
+}
+/* ⚠️ 只在「值真的变了」时写属性：CDP 逐帧导出要跑满 225 次，无谓写属性会拖慢栅格化 */
+function setA(el,k,v){ v=String(v); if(el.getAttribute(k)!==v) el.setAttribute(k,v); }
+function setS(el,k,v){ v=String(v); if(el.style[k]!==v) el.style[k]=v; }
+
+/* ============================== 常量 ============================== */
+var FPS=30, DUR=225, HOLD=0.9, CYCLE=DUR/FPS+HOLD;
+var TAU=Math.PI*2;
+var CARD={cx:960,cy:545,w:470,h:400};        /* 铬块设计尺寸 ⇒ x 725→1195, y 345→745 */
+var HOR=745;                                  /* 地平线 · 镜面 */
+var T1B=308, T2T=782, SIDE_B=176;             /* 上带底边 / 下带顶边 / 各带竖向预算 */
+var TITX=210, TITW=1500, TITMAXFS=126, TITMINFS=24, TITLH=1.18;
+var TYPE_SX=1.15;                             /* 宽体：字形横向拉伸（不影响布局 ⇒ 判据要自己乘） */
+var NTH=140;                                  /* 轮廓采样角数 */
+var MIRROR=739;                               /* 镜面可见上界：HOR−6，液面绝不许越过 */
+/* 倒影的透视收束：镜面反射不是等比翻版，近地物体会被【压扁 + 收窄】。
+   sy=0.66 ⇒ 倒影最深只到屏幕 1007（等比翻会到 1143，正压在 t2 标题带上打架）；
+   sx=0.90 ⇒ 比本体窄一档，中轴两侧留出呼吸。 */
+var REF_SX=0.90, REF_SY=0.66;
+/* 液滴轨道场 = 探针 G4 的同一份边界（两边各写一遍必然漂移）。
+   ★ 这个框同时是【装饰环该画多大】的依据：外轨 rx452/ry318 就是照它放的。 */
+var FIELD={x0:440,x1:1450,y0:300};
+var BR=2.6, BR2=1.7;                          /* 液面常驻微涟漪两阶幅度（px）⇒ 轮廓永不定格 */
+var BUMP_SD=0.50;                             /* 吞入凸起的高斯角宽（弧度）；0.44 时凸尖被读成「鸟嘴」 */
+
+/* ============================ 液滴 = 【飞入 → 拉伸 → 落面 → 液面鼓起 + 涟漪】 ============================
+   🔴 这一版把机制整个换掉了。前一版用「极坐标单值轮廓 + smooth-max 并集」去长合并颈，
+      连调三轮参数（K 130→172、半径 70→40、合并帧提前）都救不回来，抽帧实测仍是：
+        · 液滴离得远 ⇒ 射线方向 r 直接跳过 ⇒ 【放射状铁片】（f052~f098）
+        · 液滴刚贴上 ⇒ 两个并列的包 ⇒ 【米老鼠耳朵 / 一坨云】（f114~f150）
+      根因不在参数：极坐标轮廓是【星形】的（每个角度只有一个 r），它在数学上就表达不了
+      「一个脱离主体的独立团」。要独立团就必须换表征 —— 这里改成
+      【独立椭圆液滴（自己画，不进轮廓）】+【液面局部高斯凸起（吸收时给）】：
+      两者在落点帧交接，肉眼读到的是「一滴铬撞进液面、液面鼓起来吞掉它」。
+   ★ 位置仍用【椭圆参数角 × 当前半径 × 倍率 k】，k=1 恰好落在液面上。
+   ★ θ 避开正下方：k>1 时液滴在体外，正下方那颗会越过镜面（MIRROR 钳得住中心，钳不住观感）。
+   ★ fb 之间均匀错开 24 帧 ⇒ 全片每 0.8s 有一次落滴，是「画面还活着」的主探针。 */
+var DROP_DEF=[
+  /* θ0, 角速度, 起始倍率 k0, 落点帧 fb, 半径 ri, 凸起强度
+     ★ k0 的上限不是手感定的，是【轨道场边界】定的：几何探针 G4 量的是液滴椭圆的
+       旋转后包围盒（rx 还要乘拉伸），所以 k0 一改必须回跑探针，肉眼抽帧看不出 20px 的越界。 */
+  [ 5.66,  0.0016, 1.92,  92, 42, 34],
+  [ 0.42, -0.0012, 1.95, 116, 34, 26],
+  [ 3.02,  0.0014, 1.88, 140, 46, 38],
+  [ 2.62, -0.0010, 1.60, 164, 30, 22],
+  [ 3.62,  0.0012, 1.95, 188, 38, 30]
+];
+var DROP_TRV=52;                              /* 飞行时长（帧）⇒ 出现帧 fa = fb − 52 */
+
+var els={
+  stage:$('stage'), bg:$('bg'), envGlow:$('envGlow'), floor:$('floor'), orbits:$('orbits'),
+  horizon:$('horizon'), horizon2:$('horizon2'), reflG:$('reflG'), reflPath:$('reflPath'),
+  liqG:$('liqG'), liqInner:$('liqInner'), liqFill:$('liqFill'), liqClipPath:$('liqClipPath'),
+  liqEdge:$('liqEdge'), beads:$('beads'), liqArt:$('liqArt'), prodImg:$('prodImg'),
+  specG:$('specG'), specBar:$('specBar'), streakG:$('streakG'),
+  streakGlow:$('streakGlow'), streakLine:$('streakLine'),
+  subRule:$('subRule'), tagRule:$('tagRule'),
+  meta:$('meta'), partTxt:$('partTxt'), prodTag:$('prodTag'),
+  titleBox:$('titleBox'), t1:$('t1'), t2:$('t2'), subTxt:$('subTxt'), caption:$('caption')
+};
+/* 🔴 必须在任何 build* 往 DOM 里塞生成件【之前】抓原始快照 */
+var PRISTINE = '<!doctype html>\n' + document.documentElement.outerHTML;
+
+/* ============================== 静态构建（几何不进 render） ============================== */
+var ART={}, ORB=[], SUBRULE_LEN=0;
+
+function ellPath(cx,cy,rx,ry){
+  return 'M '+(cx-rx)+' '+cy+' A '+rx+' '+ry+' 0 1 1 '+(cx+rx)+' '+cy+
+         ' A '+rx+' '+ry+' 0 1 1 '+(cx-rx)+' '+cy+' Z';
+}
+function buildOrbits(){
+  /* 两条椭圆轨：一条实描细线（定形），一条虚线跑动（dashoffset 每帧减 ⇒ 全片在流）。
+     🔴 半径必须【包住液滴轨道场】（探针 G4：x 440..1450 / y 300..739）。
+        原来 302/356 只有液滴场的一半 ⇒ 液滴从环【外面】飞进来，「环绕落滴」这条
+        母题的因果就断了：环是装饰，滴是主角，装饰比主角小一圈是构图事故。 */
+  var o1=mk(els.orbits,'path',{d:ellPath(CARD.cx,CARD.cy,388,272),'stroke-width':1});
+  o1.setAttribute('class','ln'); o1.setAttribute('stroke','var(--lc-steel)');
+  var o2=mk(els.orbits,'path',{d:ellPath(CARD.cx,CARD.cy,452,318),'stroke-width':1.2});
+  o2.setAttribute('class','ln'); o2.setAttribute('stroke','var(--lc-mist)');
+  /* 🔴 dasharray 是静态量 ⇒ 放 build。放 render 每帧重写 = 白付 225 次栅格化重建 */
+  o2.setAttribute('stroke-dasharray','5 17');
+  ORB.push(o1,o2);
+}
+function buildArt(){
+  /* 无产品图占位：一颗【铬球】—— 高光是椭圆、下沿有一圈冰蓝轮廓光。
+     14 用竹、15 用星爆、16 用半调环、17 用同心弧+小日；这里是【镜面球】，形状语汇不撞。 */
+  ART.orb=mk(els.liqArt,'circle',{cx:CARD.cx,cy:CARD.cy,r:148});
+  ART.orb.setAttribute('style','fill:url(#gOrb)');
+  ART.spec=mk(els.liqArt,'ellipse',{cx:CARD.cx-56,cy:CARD.cy-78,rx:44,ry:23,
+    transform:'rotate(-32 '+(CARD.cx-56)+' '+(CARD.cy-78)+')'});
+  ART.spec.setAttribute('style','fill:var(--lc-chrome);opacity:.82');
+  ART.rim=mk(els.liqArt,'path',{d:'M '+(CARD.cx-104)+' '+(CARD.cy+104)+
+    ' A 148 148 0 0 0 '+(CARD.cx+132)+' '+(CARD.cy-66),'stroke-width':3});
+  ART.rim.setAttribute('class','ln'); ART.rim.setAttribute('stroke','var(--lc-ice)');
+  ART.eq=mk(els.liqArt,'ellipse',{cx:CARD.cx,cy:CARD.cy+8,rx:150,ry:34,'stroke-width':1});
+  ART.eq.setAttribute('class','ln'); ART.eq.setAttribute('stroke','var(--lc-mist)');
+}
+function buildRules(){
+  els.subRule.setAttribute('d','M 760 966 L 1160 966');
+  SUBRULE_LEN=Math.ceil(els.subRule.getTotalLength());
+  els.subRule.setAttribute('stroke-dasharray',SUBRULE_LEN+' '+SUBRULE_LEN);
+  els.tagRule.setAttribute('d','M 690 511 L 720 511');
+}
+
+/* ============================== 文字构建 + 最坏输入预算 ============================== */
+var cfg={part:'Part.01', title:'液态金属', sub:'LIQUID CHROME', img:''};
+var PARTMAX=600, PARTFS=24, PARTLS=12;
+var SUBMAX=900,  SUBFS=26,  SUBLS=9;
+var CAPMAX=900,  CAPFS=13,  CAPLS=7;
+var META_LS=5, CAP_LS=7;                    /* 固定串（不可编辑）⇒ 不会被缩，字距用常量 */
+var PART_LS=PARTLS, SUB_LS=SUBLS;            /* 缩完后的【实际】字距，render 逐帧驱动必须共用它 */
+
+/* 字面墨宽：Range 取真实字形包围盒；scrollWidth 兜底（两者取大 ⇒ 永不低估）。
+   ⚠️ 定宽块上单用 scrollWidth 量不到溢出，方向还不稳 —— 见 17 号轮同一坑。 */
+function inkW(t){
+  var w=0;
+  try{ var r=document.createRange(); r.selectNodeContents(t); w=r.getBoundingClientRect().width; }catch(e){ w=0; }
+  return Math.max(w||0, t.scrollWidth||0, 1);
+}
+/* 单行缩到宽度上限：字号与字距【同乘 k】（letter-spacing 是绝对 px，只缩字号宽度不按比例降） */
+function fitOneLine(t,fs,ls,max){
+  t.style.fontSize=''; t.style.letterSpacing='';
+  var w=inkW(t);
+  if(w>max){
+    var k=max/w;
+    t.style.fontSize=(fs*k).toFixed(1)+'px'; t.style.letterSpacing=(ls*k).toFixed(1)+'px';
+    w=inkW(t);
+    if(w>max){ k=k*max/w; t.style.fontSize=(fs*k).toFixed(1)+'px'; t.style.letterSpacing=(ls*k).toFixed(1)+'px'; }
+  }
+  return Math.max(inkW(t),1);
+}
+function measureOne(){
+  fitOneLine(els.partTxt,PARTFS,PARTLS,PARTMAX);
+  fitOneLine(els.subTxt,SUBFS,SUBLS,SUBMAX);
+  /* 🔴 记下缩完后的实际字距给 render：按字面常量回写会把刚压小的字距顶回去 ⇒ 又溢出 */
+  PART_LS=parseFloat(els.partTxt.style.letterSpacing)||PARTLS;
+  SUB_LS=parseFloat(els.subTxt.style.letterSpacing)||SUBLS;
+}
+var TITLE={above:[],below:[],rows:[],fs:104,lh:123};
+function fillLines(box,lines,fs,lh){
+  box.textContent='';
+  var out=[],li;
+  for(li=0;li<lines.length;li++){
+    var ln=document.createElement('div'); ln.className='tl';
+    ln.style.fontSize=fs+'px'; ln.style.lineHeight=lh+'px';
+    var chars=[],txt=lines[li]||' ',ci;
+    for(ci=0;ci<txt.length;ci++){
+      var s=document.createElement('span'); s.className='ch';
+      /* 空格必须 nbsp + inline-block：裸空格在 inline-block 里宽塌成 0 ⇒ 「液 态」糊成「液态」 */
+      s.textContent = txt[ci]===' ' ? '\u00A0' : txt[ci];
+      ln.appendChild(s); chars.push(s);
+    }
+    box.appendChild(ln); out.push(chars);
+  }
+  return out;
+}
+function splitRaw(raw){
+  var lines=raw.split('\n');
+  if(lines.length===1){
+    /* 本引擎的招牌构图是「标题上下各一行」⇒ 单行标题【主动劈开】：
+       先找中点附近的空格，找不到就按字数中点硬切（4 字以下不切，切了就不成词）。 */
+    var n=raw.length;
+    if(n>=4){
+      var sp=raw.lastIndexOf(' ',Math.ceil(n/2));
+      if(sp<1) sp=raw.indexOf(' ',Math.floor(n/2));
+      if(sp<1) sp=Math.ceil(n/2);
+      /* 🔴 slice(sp+1) 的前提是【sp 处那个字符是要丢的空格】。中点硬切时 sp 位上是正文汉字，
+         照抄这条就把「液态金属」切成「液态 / 属」吞掉一个字 —— 不报错、不越界、判据全绿，
+         只有字数对不上（冒烟 chars=3 vs 期望 4 才抓到）。 */
+      var cut = raw.charAt(sp)===' ' ? sp+1 : sp;
+      lines=[raw.slice(0,sp).replace(/\s+$/,''),raw.slice(cut).replace(/^\s+/,'')];
+      if(!lines[1]) lines=[lines[0]];
+    }
+  }
+  return lines.slice(0,3);
+}
+function buildTitle(){
+  var raw=(cfg.title||'').replace(/\s+$/,'');
+  var lines=splitRaw(raw);
+  var nA=Math.ceil(lines.length/2), nB=Math.floor(lines.length/2);
+  /* ★ ab/bl 全程是【字符串】数组，只在喂 fillLines 时才换成字元节点。
+     若把节点数组回存进 TITLE.above 再喂第二次（第二轮缩字号时必发生），
+     lines[li] 就成了 span 数组 ⇒ s.textContent=span 打出 "[object HTMLSpanElement]"。 */
+  var ab=lines.slice(0,nA), bl=nB?lines.slice(nA):[];
+  /* 字号 = 上限 / 上带竖向预算 / 下带竖向预算 三者最小 ⇒ 两半【永远同号】，
+     2 行时上下各 1 行还是 104，3 行才塌到 75（这是真自适应，不是数档位） */
+  var fs=Math.min(TITMAXFS, SIDE_B/(nA*TITLH), nB?SIDE_B/(nB*TITLH):1e9);
+  fs=Math.max(TITMINFS,fs);
+  var lh=fs*TITLH;
+  TITLE.above=fillLines(els.t1,ab,fs,lh);
+  /* 🔴 空带也必须【真的调用】fillLines，不许 `bl.length?fill(...):[]` 短路：
+        短路时上一轮烤进 #t2 的行【留在 DOM 里】（display:none 只是看不见）。
+        后果一：改字往返一次就残留一份陈旧字元，固化件回打开数到 2 行（真机 H7f4 抓到）；
+        后果二：任何按 .tl/.ch 取样测量的判据量到 0 尺寸幽灵行 ⇒ 报「越容器 y=0」。 */
+  TITLE.below=fillLines(els.t2,bl,fs,lh);
+  /* 🔴 宽度判据必须乘 TYPE_SX：scaleX 是【绘制变换】，不进布局 ⇒ offsetWidth 量不到，
+     不乘 ⇒ 定版帧的字早已溢出中轴两侧而判据全绿。 */
+  for(var round=0;round<2;round++){
+    var over=1, rows=TITLE.above.concat(TITLE.below), r;
+    for(r=0;r<rows.length;r++){
+      var row=rows[r], w=0, c;
+      for(c=0;c<row.length;c++) w+=row[c].offsetWidth;
+      if(w*TYPE_SX>TITW) over=Math.max(over,w*TYPE_SX/TITW);
+    }
+    if(over<=1.001) break;
+    fs=fs/over; lh=fs*TITLH;
+    TITLE.above=fillLines(els.t1,ab,fs,lh);
+    TITLE.below=fillLines(els.t2,bl,fs,lh);
+  }
+  TITLE.fs=fs; TITLE.lh=lh;
+  TITLE.rows=TITLE.above.concat(TITLE.below);
+  /* 上带【底边】钉在 T1B ⇒ top 由实测行高反推；下带【顶边】钉在 T2T。
+     两带字元的 transform-origin 各自锁顶/底边 ⇒ 动画都朝中间的【产品】挤出。 */
+  var hA=ab.length*lh, hB=bl.length*lh;
+  els.t1.style.top=Math.round(T1B-hA)+'px';
+  els.t2.style.top=Math.round(T2T)+'px';
+  els.t1.style.display=hA?'block':'none';
+  els.t2.style.display=hB?'block':'none';
+}
+function setProdImg(src){
+  cfg.img=src||'';
+  /* ⚠️ 无图 = 属性缺省（不是空串）：空串会被解析成文档 URL ⇒ 永不结束的请求 ⇒ 导出第 0 帧抓屏挂死 */
+  if(cfg.img) els.prodImg.setAttribute('href',cfg.img);
+  else els.prodImg.removeAttribute('href');
+}
+function applyCfg(d){
+  var dirty=false;
+  if(d.part!==undefined){ cfg.part=d.part; dirty=true; }
+  if(d.title!==undefined){ cfg.title=d.title; dirty=true; }
+  if(d.sub!==undefined){ cfg.sub=d.sub; dirty=true; }
+  els.partTxt.textContent=cfg.part||'';
+  els.subTxt.textContent=cfg.sub||'';
+  /* ★ 固定串里不许出现副标题的默认文本（撞词像重复排版），也不带编造的数字规格 */
+  els.meta.textContent='LIQUID CHROME · STUDIO REFLECTION';
+  els.caption.textContent='MELT · MERGE · SPECULAR';
+  measureOne();
+  if(dirty||!TITLE.rows.length) buildTitle();
+  els.prodTag.textContent = cfg.img ? 'IMAGE HELD' : 'DROP IMAGE HERE';
+}
+
+/* ============================== 液态轮廓（极坐标 + 局部高斯凸起） ============================== */
+var DROP=[], BEAD=[];
+function buildDrops(){
+  for(var i=0;i<DROP_DEF.length;i++){
+    var d=DROP_DEF[i];
+    DROP.push({th0:d[0],spd:d[1],k0:d[2],fb:d[3],ri:d[4],br:d[5],i:i});
+    /* 液滴是一颗【独立椭圆】，不进轮廓数学 ⇒ 它想多大、离多远都不会长出针。
+       球面光走 #gBead（objectBoundingBox），不走 #gBody —— 见 defs 里的红字说明。 */
+    BEAD.push(mk(els.beads,'ellipse',{cx:CARD.cx,cy:CARD.cy,rx:0,ry:0}));
+    BEAD[i].setAttribute('style','fill:url(#gBead)');
+  }
+}
+/* 卡片当前半径 = 唯一真源。轮廓、凸起、每颗液滴都从这里取，
+   两处各写一份公式的话，改一处就会让液滴【脱离液面】（浮在体外/埋进体内）而数值全绿。 */
+function cardAB(f){
+  var a=CARD.w/2*(1+0.014*Math.sin(f*0.029));
+  var b=CARD.h/2*easeInOut(seg(f,6,62))*(1+0.014*Math.sin(f*0.037+1.1));
+  if(b<0.8) b=0.8;
+  /* 🔴 呼吸项本身就能把下沿顶过镜面（200×1.014=202.8 ⇒ y=747.8 > HOR）。
+     本体一半的「活着」感来自这条呼吸，不能砍，那就钳 b：
+     钳在半径上而不是钳在 y 上，液面才不会被抹平成一刀切的平底。 */
+  var bMax=MIRROR-CARD.cy;
+  if(b>bMax) b=bMax;
+  return [a,b];
+}
+function angDiff(a,b){ var d=(a-b)%TAU; if(d>Math.PI) d-=TAU; if(d<-Math.PI) d+=TAU; return d; }
+/* 液滴状态 = f 的纯函数：[x, y, rx, ry, 旋转deg, opacity]
+   ★ 落点前【径向拉长 + 切向压扁】、并同时把 opacity 收到 0 ⇒ 「撞进去」这件事
+     由液滴自己演完，不需要并集数学去表达，所以不可能退化成铁片。
+   🔴 opacity 必须乘 seg(f,fa,fa+9)：液滴是入场件，漏写就是第 0 帧屏上挂着五颗铬球。 */
+function dropState(f,i,ab){
+  var p=DROP[i];
+  var th=p.th0+f*p.spd;
+  var s=seg(f,p.fb-DROP_TRV,p.fb);
+  var q=s*s*(1.35-0.35*s);                      /* 前段慢、末段加速 = 被液面吸过去 */
+  var k=lerp(p.k0,1,q);
+  var rr=p.ri*(0.62+0.38*easeOut(seg(f,p.fb-DROP_TRV,p.fb-DROP_TRV+16)));
+  var near=clamp((k-1)/0.45,0,1);               /* 1=还在远处，0=已经贴上 */
+  var rx=rr*(1+0.40*(1-near)), ry=rr*(1-0.26*(1-near));
+  var x=CARD.cx+Math.cos(th)*ab[0]*k, y=CARD.cy+Math.sin(th)*ab[1]*k;
+  var op=seg(f,p.fb-DROP_TRV,p.fb-DROP_TRV+9)*clamp((k-1)/0.11,0,1);
+  var deg=Math.atan2(Math.sin(th)*ab[1],Math.cos(th)*ab[0])*180/Math.PI;
+  /* 🔴 钳位必须用【旋转后的包围盒半高】，不能用 ry：椭圆被 rotate 到斜方向后，
+        屏幕轴向的占位是 |cosA|·rx+|sinA|·ry，比 ry 大出 15~20px。
+        原来只按 ry 钳 ⇒ 探针 G4 仍抓到液滴盒底越过镜面 15px（f116~f132），
+        而「液滴中心 + ry」看着完全合规 —— 又是判据量错对象那一族。 */
+  var A=deg*Math.PI/180;
+  var ex=Math.abs(Math.cos(A))*rx+Math.abs(Math.sin(A))*ry;
+  var ey=Math.abs(Math.sin(A))*rx+Math.abs(Math.cos(A))*ry;
+  if(y+ey>MIRROR) y=MIRROR-ey;
+  if(y-ey<FIELD.y0) y=FIELD.y0+ey;
+  if(x-ex<FIELD.x0) x=FIELD.x0+ex;
+  if(x+ex>FIELD.x1) x=FIELD.x1-ex;
+  return [x,y,rx,ry,deg,op];
+}
+/* 液面场：每颗液滴对轮廓的贡献 = 高斯角宽 × (落点前鼓起 / 落点后指数衰减 + 外传涟漪)。
+   ★ 极坐标下必须换算成【几何角】：位置用的是参数角 (a·cosθ, b·sinθ)，而轮廓按几何角采样，
+     椭圆两者不相等 ⇒ 不换算的话凸起会【偏离液滴落点】好几度，看着像液面自己乱鼓。 */
+function dropField(f,ab){
+  var out=[],j;
+  for(j=0;j<DROP.length;j++){
+    var bp=DROP[j], th=bp.th0+f*bp.spd;
+    var e=f<bp.fb ? easeInOut(seg(f,bp.fb-20,bp.fb)) : Math.exp(-(f-bp.fb)/30);
+    out.push([Math.atan2(Math.sin(th)*ab[1],Math.cos(th)*ab[0]), bp.br*e, f-bp.fb, e]);
+  }
+  return out;
+}
+function sil(f,rip,ab,fd){
+  if(!ab) ab=cardAB(f);
+  if(!fd) fd=dropField(f,ab);
+  var a=ab[0], b=ab[1];
+  var pts=[],i,j;
+  for(i=0;i<NTH;i++){
+    var t=i/NTH*TAU, ux=Math.cos(t), uy=Math.sin(t);
+    var r=1/Math.sqrt(ux*ux/(a*a)+uy*uy/(b*b));
+    /* 常驻微涟漪（两阶、反向）⇒ 没有任何一帧轮廓是定格的，这是全片那口气 */
+    r+=BR*Math.sin(t*3+f*0.052)+BR2*Math.sin(t*5-f*0.037+1.3);
+    for(j=0;j<fd.length;j++){
+      var q2=fd[j];
+      if(q2[3]<=0.002) continue;
+      var d=angDiff(t,q2[0]);
+      var g=Math.exp(-(d/BUMP_SD)*(d/BUMP_SD));
+      if(q2[2]>=0) g*=1+0.42*Math.cos(d*9-q2[2]*0.22);   /* 落点后涟漪向外跑 */
+      r+=q2[1]*g;
+    }
+    if(rip) r*=1+rip*Math.sin(t*3+f*0.062);
+    /* 🔴 镜面钳加在【合成后的 r】上：凸起/涟漪都能把局部半径顶过 HOR，
+       而单看每个输入都「合规」。平滑合成之后再钳一次是通用规矩。 */
+    if(uy>0){
+      var rMax=(MIRROR-CARD.cy)/uy;
+      if(r>rMax) r=rMax;
+    }
+    pts.push([CARD.cx+ux*r,CARD.cy+uy*r]);
+  }
+  return toPath(pts);
+}
+/* 闭合 Catmull-Rom → 三次贝塞尔（★ 故意不用 17 号那套中点二次平滑：这里要的是
+   液面那种【有张力】的圆，CR 的切线连续比中点 Q 更贴，且两引擎的曲线语汇不撞形） */
+function toPath(pts){
+  var n=pts.length,d='M '+pts[0][0].toFixed(1)+' '+pts[0][1].toFixed(1);
+  for(var i=0;i<n;i++){
+    var p=pts[i],q=pts[(i+1)%n],pm=pts[(i-1+n)%n],qn=pts[(i+2)%n];
+    d+=' C '+(p[0]+(q[0]-pm[0])/6).toFixed(1)+' '+(p[1]+(q[1]-pm[1])/6).toFixed(1)+
+       ' '+(q[0]-(qn[0]-p[0])/6).toFixed(1)+' '+(q[1]-(qn[1]-p[1])/6).toFixed(1)+
+       ' '+q[0].toFixed(1)+' '+q[1].toFixed(1);
+  }
+  return d+' Z';
+}
+
+/* ============================== 逐帧渲染（纯函数） ============================== */
+function render(f){
+  var i,k;
+
+  /* ① 背景环境：底光 + 地面 + 地平线。
+     ★ 地平线 f=2 就从中心拉开、环境光 f=0 起 —— 它和 ② 的液面是【开场前 1 秒唯一可见的事件】。
+       若等到主标题才落形，前 3 秒就是纯黑屏（17 号那轮的「上重下轻」在这里的同族）。
+       🔴 这一轮整组窗口再提前一倍并抬亮度：上一版仍被判「前 2 秒是死的」——
+         同一条判据（肉眼抽帧）第二次才抓到，说明「提前」的量必须肉眼验收，不能算完窗口就收工。 */
+  setA(els.envGlow,'opacity',easeInOut(seg(f,0,16)).toFixed(3));
+  setA(els.floor,'opacity',easeInOut(seg(f,2,28)).toFixed(3));
+  var hp=easeOut(seg(f,1,20)), hw=880*hp;
+  els.horizon.setAttribute('d','M '+(960-hw).toFixed(1)+' '+HOR+' L '+(960+hw).toFixed(1)+' '+HOR);
+  setA(els.horizon,'opacity',seg(f,1,7).toFixed(3));
+  var hw2=620*easeOut(seg(f,8,40));
+  els.horizon2.setAttribute('d','M '+(960-hw2).toFixed(1)+' '+(HOR+7)+' L '+(960+hw2).toFixed(1)+' '+(HOR+7));
+  setA(els.horizon2,'opacity',(0.7*seg(f,10,20)).toFixed(3));
+
+  /* ② 液态铬块：轮廓逐帧 morph（本体 + clip + 外描边 + 倒影共用同一个 d 与同一个液面场） */
+  var ab=cardAB(f);
+  var fd=dropField(f,ab);                        /* ★ 每帧只算一次，倒影复用 */
+  var d=sil(f,0,ab,fd);
+  setA(els.liqClipPath,'d',d);
+  setA(els.liqFill,'d',d);
+  setA(els.liqEdge,'d',d);
+  setA(els.liqG,'opacity',seg(f,5,22).toFixed(3));
+  setA(els.liqEdge,'opacity',(0.42*easeInOut(seg(f,44,104))).toFixed(3));
+  /* 落滴：与轮廓同一份 dropState ⇒ 位置/尺寸逐字相同，只差「谁画形」 */
+  for(i=0;i<BEAD.length;i++){
+    var ds=dropState(f,i,ab);
+    setA(BEAD[i],'cx',ds[0].toFixed(1)); setA(BEAD[i],'cy',ds[1].toFixed(1));
+    setA(BEAD[i],'rx',ds[2].toFixed(1)); setA(BEAD[i],'ry',ds[3].toFixed(1));
+    /* 🔴 SVG 的 transform【属性】不认 'none'，也不许带单位 ⇒ 永远写一条合法 rotate()，
+       不可见时用 opacity 收掉，别指望把 transform 置空来「复位」。 */
+    setA(BEAD[i],'transform','rotate('+ds[4].toFixed(2)+' '+ds[0].toFixed(1)+' '+ds[1].toFixed(1)+')');
+    setA(BEAD[i],'opacity',ds[5].toFixed(3));
+  }
+
+  /* ③ 倒影：同一块液体的【透视收束镜像】+ 涟漪。
+        matrix(sx 0 0 −sy, cx(1−sx), H(1+sy)) = 关于 y=H 上下翻 + 以 (cx,H) 为原点收窄压扁。
+        🔴 不许用等比翻转：那样倒影最深到 1143，正压在 t2 标题带上和文字打架，
+          而数值判据只看盒子、看不出「这块反射在抢字」。 */
+  setA(els.reflPath,'d',sil(f,0.030,ab,fd));
+  els.reflG.setAttribute('transform','matrix('+REF_SX+' 0 0 '+(-REF_SY)+' '+
+    (CARD.cx*(1-REF_SX)).toFixed(1)+' '+(HOR*(1+REF_SY)).toFixed(1)+')');
+  setA(els.reflG,'opacity',(0.90*easeInOut(seg(f,44,118))).toFixed(3));
+
+  /* ④ 轨道：实线定形 + 虚线流动（全片不停，是「画面还活着」的探针量） */
+  setA(ORB[0],'opacity',(0.46*easeInOut(seg(f,10,44))).toFixed(3));
+  setA(ORB[1],'opacity',(0.78*easeInOut(seg(f,14,50))).toFixed(3));
+  setA(ORB[1],'stroke-dashoffset',(-(f-14)*0.9).toFixed(1));
+
+  /* ⑤ 各向异性横条：从中心横向拉开 + 之后持续呼吸（撑住中轴两侧的空档）。
+        ★ 现在它在液体【背后】，所以芯线加粗到 3.2：被本体吃掉中段之后，
+          两侧露出的部分要还能读成「一条」，否则就变成两片无意义的光斑。 */
+  var sp=easeInOut(seg(f,74,134));
+  var bx=sp*(0.97+0.03*Math.sin(f*0.033));
+  els.streakG.setAttribute('transform','translate('+(960*(1-bx)).toFixed(2)+' 0) scale('+bx.toFixed(3)+' 1)');
+  setA(els.streakG,'opacity',(0.92*easeInOut(seg(f,74,104))).toFixed(3));
+  setA(els.streakGlow,'opacity',(0.60+0.22*Math.sin(f*0.028)).toFixed(3));
+
+  /* ⑥ 扫光带：在液体【内部】横扫两次（被 liqClip 裁 ⇒ 出了轮廓就自己消失）。
+        🔴 第一趟从 f=96 提前到 f=38：这是「前 2 秒太暗」的正解 —— 与其抬底色（抬到灰就
+          不再是墨黑高级配色），不如让【高光本身】早点跑过铬块。一趟亮带扫过 = 一个
+          明确的第一个大事件，比四个 0.3 透明度的淡入叠在一起更像一个开场。
+        ★ 两趟之间 sw 在两端都不可见（translate 60 / 1760 都在 clip 之外）⇒ 跳变不穿帮。 */
+  var sw = f<124 ? easeInOut(seg(f,38,112)) : easeInOut(seg(f,150,220));
+  els.specBar.setAttribute('transform','translate('+lerp(60,1760,sw).toFixed(1)+' 0) skewX(-14)');
+  setA(els.specG,'opacity',(0.95*easeInOut(seg(f,34,48))).toFixed(3));
+
+  /* ⑦ Part + 元信息：淡入 + 字距从开到紧（正字距是本引擎的排版口径） */
+  var pp=easeInOut(seg(f,150,190));
+  setS(els.partTxt,'opacity',pp.toFixed(3));
+  setS(els.partTxt,'letterSpacing',(PART_LS*(1.85-0.85*pp)).toFixed(2)+'px');
+  var mp=easeInOut(seg(f,160,200));
+  setS(els.meta,'opacity',(0.85*mp).toFixed(3));
+  setS(els.meta,'letterSpacing',(META_LS*(1.55-0.55*mp)).toFixed(2)+'px');
+
+  /* ⑧ 主标题：逐字【锚边揭示】clip-path 长出 + 轻微竖向挤出 scaleY(0.72→1) + 高光在字面上游移。
+        上带从顶边往下长、下带从底边往上长 ⇒ 两半都【朝产品挤出去】，中轴构图的动作线。
+        🔴 揭示同时必须写 opacity：F0 判据要读到 0，不能只靠"裁到看不见"。 */
+  var ci=0;
+  for(i=0;i<TITLE.rows.length;i++){
+    var row=TITLE.rows[i];
+    for(k=0;k<row.length;k++,ci++){
+      var st=124+ci*3.0, q=easeInOut(seg(f,st,st+30));
+      var sq=0.72+0.28*q;
+      /* 🔴 揭示窗只许走 55%→100%，且 opacity 必须跟着【整条 30 帧】走。
+           上一版 clip 从 0% 开长 + opacity 9 帧拉满 ⇒ q=0.16 那一帧画面顶部只剩
+           「液」字最上面一小横，肉眼读作一根杂散亮线（数值判据全绿）。
+           留 55% 地板 ⇒ 任何可见帧都是字的一个【可读切片】，不是笔画碎片。 */
+      var ins=(45-45*q).toFixed(1)+'%';
+      var t=row[k];
+      setS(t,'opacity',q.toFixed(3));
+      setS(t,'transform','scaleX('+TYPE_SX+') scaleY('+sq.toFixed(3)+')');
+      setS(t,'clipPath',i===0?('inset(0 0 '+ins+' 0)'):('inset('+ins+' 0 0 0)'));
+      /* 50%±34% = 光带在字形竖向盒里来回游；逐字错相 ⇒ 看到一条光【跑过】整排字 */
+      setS(t,'backgroundPosition',(50+34*Math.sin(f*0.045-ci*0.30)).toFixed(1)+'%');
+    }
+  }
+
+  /* ⑨ 副标题 + 中心向两侧描绘的细线 + 页脚小字 */
+  var s2=easeInOut(seg(f,158,196));
+  setS(els.subTxt,'opacity',s2.toFixed(3));
+  setS(els.subTxt,'letterSpacing',(SUB_LS*(1.75-0.75*s2)).toFixed(2)+'px');
+  var rp=easeInOut(seg(f,166,206));
+  setA(els.subRule,'stroke-dashoffset',(SUBRULE_LEN*(1-rp)).toFixed(1));
+  setA(els.subRule,'opacity',seg(f,166,178).toFixed(3));
+  var cp=easeInOut(seg(f,176,212));
+  setS(els.caption,'opacity',cp.toFixed(3));
+  setS(els.caption,'letterSpacing',(CAP_LS*(1.9-0.9*cp)).toFixed(2)+'px');
+
+  /* ⑩ 占位铬球 vs 上传产品图：互不闩住，每帧按目标态写（幂等比较省写）。
+        🔴 占位件的【高光子椭圆】也归这个组管，别单写 —— 有图时它会浮在照片上。
+        ★ 窗口从 138~192 提前到 104~158：铬球是这块液体【唯一的高光主体】，
+          它到 f=138（4.6s）才亮，等于前 4.6 秒屏上只有一坨黑液面 —— 抽帧实测
+          f040~f132 读成「地上一个洞」。产品位提前落形，后半段才留给文字。 */
+  var has=!!cfg.img, dev=easeInOut(seg(f,104,158));
+  setA(els.liqArt,'opacity',has?0:dev.toFixed(3));
+  els.liqArt.setAttribute('transform','translate(0 '+(-9*Math.sin(f*0.032)).toFixed(2)+')');
+  setA(els.prodImg,'opacity',has?dev.toFixed(3):0);
+  var tp=easeInOut(seg(f,182,216));
+  setS(els.prodTag,'opacity',(0.9*tp).toFixed(3));
+  setA(els.tagRule,'opacity',(0.55*tp).toFixed(3));
+}
+
+/* ---------- 主循环 ---------- */
+var rafId=0, startAt=performance.now();
+function tick(){
+  var now=performance.now();
+  var t=((now-startAt)/1000)%CYCLE;
+  render(Math.min(DUR, t*FPS));
+  rafId=requestAnimationFrame(tick);
+}
+function restart(){ startAt=performance.now(); }
+var fitScale=1;
+function fit(){
+  /* ⚠️ 无放大上限（导出高清链路要求） */
+  var s=Math.min(innerWidth/1920, innerHeight/1080);
+  var wr=$('wrap');
+  wr.style.width=(1920*s)+'px'; wr.style.height=(1080*s)+'px';
+  /* 🔴 #wrap 被缩了，#stage 却是定死 1920×1080 + overflow:hidden ⇒ 不写这条，
+     小窗口里只看到画面的【左上角一块】，而文件尺寸/像素判据照样全绿。 */
+  els.stage.style.transform='scale('+s+')';
+  fitScale=s;
+}
+window.addEventListener('resize',fit);
+
+/* ---------- 配色 ---------- */
+var VAR_NAMES=['--lc-void','--lc-steel','--lc-chrome','--lc-mist','--lc-ice','--lc-rose'];
+function applyColors(vars){
+  var root=document.documentElement.style,k;
+  for(k in vars){ if(k.indexOf('--lc-')===0) root.setProperty(k,vars[k]); }
+}
+
+/* ---------- 自定义字体（cyber 协议） ---------- */
+function applyFont(d){
+  var name=d.family,url=d.dataURL;
+  if(!name){ var old=document.getElementById('__lcFont'); if(old) old.remove(); return; }
+  var st=document.getElementById('__lcFont')||document.createElement('style');
+  st.id='__lcFont';
+  st.textContent = url ? '@font-face{font-family("__lcfont");src:url('+url+') format("truetype");font-display:block;}' : '';
+  if(!st.parentNode) document.head.appendChild(st);
+  var fam = url ? '__lcfont' : name;
+  $('stage').style.fontFamily='"'+fam+'","Helvetica Neue",Arial,"Microsoft YaHei",sans-serif';
+}
+
+/* ---------- postMessage 桥（与 blush-morandi / press-halftone 同协议） ---------- */
+window.addEventListener('message',function(e){
+  var d=e.data||{};
+  if(d.source!=='host')return;
+  try{
+    if(d.type==='cyber-embed'){ document.body.classList.add('embed'); fit(); }
+    else if(d.type==='cyber-unembed'){ document.body.classList.remove('embed'); fit(); }
+    else if(d.type==='cyber-cfg'){ applyCfg(d); if(d.replay)restart(); }
+    else if(d.type==='cyber-color'){ applyColors(d.vars||{}); }
+    else if(d.type==='cyber-img'){ setProdImg(d.img||''); applyCfg({}); }
+    else if(d.type==='cyber-font'){ applyFont(d); }
+    else if(d.type==='cyber-play'){ restart(); if(!rafId) rafId=requestAnimationFrame(tick); }
+    else if(d.type==='cyber-seek'){
+      if(rafId){ try{ cancelAnimationFrame(rafId); }catch(err){} rafId=0; }
+      /* ⚠️ d.t 单位是【秒】 */
+      if(typeof d.t==='number'){ try{ render(Math.min(DUR, d.t*FPS)); void document.documentElement.offsetHeight; }catch(err){} }
+    }
+    else if(d.type==='cyber-resume'){
+      startAt=performance.now(); if(!rafId) rafId=requestAnimationFrame(tick);
+    }
+    else if(d.type==='cyber-get-html'){
+      var ovr='',k2;
+      var cs=getComputedStyle(document.documentElement);
+      for(k2=0;k2<VAR_NAMES.length;k2++){ ovr+=VAR_NAMES[k2]+':'+cs.getPropertyValue(VAR_NAMES[k2]).trim()+';'; }
+      ovr=':root{'+ovr+'}';
+      /* ⚠️ 本注释里不能写 script 闭合标签的字面量 —— 它会先把自己所在的 script 截断 */
+      var boot='<script>window.__LIQCHR_BOOT='+JSON.stringify({part:cfg.part,title:cfg.title,sub:cfg.sub,img:cfg.img||''}).replace(/</g,'\\u003c')+'<\/script>';
+      var html=PRISTINE.replace('</head>','<style id="liqchr-override">'+ovr+'</style>'+boot+'</head>');
+      parent.postMessage({source:'cyber',type:'cyber-html',reqId:d.reqId,html:html},'*');
+    }
+  }catch(err){ parent.postMessage({source:'cyber',type:'cyber-status',err:err.message},'*'); }
+});
+
+/* ---------- 独立面板 ---------- */
+$('pPart').addEventListener('input',function(){ applyCfg({part:this.value}); restart(); });
+$('pTitle').addEventListener('input',function(){ applyCfg({title:this.value}); restart(); });
+$('pSub').addEventListener('input',function(){ applyCfg({sub:this.value}); restart(); });
+$('pPlay').addEventListener('click',function(){ restart(); });
+$('pImg').addEventListener('change',function(){
+  var f=this.files&&this.files[0]; if(!f) return;
+  if(!/^image\//i.test(f.type||'')) return;
+  var r=new FileReader();
+  r.onload=function(){ setProdImg(r.result); applyCfg({}); restart(); };
+  r.readAsDataURL(f); this.value='';
+});
+
+/* ---------- 启动 ---------- */
+buildDrops(); buildOrbits(); buildArt(); buildRules();
+/* ⚠️ 顺序不能反：applyCfg 只认「传了的键」，__LIQCHR_BOOT 里带的是固化时的用户值，
+   必须先铺默认再拿 boot 覆盖，否则固化 HTML 打开永远是模板默认字。 */
+applyCfg(cfg);
+if(window.__LIQCHR_BOOT){ applyCfg(window.__LIQCHR_BOOT); }
+fit();
+render(0);
+/* ★ 必须自启主循环：漏掉的后果不是报错，是【预览永远停在第 0 帧】—— 版式全对、数值全绿，就是不动。 */
+rafId=requestAnimationFrame(tick);
+parent.postMessage({source:'cyber',type:'cyber-ready'},'*');
+</script>
+</body>
+</html>
