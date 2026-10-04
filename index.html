@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>动态开头 / 标题模板库 · animated-title-templates</title>
+<style>
+  :root { --bg:#0e1116; --card:#171c24; --line:#252d3a; --tx:#e8edf4; --sub:#8b97a8; --acc:#5ea0ff; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--bg); color:var(--tx); font:15px/1.6 "Segoe UI","Microsoft YaHei",sans-serif; padding:40px 4vw 60px; }
+  h1 { font-size:26px; margin-bottom:6px; }
+  .lead { color:var(--sub); margin-bottom:34px; }
+  .lead b { color:var(--acc); font-weight:600; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:18px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; overflow:hidden;
+          display:block; transition:transform .15s ease, border-color .15s ease; }
+  .card:hover { transform:translateY(-3px); border-color:var(--acc); }
+  .cover { display:block; text-decoration:none; color:var(--tx); }
+  .card img { width:100%; aspect-ratio:16/9; object-fit:cover; display:block; background:#000; }
+  .meta { display:flex; align-items:baseline; gap:10px; padding:12px 14px 4px; }
+  .num { color:var(--acc); font-weight:700; font-size:13px; }
+  .name { font-weight:600; font-size:16px; flex:1; }
+  .size { color:var(--sub); font-size:12px; }
+  .links { padding:0 14px 12px; color:var(--sub); font-size:12px; }
+  .links a { color:var(--acc); text-decoration:none; margin-left:10px; }
+  .lk { color:var(--sub); }
+  footer { margin-top:40px; color:var(--sub); font-size:13px; }
+  footer a { color:var(--acc); }
+</style>
+</head>
+<body>
+<h1>动态开头 / 标题模板库</h1>
+<p class="lead">20 个单文件 HTML 动态标题模板 · 纯前端零依赖 · <b>点卡片打开模板本体</b>，文案参数直接在代码里改</p>
+<div class="grid">
+<div class="card">
+  <a class="cover" href="demos/cyber/cyber-chapter-card.html" target="_blank" rel="noopener">
+    <img src="demos/cyber/preview.png" alt="Cyber 章节卡" loading="lazy">
+    <div class="meta"><span class="num">01</span><span class="name">Cyber 章节卡</span><span class="size">1280×720</span></div>
+  </a>
+  <div class="links"><a href="demos/cyber/cyber-chapter-card.html" target="_blank" rel="noopener">▶ 打开模板</a><a href="demos/cyber/demo.mp4" target="_blank" rel="noopener">MP4</a></div>
+</div>
+<div class="card">
+  <a class="cover" href="demos/cyber2/part02-opener.html" target="_blank" rel="noopener">
+    <img src="demos/cyber2/preview.png" alt="Cyber2 开场" loading="lazy">
+    <div class="meta"><span class="num">02</span><span class="name">Cyber2 开场</span><span class="size">2048×1152</span></div>
+  </a>
+  <div class="links"><a href="demos/cyber2/part02-opener.html" target="_blank" rel="noopener">▶ 打开模板</a><a href="demos/cyber2/demo.mp4" target="_blank" rel="noopener">MP4</a></div>
+</div>
+<div class="card">
+  <a class="cover" href="demos/neon/neon-circuit.html" target="_blank" rel="noopener">
+    <img src="demos/neon/preview.png" alt="霓虹电路" loading="lazy">
+    <div class="meta"><span class="num">03</span><span class="name">霓虹电路</span><span class="size">2048×1152</span></div>
+  </a>
+  <div class="links"><a href="demos/neon/neon-circuit.html" target="_blank" rel="noopener">▶ 打开模板</a><a href="demos/neon/demo.mp4" target="_blank" rel="noopener">MP4</a></div>
+</div>
+<div class="card">
+  <a class="cover" href="demos/motion/motion-wipe.html" target="_blank" rel="noopener">
+    <img src="demos/motion/preview.png" alt="MOTION 文字弹球" loading="lazy">
+    <div class="meta"><span class="num">04</span><span class="name">MOTION 文字弹球</span><span class="size">1280×720</span></div>
+  </a>
+  <div class="links"><a href="demos/motion/motion-wipe.html" target="_blank" rel="noopener">▶ 打开模板</a><a href="demos/motion/demo.mp4" target="_blank" rel="noopener">MP4</a></div>
+</div>
+<div class="card">
+  <a class="cover" href="demos/cloudpop/cloud-pop.html" target="_blank" rel="noopener">
+    <img src="demos/cloudpop/preview.png" alt="云朵弹跳" loading="lazy">
+    <div class="meta"><span class="num">05</span><span class="name">云朵弹跳</span><span class="size">1280×720</span></div>
+  </a>
+  <div class="links"><a href="demos/cloudpop/cloud-pop.html" target="_blank" rel="noopener">▶ 打开模板</a><a href="demos/cloudpop/demo.mp4" target="_blank" rel="noopener">MP4</a></div>
+</div>
+<div class="card">
+  <a class="cover" href="demos/opener/opener.html" target="_blank" rel="noopener">
+    <img src="demos/opener/preview.png" alt="Opener 开场" loading="lazy">
+    <div class="meta"><span class="num">06</span><span class="name">Opener 开场</span><span class="size">1920×1080</span></div>
+  </a>
+  <div class="links"><a href="demos/opener/opener.html" target="_blank" rel="noopener">▶ 打开模板</a><a href="demos/opener/demo.mp4" target="_blank" rel="noopener">MP4</a></div>
+</div>
+<div class="card">
+  <a class="cover" href="demos/schema/chip-pulse_tpl.html" target="_blank" rel="noopener">
+    <img src="demos/schema/preview.png" alt="芯片弹跳" loading="lazy">
+    <div class="meta"><span class="num">07</span><span class="name">芯片弹跳</span><span class="size">1280×720</span></div>
+  </a>
+  <div class="links"><a href="demos/schema/chip-pulse_tpl.html" target="_blank" rel="noopener">▶ 打开模板</a><a href="demos/schema/demo.mp4" target="_blank" rel="noopener">MP4</a></div>
+</div>
+<div class="card">
+  <a class="cover" href="demos/gridblue/grid-blue-open.html" target="_blank" rel="noopener">
+    <img src="demos/gridblue/preview.png" alt="网格标题" loading="lazy">
+    <div class="meta"><span class="num">08</span><span class="name">网格标题</span><span class="size">1920×1080</span></div>
+  </a>
+  <div class="links"><a href="demos/gridblue/grid-blue-open.html" target="_blank" rel="noopener">▶ 打开模板</a><a href="demos/gridblue/demo.mp4" target="_blank" rel="noopener">MP4</a></div>
+</div>
+<div class="card">
+  <a class="cover" href="demos/draftdesk/draft-desk.html" target="_blank" rel="noopener">
+    <img src="demos/draftdesk/preview.png" alt="蓝图制图台" loading="lazy">
+    <div class="meta"><span class="num">09</span><span class="name">蓝图制图台</span><span class="size">1920×1080</span></div>
+  </a>
+  <div class="links"><a href="demos/draftdesk/draft-desk.html" target="_blank" rel="noopener">▶ 打开模板</a><a href="demos/draftdesk/demo.mp4" target="_blank" rel="noopener">MP4</a></div>
+</div>
+<div class="card">
+  <a class="cover" href="demos/helldive/hell-dive.html" target="_blank" rel="noopener">
+    <img src="demos/helldive/preview.png" alt="黑金突入" loading="lazy">
+    <div class="meta"><span class="num">10</span><span class="name">黑金突入</span><span class="size">1920×1080</span></div>
+  </a>
+  <div class="links"><a href="demos/helldive/hell-dive.html" target="_blank" rel="noopener">▶ 打开模板</a><a href="demos/helldive/demo.mp4" target="_blank" rel="noopener">MP4</a></div>
+</div>
+<div class="card">
+  <a class="cover" href="demos/mosswin/moss-window.html" target="_blank" rel="noopener">
+    <img src="demos/mosswin/preview.png" alt="竹窗苔原" loading="lazy">
+    <div class="meta"><span class="num">11</span><span class="name">竹窗苔原</span><span class="size">1920×1080</span></div>
+  </a>
+  <div class="links"><a href="demos/mosswin/moss-window.html" target="_blank" rel="noopener">▶ 打开模板</a><a href="demos/mosswin/demo.mp4" target="_blank" rel="noopener">MP4</a></div>
+</div>
+<div class="card">
+  <a class="cover" href="demos/popmint/pop-mint.html" target="_blank" rel="noopener">
+    <img src="demos/popmint/preview.png" alt="薄荷撞色" loading="lazy">
+    <div class="meta"><span class="num">12</span><span class="name">薄荷撞色</span><span class="size">1920×1080</span></div>
+  </a>
+  <div class="links"><a href="demos/popmint/pop-mint.html" target="_blank" rel="noopener">▶ 打开模板</a><a href="demos/popmint/demo.mp4" target="_blank" rel="noopener">MP4</a></div>
+</div>
+<div class="card">
+  <a class="cover" href="demos/pressht/press-halftone.html" target="_blank" rel="noopener">
+    <img src="demos/pressht/preview.png" alt="半调套印" loading="lazy">
+    <div class="meta"><span class="num">13</span><span class="name">半调套印</span><span class="size">1920×1080</span></div>
+  </a>
+  <div class="links"><a href="demos/pressht/press-halftone.html" target="_blank" rel="noopener">▶ 打开模板</a><a href="demos/pressht/demo.mp4" target="_blank" rel="noopener">MP4</a></div>
+</div>
+<div class="card">
+  <a class="cover" href="demos/blushm/blush-morandi.html" target="_blank" rel="noopener">
+    <img src="demos/blushm/preview.png" alt="莫兰迪柔雾" loading="lazy">
+    <div class="meta"><span class="num">14</span><span class="name">莫兰迪柔雾</span><span class="size">1920×1080</span></div>
+  </a>
+  <div class="links"><a href="demos/blushm/blush-morandi.html" target="_blank" rel="noopener">▶ 打开模板</a><a href="demos/blushm/demo.mp4" target="_blank" rel="noopener">MP4</a></div>
+</div>
+<div class="card">
+  <a class="cover" href="demos/liqchr/liquid-chrome.html" target="_blank" rel="noopener">
+    <img src="demos/liqchr/preview.png" alt="液态铬镜" loading="lazy">
+    <div class="meta"><span class="num">15</span><span class="name">液态铬镜</span><span class="size">1920×1080</span></div>
+  </a>
+  <div class="links"><a href="demos/liqchr/liquid-chrome.html" target="_blank" rel="noopener">▶ 打开模板</a><a href="demos/liqchr/demo.mp4" target="_blank" rel="noopener">MP4</a></div>
+</div>
+<div class="card">
+  <a class="cover" href="demos/gsam/gold-seam.html" target="_blank" rel="noopener">
+    <img src="demos/gsam/preview.png" alt="金缮合缝" loading="lazy">
+    <div class="meta"><span class="num">16</span><span class="name">金缮合缝</span><span class="size">1920×1080</span></div>
+  </a>
+  <div class="links"><a href="demos/gsam/gold-seam.html" target="_blank" rel="noopener">▶ 打开模板</a><a href="demos/gsam/demo.mp4" target="_blank" rel="noopener">MP4</a></div>
+</div>
+<div class="card">
+  <a class="cover" href="demos/vinyl/vinyl.html" target="_blank" rel="noopener">
+    <img src="demos/vinyl/preview.png" alt="黑胶落针" loading="lazy">
+    <div class="meta"><span class="num">17</span><span class="name">黑胶落针</span><span class="size">1920×1080</span></div>
+  </a>
+  <div class="links"><a href="demos/vinyl/vinyl.html" target="_blank" rel="noopener">▶ 打开模板</a><a href="demos/vinyl/demo.mp4" target="_blank" rel="noopener">MP4</a></div>
+</div>
+<div class="card">
+  <a class="cover" href="demos/pcut/paper-cut.html" target="_blank" rel="noopener">
+    <img src="demos/pcut/preview.png" alt="纸层隧道" loading="lazy">
+    <div class="meta"><span class="num">18</span><span class="name">纸层隧道</span><span class="size">1920×1080</span></div>
+  </a>
+  <div class="links"><a href="demos/pcut/paper-cut.html" target="_blank" rel="noopener">▶ 打开模板</a><a href="demos/pcut/demo.mp4" target="_blank" rel="noopener">MP4</a></div>
+</div>
+<div class="card">
+  <a class="cover" href="demos/mb/mission-badge.html" target="_blank" rel="noopener">
+    <img src="demos/mb/preview.png" alt="极坐标徽" loading="lazy">
+    <div class="meta"><span class="num">19</span><span class="name">极坐标徽</span><span class="size">1920×1080</span></div>
+  </a>
+  <div class="links"><a href="demos/mb/mission-badge.html" target="_blank" rel="noopener">▶ 打开模板</a><a href="demos/mb/demo.mp4" target="_blank" rel="noopener">MP4</a></div>
+</div>
+<div class="card">
+  <a class="cover" href="demos/bz/brass-gauge.html" target="_blank" rel="noopener">
+    <img src="demos/bz/preview.png" alt="黄铜表" loading="lazy">
+    <div class="meta"><span class="num">20</span><span class="name">黄铜表</span><span class="size">1920×1080</span></div>
+  </a>
+  <div class="links"><a href="demos/bz/brass-gauge.html" target="_blank" rel="noopener">▶ 打开模板</a><a href="demos/bz/demo.mp4" target="_blank" rel="noopener">MP4</a></div>
+</div>
+</div>
+<footer>每个模板内部都有 <code>cfg</code> 配置对象，改文案/参数刷新即生效 · <a href="README.md" target="_blank" rel="noopener">README</a> · MIT License</footer>
+</body>
+</html>
