@@ -1,0 +1,999 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>Brass Gauge · 黄铜表（机床背板 + 左侧巨表盘 + 右上齿轮链 + 右列文字 + 右下观察窗）</title>
+<!--
+  风格方向（老板 2026-10-03：Pinterest 自选参考，任意主题/配色，任意设计，只求高级配色 + 高级动效；
+  元素与构图都必须与既有 22 张引擎区分）
+  参考 = _tmp/pins1003/（kw "brass steampunk gauge dial poster" 一系接触印样）
+  配色真源 = X058（本地 140 组高级配色库现成条目，palette_index.txt:83，无自造色值）：
+    #452E16 深棕壳 / #DC9C4D 琥珀 / #6FB4A9 青绿 / #AB8761 褐黄 / #A84717 锈红 / #766850 橄榄灰
+  ★ 选这组的理由 = 对比度表先筛（第三张起改用这套口径，不再靠肉眼）：
+    深棕压琥珀 5.38 · 深棕压青绿 5.30 · 深棕压褐黄 3.85 ⇒ 三条文字链全过（大字号档 ≥3:1）。
+    其余两两 ≤2.5 ⇒ 锈红/橄榄灰【只做图形、一律不上字】（锈压琥珀 2.49、橄榄压深棕 2.34）。
+  ★ 本张的文字方向是反的：前面几张都是"浅字压深底"，这里是【深字压亮盘】（盘面琥珀、壳深棕）
+    ⇒ 铭牌条走"深棕压褐黄"，读数链条与盘面刻度共用同一组对比 ⇒ 整张读成"一张金属铭牌海报"。
+  母题 = 270° 圆形表盘 / 铜壳铆钉 / 扇环观察窗（产品位）/ 三齿轮咬合链 / 铜管与流动脉冲 / 黄铜铭牌条
+    （现有引擎零撞：无齿轮、无仪表指针、无扇环窗、无管道、无铆钉铭牌条。）
+  ★ 构图 = 【左侧一枚顶天立地的大表盘 + 右上齿轮链 + 右列直置文字栏 + 底部横贯铭牌条】：
+     重心在【左上】（铜壳跨 x 216..1084 / y 71..939 = 占画面 45% 宽度、68% 高度），
+     vinyl 是"左文右盘"、moss-window 是"左文右图窗" ⇒ 本张【盘放左、字放右】整体反了个方向，
+     再用一条底部横贯铭牌条把画面压成"仪表台"而不是"分栏页面"。
+     ⚠️ 没有装饰性空心圆：铜壳 / 刻度带 / 数字圈 / 扇窗 / 轴帽 各有职责，没有一圈"为了像表而加的环"
+        （mission-badge 的 r=322 内环教训：装饰同心圆要先问它压不压字）。
+  动效动词 = 【刻度一圈圈抄亮 → 指针从 0 位冲到满格（过冲 + 阻尼回弹 + 定版微颤）→ 铜管里走一道脉冲
+              → 齿轮全程咬合转 → 标题逐字"冲压"落位】。
+    （paper-cut=逐层开洞 / vinyl=整盘旋转+扇形刻印 / mission-badge=沿弧滑字+水平收拢 /
+      gold-seam=双域错位合拢 / draft-desk=一笔描字 / liquid-chrome=液体形变 / blush-morandi=逐字拉焦 /
+      press-halftone=三版套印 / pop-mint=backOut 弹跳 / moss-window=竖条遮罩+dolly ——
+      本引擎不推镜、不弹跳、不套印、不拉焦、不形变、不合拢、不开洞、不沿弧滑字、不整盘旋转。
+      ★ 三个独门动词：① 【仪表指针】—— 全库第一次出现"带物理回弹的指针"（过冲 6.5° + exp 阻尼 + ±0.45° 微颤）
+                      ② 【齿轮咬合链】—— ω 按齿数反比、转向交替、初相位按半齿距解算，纯 f 函数
+                      ③ 【管道脉冲】—— 一条 dash 沿铜管走，走完整张片都还在动（定版后的"活着"））
+  字体 = Noto Sans SC 400/500（前三张分别用 300/400，这里字重压厚，配"冲压"手感）。
+  产品位形状 = 【右下机加工圆角观察窗（560×560 · 圆角 R=80 · 铜框 26 · 图盒 508×508）】：
+    既非圆 medallion（vinyl）、非盾形 clasp（mission-badge）、非拱窗（moss-window）、
+    非直角卡纸（paper-cut）、非六边补片。★ 前两版都被老板打回：
+      一版 = 盘内扇环（110°×r76..228，图元盒 374×184）⇒「空间太小、产品展示不完整」；
+      二版 = 右下出血四分之一圆舷窗（R=400）⇒ 仍偏小，而且弧恒切掉产品的一个角
+             （方图要吃满就得铺到外接正方形，而 √2·R 恒 > R ⇒ 数学上无法零裁切）。
+    三版 = 圆角窗：图盒 = 窗洞本身 ⇒ 方图 1:1 铺满、零裁切，只有四个 R=54 的内圆角各削掉
+           一个指甲盖，而产品图四周本来就有 12~21% 留白（alpha bbox 实测）⇒ 削在留白上。
+    可见面积 258,064 px² = 舷窗版（374² 再被弧切掉 21.5% ⇒ 实得 110,000）的 2.3 倍，且不再被指针压住。
+    为腾出这块 560 的场：齿轮链整体搬到表盘右上沿【之后】（只露 3/4 个轮 = 机芯探出壳外），
+    文字栏整体上移到 y 132..431。数学口径见 §WIN_* 常量处注释。
+  本文件为零依赖单文件 HTML 引擎, 挂 cyber 同款 postMessage 桥:
+    host→iframe: cyber-embed / cyber-unembed / cyber-cfg{part,title,sub,replay} / cyber-color{vars}
+                 / cyber-img{img} / cyber-play / cyber-seek{t} / cyber-resume / cyber-get-html{reqId} / cyber-font
+    iframe→host: cyber-ready / cyber-html{reqId,html} / cyber-status{err}  (source 均为 'cyber')
+  铁律: 所有视觉量 = 帧号 f 的纯函数；无 Math.random（齿轮初相位走 hash1）；禁 CSS animation/transition。
+  ⚠️ 已付过学费的硬约束（R151~R200）在本文件里的落点：
+    ① 描边件 class .ln{fill:none}，实心件一律内联 style="fill:…"；
+    ② 几何（刻度角、扇窗 d、齿位与初相位、bbox）只在 build* 量一次，不进 render()；
+       ★ 扇形的 d 由 sectorD(半径对/角对) 现算，所有端点走 polar()，一个坐标都不手算；
+    ③ 「无产品图」= href 属性缺省（href="" = 永不结束的请求 ⇒ 导出第 0 帧抓屏挂死）；
+    ④ 禁一次性闩；只允许「当前值 ≠ 目标值才写」的幂等写法；
+    ⑤ SVG transform 只写裸数字，不写单位也不写 none；
+    ⑥ HTML 文字层 #txt 显式 z-index 9 > SVG #hud z-index 5；同权重按书写顺序翻盘 ⇒ 覆盖用复合选择器；
+    ⑦ seg() 段前 = 0 ⇒ 不许拿 (1-p)*k 当入场前暗度；
+    ⑧ 可编辑文字按【最坏输入】设计：超行压字号；缩宽时字号与字距【同乘 k】；
+       Part / 副标题 / 铭牌串用 fitText() 按 getBoundingClientRect 实测自然宽反算（不靠字数估）；
+    ⑨ 主循环开机自启（漏掉 = 预览停在第 0 帧，不报错、数值全绿）；
+    ⑩ + ⑯ ★【第 0 帧就必须是一张海报，而且"预开"后面不许再关着别的门】：
+       本张从源头绕开 mission-badge 那个坑 —— 半径一律不动，入场只写 opacity，且
+       【每个入场层的 opacity 都带下限】：铜壳 0.72 起、盘面 0.62 起、扇窗描边 0.58 起、
+       指针 0.75 起、整圈细刻度 0.22 起、齿轮恒 1.0 ⇒ 首帧已经是"一台没点亮完的仪表"，不是空场。
+    ⑪ ★【逐字入场不许用 scale>1 的静态默认值】：这里用 translateY(-10px) scaleY(0.90) ⇒ 入场态
+       只会让墨盒【变小】，W2 的墨盒判据不会被未揭示的字撑大；
+    ⑫ ★【文字安全区先量"谁在旁边"】：右列文字 x 1360..1900 / y 132..431（整栏上移，把右下让给窗）
+       ⇒ 齿轮链最右 x=1314（G3 齿尖）与文字左沿 1360 留 46px 缝；齿轮最低 y=301（G2 齿尖）在文字
+         左侧、不共面；表盘铜壳右沿 x=1084 ⇒ 文字左沿留 276px 缝；
+       底部铭牌条 y 958 起、右端 1260 止（让给观察窗），铜壳下沿 939 ⇒ 19px 缝（盘心不许再往下降）；
+       ★ 观察窗的净空是【按最坏文字反算】的：窗顶 490 → 最坏副标题下沿 431（= TITTOP+TITVMAX+24+
+         SUBFS×1.25）留 59px；窗左 1340 → 铭牌条右端 1260 留 80px ⇒ 六组压帧由 _tmp_eng_worst.cjs
+         复验文字对画布，元素对元素的三处缝是这里手算的，判据看不见；
+       铜管走 x 1060..1352 / y 574..732 ⇒ 与窗（x≥1340 但 y≥490 且管头压在框下）、条（y≥958）、
+         齿轮（y≤301）三者优先级都不相交；
+       窗内状态小字 prodTag 摆在表盘正下方【刻度缺口】里（θ=90 那 90° 区间没有任何刻度/数字）；
+    ⑬ 36 条细刻度不许 36 次属性写 ⇒ 建成【12 组 × 3 条】+ 一组整点长刻度，每帧最多 13 次 opacity 写；
+    ⑰ ★【跨色相的两色之间不许直接拉渐变，压暗一律走 alpha】：盘面是【实色琥珀】+ 一层偏左上光源的
+       深棕 stop-opacity（上限 0.34）盖在上面 ⇒ 盘缘读成"穹面背光"，不会像第一版 mission-badge
+       那样把下半片拉成发灰的泥色黑洞；铜壳同理（实色褐黄 + 深棕描边，不插值）。
+    ★【本张写代码时就防住的一条】：齿轮必须【同模数】，否则按齿数反比算出的 ω 会让两齿轮的
+       齿面线速度不相等 ⇒ 肉眼一眼看穿"两个齿轮在互相穿过"。
+       取 m=2R/t≈10.2 ⇒ t=22/14/9 与 r=112/72/46 严格配套，齿距 πm≈32 三档全等，齿高同为 13；
+       中心距取 r1+r2+10（= 两齿尖各吃进对方半齿）⇒ 咬合而不是相撞。
+    ★【还有一条是上一张的教训前置】：指针的 d 写在【以表心为原点】的标准姿态（指向 +x）下，
+       之后每帧只 rotate —— 第一版我把刀身写在 SVG 全局原点 (0,0)，rotate(θ,CX,CY) 转的是一根
+       "在左上角绕表心公转的针"，数值判据（transform 有在动）全绿，肉眼看是画面里飞着一根针。
+  ★★【2026-10-03 第二轮 · 老板判「界面太过于单调了，要补充的占画面的 50-70% 占比」】
+     实测单调的原因 = 画布底是一整块【无纹理的纯色 case】：表盘占掉左上，右下一块窗，
+     剩下的左条 / 顶条 / 底条 / 右条 ≈ 全帧 30% 一直是空的（原片实测"非背景像素"只有 60%）。
+     ⇒ 补一整层【机床背板】bzBg（排在 #ground 之后、所有现役元素之前，纯背景不抢戏）：
+        ★ 钣金拼板 10 块（实心面 · 四档 fill-opacity .12/.18/.26/.34）+ 斜铣网纹 + 铆钉阵
+          + 四条同心机加工缝线（沿表心 100°→260°，逐条按画布内连续区间裁端点）+ 缝线上 5 颗螺栓
+          + 三只外沿残影齿轮（左上 3/4 只 / 顶条半只 / 左下角，轮体实心 + 各自独立慢转）
+          + 一条竖导管 + 四道管箍。
+     ★★【第一轮就栽过的地方：只补线条层 = 判据上"补了"，肉眼看还是空的】
+        先做的版本只有网纹/铆钉/缝线/齿轮描边 ⇒ 实测开/关差集 **3.3%** 全幅（左条 28% / 顶条 7%）。
+        ⇒ 线、点元素的【质积】天然小：2px 线无论多密都盖不满画面。要"占 50-70%"必须有【实心面】。
+        ⇒ 补上拼板 + 齿轮实心轮体后：背景层自身 **31.7%**（左条 95% / 顶条 83%），
+           全幅"非底色"从 52% → **76%**。⚠️ 这条只能靠 on/off 双截图像素差集量，肉眼会高估。
+     ★ 防"背景穿字"的做法不是逐条手算净空，而是【结构上不给它机会】：
+        bzBg 整层挂 clip-path=url(#bzBgClip)，而这条剪裁路径 = 全画布矩形 【挖一个洞】
+        （evenodd）：洞 = 右栏 x 1274..1920 / y 66..1080 —— 文字栏最坏墨盒与观察窗【都在里面】。
+        ⇒ 网纹/缝线/铆钉/拼板在数学上【不可能】落到可编辑文字或产品图上，用户把标题改成 2 行 26 字
+           也不会出现"一条纹从字里横穿"（mission-badge 的 r=322 装饰内环就是这么把字穿了的）。
+        ⚠️ 洞只挖一个、且它的左边界 1274 = 右侧拼板的右边界【同一个数】。
+           第一版挖了两个洞（文字栏 / 观察窗各一个），实测出来是【文字后面浮着一块浅色矩形】——
+           拼板的实心面被洞沿整齐切断 = 一条不属于任何版面的直边，读成"多了一张卡"。
+           合成一个洞、并让板缝与洞沿对齐之后，那条边同时是"机床背板的板缝"，artifact 变成设计。
+           ⇒ 通用口径：**剪裁洞的边界必须与版面里已有的某条边重合，否则洞自己会画出一个盒子。**
+        ⚠️ 两个洞也不许在 y 方向重叠：重叠区被 evenodd 数成"穿过两次 = 在内部"，洞会被填回来。
+        ⚠️ 唯一的例外是本层内部自己叠本层内部（缝线从竖导管后面穿过、螺栓压在缝线上、齿轮轮体压在拼板上）
+           —— 那些元素都是不透明实心件、且绘制顺序 = 后画的在上，读成"装在背板上的零件"，不是串线。
+     ★ 首帧就是海报（header ⑩+⑯ 口径）：bzBg 的入场只写 group opacity、且带 0.68 下限，
+        子组透明度写在 markup 里当静态值；残影齿轮的 rotate 是 f 的纯函数（常数初相位走 hash1）。
+        ⚠️ 下限从 0.55 抬到 0.68：拼板成为画面主体之一之后，层闸压太低 = 首帧又洗回暗底。
+     ★ 配色语义同步：tan 多了"拼板焊缝·缝线·铆钉·管箍"、olive 多了"拼板面·斜铣网纹·齿轮轮体·竖导管"
+        （六格控件的含义不变，仍是那六个变量；背景只用 tan/olive/case 三色 = 不新增色相，
+         避免"背景比主体抢眼"）。
+-->
+<style>
+  /* 🔴 六个配色变量必须在这里给【默认值】：JS 里 setAttribute('stroke','var(--bz-x)')
+     不带 CSS 回退，宿主没发色时整棵树解析成 black。 */
+  :root{
+    --bz-case:#452E16;  --bz-amber:#DC9C4D; --bz-teal:#6FB4A9;
+    --bz-tan:#AB8761;   --bz-rust:#A84717;  --bz-olive:#766850;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{width:100%;height:100%;background:#1D1309;overflow:hidden;}
+  body{font-family:"Noto Sans SC","Microsoft YaHei","PingFang SC",sans-serif;}
+  #wrap{position:absolute;left:50%;top:50%;width:1920px;height:1080px;margin:-540px 0 0 -960px;}
+  #stage{position:relative;width:1920px;height:1080px;overflow:hidden;transform-origin:0 0;
+    background:var(--bz-case,#452E16);}
+  #hud{position:absolute;inset:0;width:1920px;height:1080px;z-index:5;}
+  #hud .ln{fill:none;}
+  #txt{position:absolute;inset:0;z-index:9;pointer-events:none;}
+  #txt > *{position:absolute;white-space:pre;}
+
+  /* ---------- 右列文字（Part / 主标题 / 副标题），左对齐 ---------- */
+  #partTxt{left:1360px;top:132px;font-size:30px;font-weight:400;letter-spacing:8px;
+    color:var(--bz-tan);opacity:0;transform:translateX(-14px);}
+  #titleBox{left:1360px;top:174px;width:540px;text-align:left;}
+  .tline{display:block;white-space:pre;position:relative;font-weight:500;text-align:left;
+    color:var(--bz-amber);}
+  /* ★ 入场动画全部写在【.tw 这一层】—— 冒烟判据量的就是 .tw 的 computed opacity，
+        写在子节点上会"永远读到 1"。
+     ★ translateY(-10px) scaleY(.90)：入场态只会把墨盒【缩小】，不许用 scale>1（header ⑪）。
+     ★ 落影只吃 var(--bz-case)（不许硬写 rgba，否则用户改色后影字脱节）。 */
+  .tw{position:relative;display:inline-block;white-space:pre;color:var(--bz-amber);opacity:0;
+    transform:translateY(-10px) scaleY(.90);text-shadow:2px 3px 0 var(--bz-case);}
+  #subTxt{left:1360px;top:388px;font-size:34px;font-weight:400;letter-spacing:6px;
+    color:var(--bz-teal);opacity:0;transform:translateX(-14px);}
+
+  /* ---------- 固定串（底部横贯黄铜铭牌条正中，深棕压褐黄 3.85:1） ----------
+     ★ 居中用 left:条心 + translateX(-50%)，不给 div 定宽：
+       定宽的盒会让 fitText 量到【盒宽】而不是【字宽】⇒ 短字也被误缩。 */
+  #tagline{left:960px;top:984px;transform:translateX(-50%);font-size:26px;font-weight:500;letter-spacing:6px;
+    color:var(--bz-case);opacity:0;}
+
+  /* ---------- 独立面板 ---------- */
+  #panel{position:fixed;left:14px;top:14px;z-index:50;display:flex;gap:8px;align-items:center;}
+  #panel input[type=text],#panel input:not([type=file]){background:rgba(255,245,230,.92);color:#2A1B0C;
+    border:1px solid #a89072;border-radius:6px;padding:6px 9px;font-size:13px;width:150px;}
+  #panel button{background:#AB8761;color:#452E16;border:0;border-radius:6px;padding:7px 12px;font-size:13px;cursor:pointer;}
+  body.embed #panel{display:none;}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="stage">
+    <svg id="hud" viewBox="0 0 1920 1080" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <!-- ★ 背景层剪裁 = 全画布矩形挖两个洞（evenodd）。洞1 = 文字栏最坏墨盒外扩 26，
+             洞2 = 观察窗外扩 26 ⇒ 网纹/缝线/铆钉在数学上碰不到可编辑文字与产品图（见 header 第二段末）。
+             d 由 buildBg 现算（BX/BY/BW/BH 常量在脚本里，改版面只动常量）。 -->
+        <clipPath id="bzBgClip"><path id="bzBgClipD" clip-rule="evenodd" d="M0 0H1920V1080H0Z"/></clipPath>
+        <!-- 观察窗内嵌剪裁：产品图吃进圆角窗洞里（d 由 buildPort 现算，
+             内缩 = WIN_F ⇒ 铜框 26px 永远看得见，图是镶进窗洞的） -->
+        <clipPath id="bzPhClip"><path id="bzPhClipD" class="ln"/></clipPath>
+        <!-- 盘面压暗层（★ 不是跨色相渐变，是【盖在实色盘上的一层 alpha 阴影】，见 header ⑰）：
+             光源在左上 ⇒ 偏心 (CX−96, CY−112)、边缘最深只到 0.34
+             ⇒ 盘缘 = 0.34×深棕 + 0.66×琥珀 = 暖铜暗边，色相仍留在琥珀 family 里。 -->
+        <radialGradient id="gFace" gradientUnits="userSpaceOnUse" cx="554" cy="393" r="516">
+          <stop offset="0%"   style="stop-color:var(--bz-case);stop-opacity:0"/>
+          <stop offset="62%"  style="stop-color:var(--bz-case);stop-opacity:0"/>
+          <stop offset="100%" style="stop-color:var(--bz-case);stop-opacity:.34"/>
+        </radialGradient>
+        <!-- 铜壳压暗层：同样只走 alpha（褐黄 → 深棕直接插值必过灰泥） -->
+        <linearGradient id="gBezel" gradientUnits="userSpaceOnUse" x1="334" y1="120" x2="966" y2="890">
+          <stop offset="0%"   style="stop-color:var(--bz-case);stop-opacity:0"/>
+          <stop offset="100%" style="stop-color:var(--bz-case);stop-opacity:.30"/>
+        </linearGradient>
+        <!-- 管道脉冲的头尾渐隐（同色相内的 alpha 渐隐） -->
+        <linearGradient id="gPulse" gradientUnits="userSpaceOnUse" x1="1060" y1="574" x2="1352" y2="732">
+          <stop offset="0%"   style="stop-color:var(--bz-teal);stop-opacity:0"/>
+          <stop offset="45%"  style="stop-color:var(--bz-teal);stop-opacity:.95"/>
+          <stop offset="100%" style="stop-color:var(--bz-teal);stop-opacity:0"/>
+        </linearGradient>
+      </defs>
+
+      <!-- 画布底 -->
+      <rect id="ground" x="0" y="0" width="1920" height="1080" style="fill:var(--bz-case)"/>
+
+      <!-- ★ 机床背板（2026-10-03 老板判"太单调"补的整层背景 · 必须在一切现役元素之前）
+             内含：斜铣网纹 → 铆钉阵 → 同心缝线 → 缝线螺栓 → 三只残影齿轮 → 竖导管与管箍
+             整层吃 bzBgClip：文字栏与观察窗是两个洞，背景永远进不去。 -->
+      <g id="bzBg" clip-path="url(#bzBgClip)" opacity="0">
+        <g id="bzBgPlate"></g>
+        <g id="bzBgGFill" style="fill:var(--bz-olive);fill-opacity:.30"></g>
+        <g id="bzBgHatch" class="ln" stroke="var(--bz-olive)" stroke-width="2.4" opacity="0.30"></g>
+        <g id="bzBgRivet" style="fill:var(--bz-tan)" opacity="0.40"></g>
+        <g id="bzBgSeam" class="ln" stroke="var(--bz-tan)" stroke-width="2"
+           stroke-dasharray="18 12" stroke-linecap="butt" opacity="0.46"></g>
+        <g id="bzBgBolt" opacity="0.66"></g>
+        <g id="bzBgG0" class="ln" stroke="var(--bz-tan)" stroke-width="3.5" opacity="0.30"></g>
+        <g id="bzBgG1" class="ln" stroke="var(--bz-tan)" stroke-width="3.5" opacity="0.30"></g>
+        <g id="bzBgG2" class="ln" stroke="var(--bz-tan)" stroke-width="3.5" opacity="0.30"></g>
+        <g id="bzBgPipe" opacity="0.78">
+          <path id="bzBgConduit" class="ln" d="M56 230V870" stroke="var(--bz-olive)"
+                stroke-width="20" stroke-linecap="round"/>
+          <path class="ln" d="M56 230V870" stroke="var(--bz-tan)" stroke-width="3" opacity="0.45"/>
+        </g>
+      </g>
+
+      <!-- ① 铜管：从表盘铜壳右沿出来、在文字栏下方拐两个弯、扎进观察窗的铜框底下（三条同 d） -->
+      <path id="pipe" class="ln" d="M1060 574H1200Q1232 574 1232 606V700Q1232 732 1264 732H1352"
+            stroke="var(--bz-olive)" stroke-width="24" stroke-linecap="round"
+            pathLength="100" opacity="0"/>
+      <path id="pipeHi" class="ln" d="M1060 574H1200Q1232 574 1232 606V700Q1232 732 1264 732H1352"
+            stroke="var(--bz-tan)" stroke-width="4" pathLength="100" opacity="0"/>
+      <!-- ★ 流动脉冲：dash 9 在 91 的缝里跑 ⇒ 每帧一次 dashoffset 写 -->
+      <path id="pipeFlow" class="ln" d="M1060 574H1200Q1232 574 1232 606V700Q1232 732 1264 732H1352"
+            stroke="url(#gPulse)" stroke-width="10" stroke-linecap="round" pathLength="100"
+            stroke-dasharray="9 91" opacity="0"/>
+
+      <!-- ② 三齿轮咬合链（藏在表盘右上沿【之后】、只露出 3/4 个轮 ⇒ 像机芯探出壳外；
+           齿数 22/14/9 与半径 112/72/46 同模数；排在表盘之前 = 天然被铜壳遮住一截） -->
+      <g id="bzG0"></g>
+      <g id="bzG1"></g>
+      <g id="bzG2"></g>
+
+      <!-- ③ 大表盘：铜壳 → 盘面 → 压暗 → 扇窗 → 刻度 → 数字 → 轴帽 → 指针 -->
+      <circle id="bezel" class="ln" cx="650" cy="505" r="415" stroke="var(--bz-tan)" stroke-width="38" opacity="0"/>
+      <circle id="bezelShade" class="ln" cx="650" cy="505" r="415" stroke="url(#gBezel)" stroke-width="38" opacity="0"/>
+      <circle id="bezelEdge" class="ln" cx="650" cy="505" r="434" stroke="var(--bz-case)" stroke-width="4" opacity="0"/>
+      <circle id="faceEdge" class="ln" cx="650" cy="505" r="397" stroke="var(--bz-case)" stroke-width="3" opacity="0"/>
+      <circle id="face" cx="650" cy="505" r="396" style="fill:var(--bz-amber)" opacity="0"/>
+      <circle id="faceShade" cx="650" cy="505" r="396" fill="url(#gFace)" opacity="0"/>
+      <!-- 铜壳上的机加工铆钉（深棕压褐黄 3.85:1：看得见，但不抢字） -->
+      <g id="rivets" style="fill:var(--bz-case)" opacity="0"></g>
+      <!-- 铜壳左上高光弧（琥珀压褐黄 = 一道磨亮的边） -->
+      <path id="bezelHi" class="ln" stroke="var(--bz-amber)" stroke-width="4" stroke-linecap="round"
+            pathLength="100" opacity="0"/>
+
+      <!-- ④ 扇环【机加工凹槽】（纯装饰，产品位已搬到右下观察窗）：镶底 → 刻纹 → 窗框描边一笔画 -->
+      <g id="bzPort">
+        <path id="portBack" style="fill:var(--bz-case)" opacity="0"/>
+        <g id="holder" class="ln" stroke="var(--bz-olive)" stroke-width="5" stroke-linecap="round" opacity="0"></g>
+        <path id="portRim" class="ln" stroke="var(--bz-tan)" stroke-width="6" stroke-linejoin="round"
+              pathLength="100" opacity="0"/>
+      </g>
+
+      <!-- ⑤ 刻度：270°（135°→405°，缺口 90° 在正下方）。细刻度 36 条 = 12 组 × 3 条（header ⑬） -->
+      <g id="tickRing">
+        <g id="bzTk0"  class="ln" stroke="var(--bz-case)" stroke-width="3.4" opacity="0"></g>
+        <g id="bzTk1"  class="ln" stroke="var(--bz-case)" stroke-width="3.4" opacity="0"></g>
+        <g id="bzTk2"  class="ln" stroke="var(--bz-case)" stroke-width="3.4" opacity="0"></g>
+        <g id="bzTk3"  class="ln" stroke="var(--bz-case)" stroke-width="3.4" opacity="0"></g>
+        <g id="bzTk4"  class="ln" stroke="var(--bz-case)" stroke-width="3.4" opacity="0"></g>
+        <g id="bzTk5"  class="ln" stroke="var(--bz-case)" stroke-width="3.4" opacity="0"></g>
+        <g id="bzTk6"  class="ln" stroke="var(--bz-case)" stroke-width="3.4" opacity="0"></g>
+        <g id="bzTk7"  class="ln" stroke="var(--bz-case)" stroke-width="3.4" opacity="0"></g>
+        <g id="bzTk8"  class="ln" stroke="var(--bz-case)" stroke-width="3.4" opacity="0"></g>
+        <g id="bzTk9"  class="ln" stroke="var(--bz-case)" stroke-width="3.4" opacity="0"></g>
+        <g id="bzTk10" class="ln" stroke="var(--bz-case)" stroke-width="3.4" opacity="0"></g>
+        <g id="bzTk11" class="ln" stroke="var(--bz-case)" stroke-width="3.4" opacity="0"></g>
+        <g id="tickMaj" class="ln" stroke="var(--bz-case)" stroke-width="7" opacity="0"></g>
+      </g>
+      <!-- 数字圈 r=354（★ 在刻度圈【外侧】、针尖【前方】：0/25/50/75/100 是表盘自己的刻度，不是产品参数宣称） -->
+      <g id="nums" style="fill:var(--bz-case)" font-size="34" font-weight="500" letter-spacing="1"
+         text-anchor="middle" dominant-baseline="central" opacity="0"></g>
+      <!-- 满格红区（锈红只在图形上用、不上字：锈压琥珀 2.49） -->
+      <g id="redzone" class="ln" stroke="var(--bz-rust)" stroke-width="7" stroke-linecap="round" opacity="0"></g>
+
+      <!-- ⑥ 指针（★ 本库第一个带物理回弹的仪表针）+ 轴帽 -->
+      <g id="needle" opacity="0">
+        <!-- ★ 针身必须带一条褐黄机加工边：针与观察窗同为 --bz-case，
+             纯深棕针扫过扇形窗时【整段消失】（f034/f050 肉眼实测），
+             而数值判据量的是文字墨盒对画布边界，看不见"针在深色底上糊掉"。
+             用 tan 不用 amber：在亮琥珀盘面上 tan 比底暗 ⇒ 只像针多了一道边，
+             在深色窗面上 tan 比底亮 ⇒ 针的轮廓回来了。两头都不发光、不脏。 -->
+        <path id="needleBlade" style="fill:var(--bz-case);stroke:var(--bz-tan);stroke-width:3;paint-order:stroke;stroke-linejoin:round"/>
+        <path id="needleTip" style="fill:var(--bz-rust)"/>
+      </g>
+      <circle id="hub" cx="650" cy="505" r="70" style="fill:var(--bz-case)" opacity="0"/>
+      <circle id="hubRing" class="ln" cx="650" cy="505" r="70" stroke="var(--bz-tan)" stroke-width="3" opacity="0"/>
+      <circle id="hubDot" cx="650" cy="505" r="8" style="fill:var(--bz-amber)" opacity="0"/>
+
+      <!-- ⑦ 窗内状态小字（深棕压琥珀 5.38:1，摆在表盘正下方的刻度缺口里 = 那里什么都没有） -->
+      <text id="prodTag" x="650" y="800" opacity="0" font-size="24" font-weight="400" letter-spacing="4"
+            text-anchor="middle" dominant-baseline="central" style="fill:var(--bz-case)">EMPTY PORT</text>
+
+      <!-- ⑧ 底部横贯黄铜铭牌条（tagline 是 HTML 层，压在这条铜片上） -->
+      <rect id="plateBar" x="120" y="958" width="1140" height="74" rx="6"
+            style="fill:var(--bz-tan)" opacity="0"/>
+      <rect id="plateEdge" class="ln" x="120" y="958" width="1140" height="74" rx="6"
+            stroke="var(--bz-case)" stroke-width="3" opacity="0"/>
+      <g id="plateRivets" style="fill:var(--bz-case)" opacity="0"></g>
+
+      <!-- ⑨ 产品观察窗（右下 · 560×560 圆角机加工窗洞 · 真正的产品位）
+             顺序 = 镶底 → 图（吃剪裁）→ 铜框一笔画 → 内沿键线 → 四角螺钉 -->
+      <g id="bzPh">
+        <!-- ★ 窗洞必须有自己的底色：镶底若与画布同色（--bz-case），整个窗就读成
+             "一个 tan 线框 + 一块浮在页面背景上的产品"，而不是"壳里开了个洞"。
+             走 olive 的 alpha（不是渐变、不换色相）⇒ 暖灰机加工凹腔。 -->
+        <path id="phBack" style="fill:var(--bz-olive)" opacity="0"/>
+        <image id="prodImg" clip-path="url(#bzPhClip)" preserveAspectRatio="xMidYMid slice" opacity="0"/>
+        <path id="phRim" class="ln" stroke="var(--bz-tan)" stroke-width="26" pathLength="100" opacity="0"/>
+        <path id="phEdge" class="ln" stroke="var(--bz-tan)" stroke-width="3" pathLength="100" opacity="0"/>
+        <g id="phBolts" style="fill:var(--bz-case)" opacity="0"></g>
+      </g>
+    </svg>
+
+    <div id="txt">
+      <div id="partTxt">Part.02</div>
+      <div id="titleBox"></div>
+      <div id="subTxt">AT FULL SCALE</div>
+      <div id="tagline">BRASS PORT · GEAR TRAIN</div>
+    </div>
+  </div>
+</div>
+
+<div id="panel">
+  <input id="pPart" placeholder="Part" value="Part.02" />
+  <input id="pTitle" placeholder="主标题" value="满格压力" />
+  <input id="pSub" placeholder="副标题" value="AT FULL SCALE" />
+  <button id="pPlay">重播</button>
+  <input id="pImg" type="file" accept="image/*" />
+</div>
+
+<script>
+"use strict";
+/* ============================== 工具 ============================== */
+var $ = function(id){ return document.getElementById(id); };
+function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
+function seg(f,a,b){ return clamp((f-a)/(b-a),0,1); }                 /* 段前严格 0 */
+function easeOut(p){ return 1-Math.pow(1-p,3); }
+function easeInOut(p){ return p<0.5?4*p*p*p:1-Math.pow(-2*p+2,3)/2; }
+function smoother(p){ return p*p*p*(p*(p*6-15)+10); }
+function hash1(n){ var x=Math.sin(n*127.1+311.7)*43758.5453; return x-Math.floor(x); }
+function mk(parent,tag,attrs){
+  var n=document.createElementNS('http://www.w3.org/2000/svg',tag);
+  for(var k in attrs) n.setAttribute(k,attrs[k]);
+  parent.appendChild(n); return n;
+}
+function f2(v){ return Math.round(v*100)/100; }
+var FPS=30, DUR=225, HOLD=0.9, CYCLE=DUR/FPS+HOLD;
+
+/* ============================== 版面常量（唯一真源） ============================== */
+var CX=650, CY=505;                        /* 大表盘心：铜壳跨 x 216..1084 / y 71..939 */
+var R_FACE=396, R_BEZ=415, W_BEZ=38;       /* 盘面半径 / 铜壳中线半径 / 壳宽 */
+var A0=135, A1=405;                        /* 270° 刻度，缺口 90° 在正下方 */
+var N_STEP=(A1-A0)/40;                     /* 6.75° 一格 ⇒ 41 个位，整点在 k=0/10/20/30/40 */
+/* ★ 数字圈在刻度圈【外侧】(r=354 > 针尖 318)：老式黄铜压力表正是这种版面。
+   ⚠️ 这不是风格选择，是【避让】—— 数字若摆在刻度内侧（第一版 r=272、针尖 364），
+      定版时针身正好从 "100" 中间穿过，而指针和数字同为深棕 ⇒ 糊成一坨。
+      数值判据量的是文字墨盒对画布边界，量不到"针压字"，只有肉眼看得到。 */
+var R_TK_OUT=312, R_TK_IN=284, R_MAJ_IN=260, R_NUM=354;
+var N_GRP=12, PER_GRP=3;                   /* 36 条细刻度 = 12 组 × 3 */
+var W_A0=215, W_A1=325, W_R0=76, W_R1=228; /* 扇环机加工凹槽（装饰 · 产品位见 WIN_* 观察窗） */
+var R_HUB=70, NEED_TIP=318, NEED_TAIL=62;
+var PLATE_X=120, PLATE_Y=958, PLATE_W=1140;/* 铭牌条右端让给观察窗：1260 处窗边已在 1340 ⇒ 留 80px 缝 */
+var TXTX=1360, TXTW=540;                   /* 右列文字（左对齐）· 整栏上移到齿轮右侧 */
+var PARTY=132, PARTFS=30, PARTLS=8;
+var SUBFS=34, SUBLS=6;
+var TITTOP=174, TITVMAX=190, TITVB=364;     /* 标题块顶 / 竖向预算 / 墨盒底不得越过 */
+var TITMAXFS=96, TITMINFS=24, LH_K=1.18;
+var TAGFS=26, TAGLS=6;
+/* 三齿轮：同模数 m=2R/t≈10.2 ⇒ 齿距 πm≈32 三档全等（否则齿面线速度不等，肉眼看是"互相穿过"）
+   ★ 整组【搬到表盘右上沿之后】（齿轮组在 markup 里排在表盘之前 ⇒ 天然被铜壳遮住一截）：
+     腾出 x 1340..1900 / y 470..1050 一整块给产品窗。老位置（齿轮右上、文字右中）放不下 560 的窗。 */
+var GEARS=[{x:960,y:150,r:112,t:22},{x:1142,y:216,r:72,t:14},{x:1255,y:156,r:46,t:9}];
+var TOOTH_H=13, W0=1.60;                   /* 齿高同模数 ⇒ 同齿高；W0 = 大齿轮 °/帧 */
+var PH=[0,0,0];                            /* 初相位（build 里按半齿距解算一次） */
+
+/* ★★ 产品位 = 右下【机加工圆角观察窗】560×560（老板 2026-10-03 二次判：舷窗仍偏小、产品被弧切角）
+   为什么两版都不对：
+   ① 表盘内的扇环：边界盒恒为 宽 2·R1·sin(θ/2) × 高 (R1−R0)，θ=110° 时 ≈2.7:1 ⇒ 数学上做不出正方形。
+   ② 右下角出血四分之一圆：方图要吃满就得铺到剪裁圆的外接正方形，而那个正方形的远角恒在圆外
+      （对角 √2·R > R）⇒ 产品左上角必被弧切掉。要"一像素都不切"，方图只能缩到内接正方形 = R/√2，
+      R=374 时只剩 264 ⇒ 想更大就得把圆心挪进画布，而那里是文字栏。
+   ③ 正解 = 圆角矩形窗：内切盒 = 窗洞本身，方图 1:1 铺满、零裁切，只有四个 R=54 的圆角各削掉
+      一个指甲盖大的角，而产品图四周本来就有 12~21% 的留白（L10-front-760 alpha bbox 实测）⇒ 削在留白上。
+   面积：图盒 508×508 = 258,064 px² ≈ 扇环版的 5.8 倍 / 舷窗版的 1.85 倍。
+   ⚠️ 与文字栏的净空：最坏副标题下沿 y=431（TITTOP+TITVMAX+24+SUBFS×1.25）→ 窗顶 490 留 59px；
+      齿轮最低点 y=301（G2 齿尖）→ Part 顶 132 在齿轮右侧（齿轮最右 1314 < 文字最左 1360）⇒ 不共面；
+      铭牌条右端 1260 → 窗左 1340 留 80px。三处都是按【最坏输入】反算的，不是"看着还空"。 */
+var WIN_X=1340, WIN_Y=490, WIN_S=560, WIN_R=80, WIN_F=26;  /* 窗左上角 / 边长 / 外角半径 / 铜框宽 */
+var WIN_IS=WIN_S-WIN_F*2;                                   /* 图与剪裁的边长（窗洞内缩一圈框）*/
+
+/* ---------- 机床背板 bzBg（2026-10-03 老板判"太单调"补的整层背景，见 header 末段） ----------
+   净空不靠逐条手算，靠【剪裁洞】：整层吃 bzBgClip，洞 = 右栏整列（文字栏最坏墨盒 + 观察窗，各外扩 ≥26）。
+   ⚠️ 洞的坐标是从 TXTX/TXTW/TITTOP/TITVMAX/SUBFS/WIN_* 反算的，改版面必须一起核：
+      洞左 1274 = min(TXTX, WIN_X) − 66，且【等于右侧拼板的右边界】—— 洞沿必须压在一条已有板缝上，
+      否则实心拼板被洞沿整齐切断 = 文字后面浮出一块浅色矩形（第一版两个洞正是这个毛病，肉眼抓出的）。
+      洞上 66 = PARTY(132) − 66；右下推到画布边（文字与窗都靠右，留不出外沿）。 */
+var BG_HATCH=38;                        /* 斜铣网纹间距（45° 一组平行线） */
+/* ★ 钣金拼板：老板要的"占画面 50-70%"主要靠这一组【实心面】—— 光靠 2px 线条层
+      实测只盖到 3.3%（线/点元素质积天然小，见 header）。四档明度全吃 --bz-olive 的 fill-opacity，
+      不新增色相；板缝 18px 露出画布底色 = 拼板读得出来，不会糊成一片洗色。
+   ⚠️ 中排（y 344..682）只铺左条与右条 —— 中段整块是表盘的地盘（铜壳 216..1084），铺了也被盖住。
+   ⚠️ 任何一块的右边界都不许越过 1274（洞沿）；唯一例外是右上角那条 66 高的压条，
+      它的下沿就是洞的上沿 ⇒ 洞沿被板缝盖住，不露新边。 */
+var BG_PLATE=[
+  [0,0,278,326,.20],    [296,0,434,326,.30],   [748,0,354,326,.14],   [1120,0,154,326,.24],
+  [1274,0,646,66,.30],
+  [0,344,278,338,.34],  [1120,344,154,338,.22],
+  [0,700,278,362,.12],  [296,700,434,362,.18], [748,700,354,362,.28], [1120,700,154,362,.16]
+];
+var BG_RIV=[106,98,212,196];            /* 铆钉阵：起点 x/y + 横/纵步距，奇行错半个步距 */
+var BG_SEAM=[470,528,592,660];          /* 四条同心机加工缝线：绕表心（比铜壳外沿 434 远 36 起） */
+var BG_SEAM_A=[100,260];                /* 缝线角域：绕左侧半圈（右半边是文字栏与窗，本来就空不出来） */
+var BG_BOLT=[118,150,182,214,246];      /* 缝线螺栓：摆在 BG_SEAM[0] 上，与铜壳(434)/铭牌条(958) 都反算过 ≥34 */
+var BG_HOLE=[[1274,66,646,1014]];       /* 右栏整列清空：文字栏最坏墨盒 + 观察窗都在里面（见 header） */
+var BG_GEARS=[{x:-84,y:-72,r:236,t:30,w:0.22},{x:1150,y:-52,r:122,t:16,w:-0.50},{x:60,y:1040,r:120,t:15,w:0.40}];
+var BG_PH=[0,0,0];                      /* 残影齿轮初相位：build 里按 hash1 解一次（非啮合组，允许与主链不同模数） */
+
+function polar(r,a){ var t=a*Math.PI/180; return [CX+r*Math.cos(t), CY+r*Math.sin(t)]; }
+function arcD(r,a0,a1){
+  var p0=polar(r,a0), p1=polar(r,a1), dd=a1-a0;
+  return 'M'+f2(p0[0])+' '+f2(p0[1])+' A'+f2(r)+' '+f2(r)+' 0 '+
+         (Math.abs(dd)>180?1:0)+' '+(dd>0?1:0)+' '+f2(p1[0])+' '+f2(p1[1]);
+}
+/* 扇环 d：外角点起 → 外弧(顺) → 内角点 → 内弧(逆) 回到起点 */
+function sectorD(r0,r1,a0,a1){
+  var o0=polar(r1,a0), o1=polar(r1,a1), i1=polar(r0,a1), i0=polar(r0,a0);
+  var la=(Math.abs(a1-a0)>180?1:0);
+  return 'M'+f2(o0[0])+' '+f2(o0[1])+
+         ' A'+f2(r1)+' '+f2(r1)+' 0 '+la+' 1 '+f2(o1[0])+' '+f2(o1[1])+
+         ' L'+f2(i1[0])+' '+f2(i1[1])+
+         ' A'+f2(r0)+' '+f2(r0)+' 0 '+la+' 0 '+f2(i0[0])+' '+f2(i0[1])+' Z';
+}
+/* 产品窗专用：圆角矩形 d（从顶边左切点起、顺时针一整圈闭合）
+   ★ 圆心在画布外的四分之一圆做不出"方图零裁切"（见 WIN_* 上方注释）⇒ 换成正方内切的圆角窗 */
+function rrectD(x,y,w,h,r){
+  return 'M'+f2(x+r)+' '+f2(y)+
+    ' L'+f2(x+w-r)+' '+f2(y)+' A'+f2(r)+' '+f2(r)+' 0 0 1 '+f2(x+w)+' '+f2(y+r)+
+    ' L'+f2(x+w)+' '+f2(y+h-r)+' A'+f2(r)+' '+f2(r)+' 0 0 1 '+f2(x+w-r)+' '+f2(y+h)+
+    ' L'+f2(x+r)+' '+f2(y+h)+' A'+f2(r)+' '+f2(r)+' 0 0 1 '+f2(x)+' '+f2(y+h-r)+
+    ' L'+f2(x)+' '+f2(y+r)+' A'+f2(r)+' '+f2(r)+' 0 0 1 '+f2(x+r)+' '+f2(y)+' Z';
+}
+
+var els={
+  pipe:$('pipe'), pipeHi:$('pipeHi'), pipeFlow:$('pipeFlow'),
+  bezel:$('bezel'), bezelShade:$('bezelShade'), bezelEdge:$('bezelEdge'), faceEdge:$('faceEdge'),
+  face:$('face'), faceShade:$('faceShade'), rivets:$('rivets'), bezelHi:$('bezelHi'),
+  portBack:$('portBack'), holder:$('holder'), portRim:$('portRim'),
+  phBack:$('phBack'), prodImg:$('prodImg'), phRim:$('phRim'), phEdge:$('phEdge'), phBolts:$('phBolts'),
+  tickMaj:$('tickMaj'), nums:$('nums'), redzone:$('redzone'),
+  needle:$('needle'), blade:$('needleBlade'), tip:$('needleTip'),
+  hub:$('hub'), hubRing:$('hubRing'), hubDot:$('hubDot'),
+  prodTag:$('prodTag'), plateBar:$('plateBar'), plateEdge:$('plateEdge'), plateRivets:$('plateRivets'),
+  partTxt:$('partTxt'), subTxt:$('subTxt'), tagline:$('tagline'), titleBox:$('titleBox'),
+  gears:[$('bzG0'),$('bzG1'),$('bzG2')],
+  bg:$('bzBg'), bgPlate:$('bzBgPlate'), bgGFill:$('bzBgGFill'),
+  bgHatch:$('bzBgHatch'), bgRivet:$('bzBgRivet'), bgSeam:$('bzBgSeam'),
+  bgBolt:$('bzBgBolt'), bgPipe:$('bzBgPipe'), bgG:[$('bzBgG0'),$('bzBgG1'),$('bzBgG2')],
+  tickG:[$('bzTk0'),$('bzTk1'),$('bzTk2'),$('bzTk3'),$('bzTk4'),$('bzTk5'),
+         $('bzTk6'),$('bzTk7'),$('bzTk8'),$('bzTk9'),$('bzTk10'),$('bzTk11')]
+};
+var PRISTINE = '<!doctype html>\n' + document.documentElement.outerHTML;
+var SCALE=1;                                /* fit() 的最新缩放：文字实测宽要除回设计单位 */
+
+/* ============================== 静态几何（只在 build 量一次） ============================== */
+/* ---------- 机床背板 bzBg（老板 2026-10-03：「补充一些背景元素，现在的界面太过于单调了，
+              要补充的占画面的 50-70% 占比」）----------
+   ★ 结构：#bzBg 整层挂 clip-path=url(#bzBgClip)，剪裁路径 = 全画布矩形 挖掉两个洞（evenodd）：
+       洞1 = 文字栏最坏墨盒外扩 26，洞2 = 观察窗外扩 26。
+     ⇒ 背景里任何一条线/一颗铆钉【在数学上不可能】落到可编辑文字或产品图上，
+       不需要逐条手算净空，也不会重演 mission-badge 那条"装饰内环从字里横穿"（header ⑮）。
+     ⚠️ 两个洞不许在 y 方向重叠：重叠区被 evenodd 数成"穿过两次 = 在内部"，洞会被填回来。
+   ★ 单调的实测原因：画布底是一整块无纹理的 case 纯色，表盘占左上、窗占右下，
+       左条/顶条/底条 ≈ 全帧 30% 一直空着。这一层把这 30% 全部接管。 */
+/* 缝线端点裁切：把 [a0,a1] 收到"整段落在画布内（留 16 边距）"的最大连续角域；全在画布外返回 null。
+   ⚠️ 只在 build 每 0.5° 扫一次 ⇒ 满足"几何只量一次"，render 一行都不算。 */
+function seamSpan(r,a0,a1){
+  var a,p,lo=-1,hi=-1,ok;
+  for(a=a0;a<=a1+1e-6;a+=0.5){
+    p=polar(r,a);
+    ok=p[0]>=16&&p[0]<=1904&&p[1]>=16&&p[1]<=1064;
+    if(ok){ if(lo<0) lo=a; hi=a; } else if(lo>=0) break;
+  }
+  return lo<0?null:[lo,hi];
+}
+function buildClip(){
+  /* 洞坐标 = 版面常量的反算，不是拍脑袋（见 BG_HOLE 上方注释） */
+  var d='M0 0H1920V1080H0Z', i;
+  for(i=0;i<BG_HOLE.length;i++){
+    var h=BG_HOLE[i];
+    d+='M'+h[0]+' '+h[1]+'H'+f2(h[0]+h[2])+'V'+f2(h[1]+h[3])+'H'+h[0]+'Z';
+  }
+  $('bzBgClipD').setAttribute('d',d);
+}
+function buildPlates(){
+  /* 钣金拼板：实心面 + 一道 tan 焊缝描边。透明度写在各 rect 的 style 上（静态件，不进 render） */
+  var i,p;
+  for(i=0;i<BG_PLATE.length;i++){
+    p=BG_PLATE[i];
+    mk(els.bgPlate,'rect',{x:p[0],y:p[1],width:p[2],height:p[3],rx:6,
+      style:'fill:var(--bz-olive);fill-opacity:'+p[4]+';stroke:var(--bz-tan);stroke-opacity:.30;stroke-width:1.6'});
+  }
+}
+function buildHatch(){
+  /* 斜铣网纹：45° 一组平行线斜穿整幅（-1080 → 1920，间距 BG_HATCH）⇒ 板面是"铣过的"不是平涂 */
+  for(var x=-1080;x<1920;x+=BG_HATCH)
+    mk(els.bgHatch,'line',{x1:x,y1:0,x2:f2(x+1080),y2:1080});
+}
+function buildRivets(){
+  /* 铆钉阵：奇行错半个步距 = 钣金标准排法。行数/列数按步距从常量推，不写死。 */
+  var j,i,ny=Math.floor((1080-BG_RIV[1])/BG_RIV[3])+1, nx=Math.floor((1920-BG_RIV[0])/BG_RIV[2])+1;
+  for(j=0;j<ny;j++) for(i=0;i<nx;i++)
+    mk(els.bgRivet,'circle',{cx:f2(BG_RIV[0]+i*BG_RIV[2]+(j%2?BG_RIV[2]/2:0)),
+                             cy:f2(BG_RIV[1]+j*BG_RIV[3]),r:3.5});
+}
+function buildSeams(){
+  var i,j,p,sp;
+  for(i=0;i<BG_SEAM.length;i++){
+    sp=seamSpan(BG_SEAM[i],BG_SEAM_A[0],BG_SEAM_A[1]);
+    if(sp) mk(els.bgSeam,'path',{d:arcD(BG_SEAM[i],sp[0],sp[1])});
+  }
+  /* 螺栓只挂在最内圈缝线上：那圈离铜壳外沿 434 有 36、离铭牌条顶 958 最近的一只有 38 */
+  for(j=0;j<BG_BOLT.length;j++){
+    p=polar(BG_SEAM[0],BG_BOLT[j]);
+    mk(els.bgBolt,'circle',{cx:f2(p[0]),cy:f2(p[1]),r:8,
+      style:'fill:var(--bz-case)',stroke:'var(--bz-tan)','stroke-width':2.5});
+  }
+}
+function buildBgGears(){
+  /* 三只残影齿轮：只描边、不填锈红 ⇒ 读成"铸在背板上的齿形"，与主链的实心轮拉开层级。
+     ⚠️ 不与主链啮合 ⇒ 允许不同模数（header 的"必须同模数"只对啮合组成立）。 */
+  var i,j,g,gg,pitch,tw,rt,sr;
+  for(i=0;i<BG_GEARS.length;i++){
+    g=BG_GEARS[i]; gg=els.bgG[i]; BG_PH[i]=hash1(i*7.3+2)*360;
+    /* 轮体先铺一层实心（残影要读成"铸进背板的轮"，只描边在铣纹底上几乎没有重量）*/
+    mk(els.bgGFill,'circle',{cx:g.x,cy:g.y,r:f2(g.r*0.98)});
+    mk(els.bgGFill,'circle',{cx:g.x,cy:g.y,r:f2(g.r*0.62),
+      style:'fill:var(--bz-case);fill-opacity:.42'});
+    mk(els.bgGFill,'circle',{cx:g.x,cy:g.y,r:f2(g.r*0.16)});
+    mk(gg,'circle',{cx:g.x,cy:g.y,r:g.r});
+    pitch=Math.PI*2*g.r/g.t; tw=clamp(pitch*0.42,8,16);
+    for(j=0;j<g.t;j++){ rt=j*360/g.t;
+      mk(gg,'rect',{x:f2(g.x+g.r-2),y:f2(g.y-tw/2),width:15,height:f2(tw),rx:2,
+        transform:'rotate('+f2(rt)+' '+g.x+' '+g.y+')'}); }
+    mk(gg,'circle',{cx:g.x,cy:g.y,r:f2(g.r*0.62)});
+    for(j=0;j<4;j++){ sr=j*90*Math.PI/180;
+      mk(gg,'line',{x1:f2(g.x+Math.cos(sr)*g.r*0.18),y1:f2(g.y+Math.sin(sr)*g.r*0.18),
+        x2:f2(g.x+Math.cos(sr)*g.r*0.56),y2:f2(g.y+Math.sin(sr)*g.r*0.56),'stroke-width':8}); }
+    mk(gg,'circle',{cx:g.x,cy:g.y,r:f2(g.r*0.16)});
+  }
+}
+function buildPipe2(){
+  /* 竖导管：走 x=56 的左侧条（铜壳左沿 216 之外），顶 230 底 870 ⇒ 两端都不越界、不压齿轮。
+     四道管箍是实心件：缝线从它后面穿过 ⇒ 读成"零件装在背板上"，不是串线。 */
+  var i;
+  for(i=0;i<4;i++) mk(els.bgPipe,'rect',{x:36,y:296+i*160,width:40,height:14,rx:3,
+    style:'fill:var(--bz-case)',stroke:'var(--bz-tan)','stroke-width':2.5});
+}
+function buildBezel(){
+  /* 铜壳铆钉：8 颗沿中线 r=415 均布（30° 起 ⇒ 避开左上高光弧与铜管接口） */
+  for(var i=0;i<8;i++){
+    var p=polar(R_BEZ, 30+i*45);
+    mk(els.rivets,'circle',{cx:f2(p[0]),cy:f2(p[1]),r:6});
+  }
+  els.bezelHi.setAttribute('d', arcD(R_BEZ+W_BEZ/2-4, 196, 248));   /* 左上高光弧 */
+  els.bezel.setAttribute('stroke-dasharray','');
+}
+function buildTicks(){
+  /* 41 个刻度位：k%10==0 是整点（5 条），其余 36 条细刻度按出现顺序每 3 条一组 ⇒ 正好 12 组 */
+  var k, mi=0, a, p0, p1, isMaj;
+  for(k=0;k<=40;k++){
+    a=A0+N_STEP*k; isMaj=(k%10===0);
+    p0=polar(isMaj?R_MAJ_IN:R_TK_IN, a); p1=polar(R_TK_OUT, a);
+    var ln={x1:f2(p0[0]),y1:f2(p0[1]),x2:f2(p1[0]),y2:f2(p1[1])};
+    if(isMaj) mk(els.tickMaj,'line',ln);
+    else { mk(els.tickG[(mi/PER_GRP)|0],'line',ln); mi++; }
+  }
+  if(mi!==N_GRP*PER_GRP) throw new Error('刻度分组不匹配 mi='+mi);
+  mk(els.redzone,'path',{d:arcD(298, A0+(A1-A0)*0.85, A1)});        /* 满格红区 85%→100%（压在刻度带中线，不挤外圈数字） */
+}
+function buildNums(){
+  var vals=['0','25','50','75','100'], i;
+  for(i=0;i<vals.length;i++){
+    var p=polar(R_NUM, A0+i*(A1-A0)/4);
+    mk(els.nums,'text',{x:f2(p[0]),y:f2(p[1])}).textContent=vals[i];
+  }
+}
+function buildPort(){
+  /* —— 扇环机加工凹槽（装饰）—— */
+  var d=sectorD(W_R0,W_R1,W_A0,W_A1);
+  els.portBack.setAttribute('d', d);
+  els.portRim.setAttribute('d', d);
+  els.portRim.setAttribute('stroke-dasharray','100 100');
+  /* 槽内刻纹：三条同心弧 + 一道内弦，半径全部由 W_R0/W_R1 现推（改扇环不用回来改数）
+     ★ 不用圆（撞 vinyl）、不用山形（撞 paper-cut）、不用 V 形军衔纹（撞 mission-badge） */
+  var span=W_R1-W_R0, rr=[W_R0+span*0.30, W_R0+span*0.52, W_R0+span*0.74], i;
+  for(i=0;i<rr.length;i++) mk(els.holder,'path',{d:arcD(rr[i], W_A0+10, W_A1-10)});
+  var q0=polar(W_R0+26,W_A0+14), q1=polar(W_R0+26,W_A1-14);
+  mk(els.holder,'line',{x1:f2(q0[0]),y1:f2(q0[1]),x2:f2(q1[0]),y2:f2(q1[1])});
+
+  /* —— 产品观察窗（右下 · 真产品位）—— */
+  $('bzPhClipD').setAttribute('d', rrectD(WIN_X+WIN_F, WIN_Y+WIN_F, WIN_IS, WIN_IS, WIN_R-WIN_F));
+  els.phBack.setAttribute('d', rrectD(WIN_X+WIN_F, WIN_Y+WIN_F, WIN_IS, WIN_IS, WIN_R-WIN_F));
+  /* 铜框中线 = 窗边界内缩半个框宽 ⇒ 框正好压在 WIN_F 那一圈上，不外溢也不留缝 */
+  els.phRim.setAttribute('d', rrectD(WIN_X+WIN_F/2, WIN_Y+WIN_F/2, WIN_S-WIN_F, WIN_S-WIN_F, WIN_R-WIN_F/2));
+  els.phRim.setAttribute('stroke-dasharray','100 100');
+  /* 内沿键线：画在窗洞口（框与图的分界）。★ 不用 --bz-case —— 画布底色也是 case，
+     一条深棕线画在深棕底上等于没画（舷窗版就白留了一层，肉眼才看得出，判据全绿）。 */
+  els.phEdge.setAttribute('d', rrectD(WIN_X+WIN_F+7, WIN_Y+WIN_F+7, WIN_IS-14, WIN_IS-14, WIN_R-WIN_F-7));
+  els.phEdge.setAttribute('stroke-dasharray','100 100');
+  for(i=0;i<4;i++)
+    mk(els.phBolts,'circle',{cx:WIN_X+(i%2?WIN_S-30:30), cy:WIN_Y+(i<2?30:WIN_S-30), r:7});
+  /* 图元 bbox = 窗洞本身（★ 与剪裁路径同一个矩形，一像素都不许多）⇒ 方图 1:1 铺满、零裁切。
+     四个 R=54 的圆角各削掉一个角，而产品图四周本来就有 12~21% 留白（alpha bbox 实测）⇒ 削在留白上。
+     ⚠️ 上一版这里写成"剪裁圆的外接正方形 = 直径"，产品被放大到只露 1/4，判据照样全绿。 */
+  els.prodImg.setAttribute('x', Math.round(WIN_X+WIN_F));
+  els.prodImg.setAttribute('y', Math.round(WIN_Y+WIN_F));
+  els.prodImg.setAttribute('width',  Math.round(WIN_IS));
+  els.prodImg.setAttribute('height', Math.round(WIN_IS));
+  els.pipe.setAttribute('stroke-dasharray','100 100');
+  els.pipeHi.setAttribute('stroke-dasharray','100 100');
+}
+function buildGears(){
+  /* 初相位：外啮合要"你的齿进我的槽" ⇒ φi = −(t(i−1)/ti)·φ(i−1) + 半齿距
+     ⇒ 第 0 帧齿尖互锁，整片转下去也不会互相穿过 */
+  var i, j, g, pitch, tw, rt, sr;
+  PH[0]=hash1(3)*360;
+  for(i=1;i<GEARS.length;i++)
+    PH[i]=-(GEARS[i-1].t/GEARS[i].t)*PH[i-1] + 180/GEARS[i].t;
+  for(i=0;i<GEARS.length;i++){
+    g=GEARS[i]; els.gears[i].textContent='';
+    pitch=Math.PI*2*g.r/g.t;                       /* πm ≈ 32，三档全等 */
+    tw=clamp(pitch*0.44, 9, 15);
+    mk(els.gears[i],'circle',{cx:g.x,cy:g.y,r:g.r,style:'fill:var(--bz-rust)'});
+    for(j=0;j<g.t;j++){
+      rt=j*360/g.t;
+      mk(els.gears[i],'rect',{x:f2(g.x+g.r-4),y:f2(g.y-tw/2),width:TOOTH_H,height:f2(tw),rx:2,
+        style:'fill:var(--bz-rust)',transform:'rotate('+f2(rt)+' '+g.x+' '+g.y+')'});
+    }
+    /* 轮缘亮边（琥珀压锈红 = 2.49，只当金属高光用，不做字） */
+    mk(els.gears[i],'circle',{cx:g.x,cy:g.y,r:g.r,fill:'none',stroke:'var(--bz-amber)','stroke-width':3.5});
+    mk(els.gears[i],'circle',{cx:g.x,cy:g.y,r:f2(g.r*0.62),fill:'none',
+      stroke:'var(--bz-olive)','stroke-width':4.5});
+    for(j=0;j<4;j++){                              /* 四根辐条 = 转起来看得见 */
+      sr=j*90*Math.PI/180;
+      mk(els.gears[i],'line',{x1:f2(g.x+Math.cos(sr)*g.r*0.20),y1:f2(g.y+Math.sin(sr)*g.r*0.20),
+        x2:f2(g.x+Math.cos(sr)*g.r*0.56),y2:f2(g.y+Math.sin(sr)*g.r*0.56),
+        stroke:'var(--bz-olive)','stroke-width':9,'stroke-linecap':'round'});
+    }
+    mk(els.gears[i],'circle',{cx:g.x,cy:g.y,r:f2(g.r*0.20),style:'fill:var(--bz-olive)'});
+    mk(els.gears[i],'circle',{cx:g.x,cy:g.y,r:4,style:'fill:var(--bz-amber)'});
+  }
+}
+function buildPlate(){
+  /* ★ 条体几何由常量写一遍（markup 里那份只是静态兜底）⇒ 铭牌只有 PLATE_* 一个真源。
+     横贯整幅（120..1800）而不是只铺在表盘下方：定版时右下是一整块空场，
+     铜条拉通才压得住版面；tagline 随之居中 ⇒ 不再出现"字挤在左端、右半空着"。 */
+  els.plateBar.setAttribute('x', PLATE_X);   els.plateBar.setAttribute('width', PLATE_W);
+  els.plateEdge.setAttribute('x', PLATE_X);  els.plateEdge.setAttribute('width', PLATE_W);
+  var xs=[PLATE_X+26, PLATE_X+PLATE_W-26], i, j;
+  for(i=0;i<xs.length;i++) for(j=0;j<2;j++)
+    mk(els.plateRivets,'circle',{cx:xs[i],cy:PLATE_Y+(j?54:20),r:6});
+}
+function buildNeedle(){
+  /* ★ 刀身写在【以表心为原点、指向 +x（θ=0）】的标准姿态下 ⇒ 之后每帧只 rotate(θ,CX,CY)。
+       第一版我把 d 写成从 SVG 全局原点出发 ⇒ 转的是一根"在左上角绕表心公转的针"。 */
+  els.blade.setAttribute('d',
+    'M'+f2(CX+NEED_TIP)+' '+CY+
+    ' L'+f2(CX+NEED_TIP*0.52)+' '+f2(CY-7)+
+    ' L'+f2(CX-NEED_TAIL)+' '+f2(CY-10)+
+    ' L'+f2(CX-NEED_TAIL)+' '+f2(CY+10)+
+    ' L'+f2(CX+NEED_TIP*0.52)+' '+f2(CY+7)+' Z');
+  els.tip.setAttribute('d',
+    'M'+f2(CX+NEED_TIP)+' '+CY+
+    ' L'+f2(CX+NEED_TIP-46)+' '+f2(CY-5.5)+
+    ' L'+f2(CX+NEED_TIP-46)+' '+f2(CY+5.5)+' Z');
+}
+function buildStatic(){ buildClip(); buildPlates(); buildHatch(); buildRivets(); buildSeams();
+                        buildBgGears();
+                        buildPipe2(); buildBezel(); buildTicks(); buildNums(); buildPort();
+                        buildGears(); buildPlate(); buildNeedle(); }
+
+/* ============================== 可编辑文字 ============================== */
+var cfg={part:'Part.02', title:'满格压力', sub:'AT FULL SCALE', img:''};
+var TITLE={lines:1, fs:96, lh:115, chars:1, step:2.6};
+
+/* ★ 单行固定串的实测自适应：字号与字距【同乘 k】，缩到 fsMin 为止（不靠字数估）。
+   ⚠️ getBoundingClientRect 量的是【屏幕像素】⇒ 宿主里 #stage 被 fit() 缩过，必须除回 SCALE，
+      否则预览窗口越小、量出来越窄 ⇒ 长字不缩 ⇒ 溢出（数值判据在 1920 视口跑，全盲）。 */
+function fitText(el, fs0, ls0, wmax, fsmin){
+  el.style.fontSize=fs0+'px'; el.style.letterSpacing=ls0+'px';
+  var w=0; try{ w=el.getBoundingClientRect().width/SCALE; }catch(e){ w=0; }
+  if(!(w>0)) return;
+  var k=wmax/w;
+  if(k<1){
+    var fs=Math.max(fsmin, fs0*k);
+    el.style.fontSize=fs.toFixed(1)+'px';
+    el.style.letterSpacing=(ls0*fs/fs0).toFixed(1)+'px';
+  }
+}
+function buildTitle(){
+  var box=els.titleBox; box.textContent='';
+  var raw=(cfg.title||'').replace(/\s+$/,'');
+  var lines=raw.split('\n');
+  if(lines.length===1 && raw.length>8){                /* 单行过长 ⇒ 先按空格切词再硬切两行 */
+    var sp=raw.lastIndexOf(' ', Math.ceil(raw.length/2));
+    if(sp<0) sp=Math.floor(raw.length/2);
+    lines=[raw.slice(0,sp), raw.slice(sp+1)];
+  }
+  lines=lines.slice(0,2);                              /* 竖向只给两行（下沿是副标题） */
+  var maxLen=Math.max.apply(null, lines.map(function(s){return s.length;}));
+  var fs=clamp(TXTW/(Math.max(1,maxLen)*1.06), TITMINFS, TITMAXFS);
+  /* ★ 块高预算 212 = lines×fs×LH_K ⇒ fs ≤ 212/(LH_K×lines)，墨盒底自动 ≤ TITVB 694 */
+  var fitV=TITVMAX/(LH_K*lines.length);
+  if(fs>fitV) fs=Math.max(TITMINFS, fitV);
+  var ls=Math.max(1, fs*0.015), lh=fs*LH_K, li, ci, total=0;
+  for(li=0;li<lines.length;li++){
+    var ln=document.createElement('div'); ln.className='tline';
+    ln.style.fontSize=fs.toFixed(1)+'px'; ln.style.lineHeight=lh.toFixed(1)+'px';
+    ln.style.letterSpacing=ls.toFixed(1)+'px';
+    var t=lines[li], n=Math.max(1,t.length);
+    for(ci=0;ci<t.length;ci++){
+      var w=document.createElement('span'); w.className='tw';
+      w.textContent=t.charAt(ci); ln.appendChild(w);
+    }
+    if(!t.length){ var nb=document.createElement('span'); nb.className='tw'; nb.innerHTML='&nbsp;'; ln.appendChild(nb); }
+    box.appendChild(ln);
+    total+=n;
+  }
+  TITLE.fs=fs; TITLE.lh=lh; TITLE.lines=lines.length; TITLE.chars=total;
+  /* ★ 版式只有 TXTX/TXTW/TITTOP 一个真源 ⇒ CSS 里那份只是静态兜底，这里再写一遍。 */
+  box.style.left=TXTX+'px'; box.style.width=TXTW+'px'; box.style.top=TITTOP+'px';
+  /* ★ 步距按【总字数】回算：最后一个字必须在 f200 前亮完（定版判据 W3）。 */
+  TITLE.step = total>1 ? Math.min(2.6, 78/(total-1)) : 2.6;
+  /* 副标题挂在标题块下沿 + 24 ⇒ 一行/两行都不撞版 */
+  els.subTxt.style.top=Math.round(TITTOP + lh*lines.length + 24)+'px';
+}
+function setProdImg(src){
+  cfg.img=src||'';
+  /* ⚠️ 无图 = 属性缺省（不是空串）：空串会被解析成文档 URL ⇒ 永不结束的请求 ⇒ 导出第 0 帧抓屏挂死 */
+  if(cfg.img) els.prodImg.setAttribute('href', cfg.img);
+  else els.prodImg.removeAttribute('href');
+}
+function applyCfg(d){
+  var dirty=false;
+  if(d.part!==undefined){ cfg.part=d.part; dirty=true; }
+  if(d.title!==undefined){ cfg.title=d.title; dirty=true; }
+  if(d.sub!==undefined){ cfg.sub=d.sub; dirty=true; }
+  els.partTxt.textContent=cfg.part||' ';
+  els.subTxt.textContent =cfg.sub||' ';
+  /* ★ 固定串不许复用副标题默认文本（撞词看着像重复排版），也不许放无出处的数字 */
+  els.tagline.textContent='BRASS PORT · GEAR TRAIN';
+  if(dirty||!els.titleBox.childNodes.length) buildTitle();
+  els.partTxt.style.left=TXTX+'px'; els.partTxt.style.top=PARTY+'px';
+  els.subTxt.style.left=TXTX+'px';
+  els.tagline.style.left=(PLATE_X+PLATE_W/2)+'px';   /* 条心 = 居中锚点，与 PLATE_W 同一个真源 */
+  /* 缩完字号才能量准：这三行顺序不许换 */
+  fitText(els.partTxt, PARTFS, PARTLS, TXTW, 18);
+  fitText(els.subTxt,  SUBFS,  SUBLS,  TXTW, 20);
+  fitText(els.tagline, TAGFS,  TAGLS,  PLATE_W-120, 18);
+  els.prodTag.textContent = cfg.img ? 'ON THE PORT' : 'EMPTY PORT';
+}
+
+/* ============================== 逐帧渲染 ============================== */
+function render(f){
+  var i, p;
+
+  /* ⓪ 机床背板：整层带【下限】淡入 ⇒ 第 0 帧就已经是一张铣过的板，不是空色块（header ⑩+⑯）。
+        子组的透明度写在 markup 里当静态值（拼板/网纹最轻 → 螺栓最实），这里只动层闸与残影齿轮。
+        ⚠️ 下限从 0.55 抬到 0.68：拼板这一轮成为画面主体之一，层闸压太低 = 首帧又洗回暗底。 */
+  var bgp=clamp(0.68+seg(f,0,34)*0.32,0,1);
+  els.bg.setAttribute('opacity', bgp.toFixed(3));
+  for(i=0;i<BG_GEARS.length;i++){
+    els.bgG[i].setAttribute('transform','rotate('+
+      f2(BG_PH[i]+BG_GEARS[i].w*f)+' '+BG_GEARS[i].x+' '+BG_GEARS[i].y+')');
+  }
+
+  /* ① 铜壳 + 盘面：🔴 半径一律不动，入场只写 opacity，且每个入场层都带【下限】
+        ⇒ 第 0 帧就是一张海报（header ⑩+⑯：上一张的坑是"半径预开 62% 却被自己的 opacity 闸归零"） */
+  p=clamp(0.80+seg(f,0,22)*0.20,0,1);
+  els.bezel.setAttribute('opacity', p.toFixed(3));
+  els.bezelShade.setAttribute('opacity', p.toFixed(3));
+  p=clamp(0.55+seg(f,0,20)*0.45,0,1);
+  els.bezelEdge.setAttribute('opacity', p.toFixed(3));
+  els.faceEdge.setAttribute('opacity', p.toFixed(3));
+  p=clamp(0.76+seg(f,0,26)*0.24,0,1);
+  els.face.setAttribute('opacity', p.toFixed(3));
+  els.faceShade.setAttribute('opacity', p.toFixed(3));
+  els.hub.setAttribute('opacity', p.toFixed(3));
+  els.hubRing.setAttribute('opacity', p.toFixed(3));
+  els.hubDot.setAttribute('opacity', p.toFixed(3));
+
+  /* ② 刻度：整点 5 条先亮（0.40 起），36 条细刻度按 12 组顺时针逐格抄亮（0.22 起 = 首帧不空） */
+  els.tickMaj.setAttribute('opacity', clamp(0.40+easeOut(seg(f,2,20))*0.60,0,1).toFixed(3));
+  for(i=0;i<N_GRP;i++){
+    p=easeOut(seg(f, 10+i*7, 30+i*7));
+    els.tickG[i].setAttribute('opacity', clamp(0.22+p*0.78,0,1).toFixed(3));
+  }
+  els.nums.setAttribute('opacity', easeOut(seg(f,16,54)).toFixed(3));
+  els.redzone.setAttribute('opacity', (0.92*easeOut(seg(f,30,66))).toFixed(3));
+  els.rivets.setAttribute('opacity', easeOut(seg(f,10,40)).toFixed(3));
+  p=smoother(seg(f,26,62));
+  els.bezelHi.setAttribute('stroke-dasharray','100 100');
+  els.bezelHi.setAttribute('stroke-dashoffset', f2(100*(1-p)));
+  els.bezelHi.setAttribute('opacity', (0.85*clamp(0.30+seg(f,26,40)*0.70,0,1)).toFixed(3));
+
+  /* ③ 扇环机加工凹槽（纯装饰 · 产品位已搬到观察窗）：框一笔画抄出（预抄 35% ⇒ 首帧凹槽已在场） */
+  p=0.35+0.65*smoother(seg(f,2,48));
+  els.portRim.setAttribute('stroke-dashoffset', f2(100*(1-p)));
+  els.portRim.setAttribute('opacity', clamp(0.58+seg(f,2,26)*0.42,0,1).toFixed(3));
+  var po=clamp(0.55+seg(f,2,30)*0.45,0,1);
+  els.portBack.setAttribute('opacity', po.toFixed(3));
+  els.holder.setAttribute('opacity', (po*0.55).toFixed(3));
+  els.prodTag.setAttribute('opacity', (0.90*easeOut(seg(f,40,64))).toFixed(3));
+
+  /* ③b 产品观察窗（右下 · ★ 真正的产品位）：铜框一笔画抄出 → 镶底与图同窗淡入 → 螺钉最后亮
+        ⚠️ 框与图必须同一时间窗淡入，不许"先亮框再亮图"分两段 —— 分两段的中途是一个黑洞。
+        ⚠️ 0.42 的下限是给第 0 帧海报用的：右下角那块空场一开场就被窗压住，不留白。 */
+  p=smoother(seg(f,58,106));
+  els.phRim.setAttribute('stroke-dashoffset', f2(100*(1-p)));
+  els.phEdge.setAttribute('stroke-dashoffset', f2(100*(1-p)));
+  var pho=clamp(0.42+seg(f,58,100)*0.58,0,1);
+  els.phRim.setAttribute('opacity', pho.toFixed(3));
+  els.phEdge.setAttribute('opacity', (0.45*pho).toFixed(3));
+  els.phBack.setAttribute('opacity', (0.30*pho).toFixed(3));
+  els.prodImg.setAttribute('opacity', pho.toFixed(3));
+  els.phBolts.setAttribute('opacity', (0.90*easeOut(seg(f,100,132))).toFixed(3));
+
+  /* ④ 铜管：从表盘那端往齿轮那端抄出来；抄完才开始跑脉冲（脉冲全程在跑 = 定版后的"活着"） */
+  p=smoother(seg(f,20,70));
+  els.pipe.setAttribute('stroke-dashoffset', f2(100*(1-p)));
+  els.pipeHi.setAttribute('stroke-dashoffset', f2(100*(1-p)));
+  els.pipe.setAttribute('opacity', clamp(0.25+seg(f,20,40)*0.75,0,1).toFixed(3));
+  els.pipeHi.setAttribute('opacity', (0.75*p).toFixed(3));
+  if(f>58){
+    els.pipeFlow.setAttribute('opacity','0.95');
+    els.pipeFlow.setAttribute('stroke-dashoffset', f2(-(((f-58)*1.6)%100)));
+  } else els.pipeFlow.setAttribute('opacity','0');
+
+  /* ⑤ 齿轮链：ω = W0·t0/ti（齿数反比 ⇒ 齿面线速度相等）、转向逐档交替 */
+  for(i=0;i<GEARS.length;i++){
+    var om = W0*GEARS[0].t/GEARS[i].t*((i%2)?-1:1);
+    els.gears[i].setAttribute('transform',
+      'rotate('+f2(PH[i]+om*f)+' '+GEARS[i].x+' '+GEARS[i].y+')');
+  }
+
+  /* ⑥ ★ 招牌 A：指针从 0 位（135°）冲到满格（405°）—— easeOut + 过冲 + 阻尼回弹 + 定版微颤。
+        全部是 f 的纯函数（不许用"上一次位置"这类状态，否则 seek 回来就错）。 */
+  var s=easeOut(seg(f,6,150));
+  var th=A0+(A1-A0)*s;
+  if(f>140){
+    var q=f-140;
+    th += 6.5*Math.exp(-q/22)*Math.sin(q/5.4);      /* 过冲 + 阻尼：±6.5° 衰减 */
+    th += 0.45*Math.sin(2*Math.PI*q/41);            /* 定版微颤：±0.45°，周期 41 帧 */
+  }
+  els.needle.setAttribute('transform','rotate('+f2(th)+' '+CX+' '+CY+')');
+  els.needle.setAttribute('opacity', clamp(0.75+seg(f,0,14)*0.25,0,1).toFixed(3));
+
+  /* ⑦ ★ 招牌 B：标题逐字【冲压落位】—— translateY(-10) scaleY(.90) → 0/1，
+        入场态只缩不涨（header ⑪），与 paper-cut 的"上浮 + 放大"、mission-badge 的"水平收拢"都不撞。 */
+  var ch=els.titleBox.querySelectorAll('.tw'), s0;
+  for(i=0;i<ch.length;i++){
+    s0=96+i*TITLE.step;
+    p=easeOut(seg(f, s0, s0+15));
+    ch[i].style.opacity=p.toFixed(3);
+    ch[i].style.transform='translateY('+f2(-10*(1-p))+'px) scaleY('+f2(0.90+0.10*p)+')';
+  }
+
+  /* ⑧ Part / 副标题：整行从左侧（朝表盘那侧）滑进位 + 淡入 */
+  p=easeInOut(seg(f,150,174));
+  els.partTxt.style.opacity=p.toFixed(3);
+  els.partTxt.style.transform='translateX('+f2(-14*(1-p))+'px)';
+  p=easeInOut(seg(f,176,202));
+  els.subTxt.style.opacity=p.toFixed(3);
+  els.subTxt.style.transform='translateX('+f2(-14*(1-p))+'px)';
+
+  /* ⑨ 底部铭牌条：整条从下沿升起 8px + 淡入，字最后亮 */
+  p=easeOut(seg(f,58,92));
+  els.plateBar.setAttribute('opacity', p.toFixed(3));
+  els.plateEdge.setAttribute('opacity', p.toFixed(3));
+  els.plateRivets.setAttribute('opacity', easeOut(seg(f,74,104)).toFixed(3));
+  var dy='translate(0 '+f2(8*(1-p))+')';
+  els.plateBar.setAttribute('transform', dy);
+  els.plateEdge.setAttribute('transform', dy);
+  els.plateRivets.setAttribute('transform', dy);
+  els.tagline.style.opacity=(0.96*easeOut(seg(f,186,214))).toFixed(3);
+}
+
+/* ============================== 主循环 ============================== */
+var rafId=0, startAt=performance.now();
+function tick(){
+  var now=performance.now();
+  var t=((now-startAt)/1000)%CYCLE;
+  render(Math.min(DUR, t*FPS));
+  rafId=requestAnimationFrame(tick);
+}
+function restart(){ startAt=performance.now(); }
+function fit(){
+  /* ⚠️ 无放大上限（导出高清链路要求）。#stage 的 transform 归这里独占 ——
+     本引擎所有运动都写在 SVG 元素或 .tw 上，都不碰 #stage。 */
+  var s=Math.min(innerWidth/1920, innerHeight/1080);
+  SCALE=s;
+  var st=$('stage'), wr=$('wrap');
+  st.style.transform='scale('+s+')';
+  wr.style.width=(1920*s)+'px'; wr.style.height=(1080*s)+'px';
+}
+window.addEventListener('resize',fit);
+
+/* ============================== 配色 ============================== */
+var VAR_NAMES=['--bz-case','--bz-amber','--bz-teal','--bz-tan','--bz-rust','--bz-olive'];
+function applyColors(vars){
+  var root=document.documentElement.style, k;
+  for(k in vars){ if(k.indexOf('--bz-')===0) root.setProperty(k,vars[k]); }
+}
+
+/* ============================== 自定义字体（cyber 协议） ============================== */
+function applyFont(d){
+  var name=d.family, url=d.dataURL;
+  if(!name){ var old=document.getElementById('__bzFont'); if(old) old.remove(); return; }
+  var st=document.getElementById('__bzFont')||document.createElement('style');
+  st.id='__bzFont';
+  st.textContent = url ? '@font-face{font-family("__bzfont");src:url('+url+') format("truetype");font-display:block;}' : '';
+  if(!st.parentNode) document.head.appendChild(st);
+  var fam = url ? '__bzfont' : name;
+  $('stage').style.fontFamily='"'+fam+'","Noto Sans SC","Microsoft YaHei",sans-serif';
+  applyCfg({});
+}
+
+/* ============================== postMessage 桥（与 vinyl / paper-cut 同协议） ============================== */
+window.addEventListener('message',function(e){
+  var d=e.data||{};
+  if(d.source!=='host')return;
+  try{
+    if(d.type==='cyber-embed'){ document.body.classList.add('embed'); fit(); }
+    else if(d.type==='cyber-unembed'){ document.body.classList.remove('embed'); fit(); }
+    else if(d.type==='cyber-cfg'){ applyCfg(d); if(d.replay)restart(); }
+    else if(d.type==='cyber-color'){ applyColors(d.vars||{}); }
+    else if(d.type==='cyber-img'){ setProdImg(d.img||''); applyCfg({}); }
+    else if(d.type==='cyber-font'){ applyFont(d); }
+    else if(d.type==='cyber-play'){ restart(); if(!rafId) rafId=requestAnimationFrame(tick); }
+    else if(d.type==='cyber-seek'){
+      if(rafId){ try{ cancelAnimationFrame(rafId); }catch(err){} rafId=0; }
+      /* ⚠️ d.t 单位是【秒】 */
+      if(typeof d.t==='number'){ try{ render(Math.min(DUR, d.t*FPS)); void document.documentElement.offsetHeight; }catch(err){} }
+    }
+    else if(d.type==='cyber-resume'){
+      startAt=performance.now(); if(!rafId) rafId=requestAnimationFrame(tick);
+    }
+    else if(d.type==='cyber-get-html'){
+      var ovr='',k2;
+      var cs=getComputedStyle(document.documentElement);
+      for(k2=0;k2<VAR_NAMES.length;k2++){ ovr+=VAR_NAMES[k2]+':'+cs.getPropertyValue(VAR_NAMES[k2]).trim()+';'; }
+      ovr=':root{'+ovr+'}';
+      /* ⚠️ 本注释里不能写 script 闭合标签的字面量 —— 它会先把自己所在的 script 截断 */
+      var boot='<script>window.__BZ_BOOT='+JSON.stringify({part:cfg.part,title:cfg.title,sub:cfg.sub,img:cfg.img||''}).replace(/</g,'\\u003c')+'<\/script>';
+      var html=PRISTINE.replace('</head>','<style id="bz-override">'+ovr+'</style>'+boot+'</head>');
+      parent.postMessage({source:'cyber',type:'cyber-html',reqId:d.reqId,html:html},'*');
+    }
+  }catch(err){ parent.postMessage({source:'cyber',type:'cyber-status',err:err.message},'*'); }
+});
+
+/* ============================== 独立面板 ============================== */
+$('pPart').addEventListener('input',function(){ applyCfg({part:this.value}); restart(); });
+$('pTitle').addEventListener('input',function(){ applyCfg({title:this.value}); restart(); });
+$('pSub').addEventListener('input',function(){ applyCfg({sub:this.value}); restart(); });
+$('pPlay').addEventListener('click',function(){ restart(); });
+$('pImg').addEventListener('change',function(){
+  var f=this.files&&this.files[0]; if(!f) return;
+  if(!/^image\//i.test(f.type||'')) return;
+  var r=new FileReader();
+  r.onload=function(){ setProdImg(r.result); applyCfg({}); restart(); };
+  r.readAsDataURL(f); this.value='';
+});
+
+/* ============================== 启动 ============================== */
+buildStatic();
+/* ⚠️ 顺序不能反：applyCfg 只认「传了的键」，__BZ_BOOT 里带的是固化时的用户值，
+   必须先铺默认再拿 boot 覆盖，否则固化 HTML 打开永远是模板默认字。 */
+applyCfg(cfg);
+if(window.__BZ_BOOT){ applyCfg(window.__BZ_BOOT); }
+fit();
+render(0);
+/* ★ 必须自启主循环：漏掉的后果不是报错，是【预览永远停在第 0 帧】—— 版式全对、数值全绿，就是不动。 */
+rafId=requestAnimationFrame(tick);
+parent.postMessage({source:'cyber',type:'cyber-ready'},'*');
+</script>
+</body>
+</html>
