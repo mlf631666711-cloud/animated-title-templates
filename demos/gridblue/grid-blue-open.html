@@ -244,7 +244,7 @@ function buildTitle(){
   if(!hard.length) hard=[' '];
   /* 超长行自动断行（每行≤10字，字号随行长缩放）：标题区宽 640、.tline 是 pre（不自动换行），
      不断行 + 字号下限会让长标题横穿产品区。
-     ★ 有空格时先按【词边界】切，别把「明动」这种词劈成两半 —— 空格现在是可以输入的了。 */
+     ★ 有空格时先按【词边界】切，别把「名称」这种词劈成两半 —— 空格现在是可以输入的了。 */
   var lines=[];
   hard.forEach(function(s){
     if(s.length<=10){ lines.push(s); return; }
