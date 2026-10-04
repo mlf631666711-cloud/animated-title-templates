@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>cyber-chapter-card 模板 — 填文字出另外一版</title>
+<style id="tpl-style">
+:root{
+  --bg-deep:#0a004c; --violet:#7d00ff; --violet-soft:#9d4edd; --magenta:#ff00ff;
+  --cyan:#00c6ff; --pink:#ff5d8f; --ink:#ffffff; --ink-blue:#cdd6ff;
+  /* ===== 用户可调色板（配色面板控制） ===== */
+  --cy-bg1:#3a1490;        /* 大背景 · 中心 */
+  --cy-bg2:#14065a;        /* 大背景 · 中段 */
+  --cy-bg3:#05001a;        /* 大背景 · 边缘 */
+  --cy-card1:#00c6ff;      /* 卡片渐变 · 起（青） */
+  --cy-card3:#7d00ff;      /* 卡片渐变 · 中（紫） */
+  --cy-card5:#ff5d8f;      /* 卡片渐变 · 止（粉） */
+  --cy-tag1:#9d2bff;       /* Part 标签 · 起 */
+  --cy-tag2:#4a0098;       /* Part 标签 · 止 */
+  --cy-title-stroke:#b069ff;/* 标题描边 */
+  --cy-cursor-fill:#ffffff; /* 鼠标主体 */
+  --cy-cursor-stroke:#b069ff;/* 鼠标描边 */
+  --cy-spark:#e6e4ff;      /* 星星 */
+  --cy-sel:#00dcff;        /* 选区框 / 涟漪 */
+  --cy-arrow:#a855f7;      /* 箭头 */
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{
+  height:100%;background:#000;overflow:hidden;
+  font-family:"PingFang SC","HarmonyOS Sans","Microsoft YaHei",sans-serif;
+  display:flex;flex-direction:column;user-select:none;
+}
+/* ===== 编辑面板（玻璃质感） ===== */
+#panel{
+  flex-shrink:0;display:flex;align-items:center;gap:16px;
+  padding:12px 18px;
+  background:linear-gradient(180deg, rgba(30,12,70,.94), rgba(15,6,40,.94));
+  border-bottom:1px solid rgba(125,0,255,.35);
+  backdrop-filter:blur(10px);
+  color:#dfe4ff;font:600 14px/1 "PingFang SC",sans-serif;
+}
+#panel .field{display:flex;flex-direction:column;gap:5px}
+#panel .field label{font-size:11px;color:#9aa6ff;letter-spacing:.5px}
+#panel input{
+  width:210px;padding:8px 12px;border-radius:10px;
+  border:1px solid rgba(125,0,255,.4);background:rgba(10,4,30,.7);
+  color:#fff;font:700 15px "PingFang SC",sans-serif;outline:none;
+}
+#panel input:focus{border-color:#00c6ff;box-shadow:0 0 0 3px rgba(0,198,255,.25)}
+#panel button{
+  padding:9px 16px;border-radius:10px;border:1px solid rgba(0,198,255,.5);
+  background:linear-gradient(180deg,#7d00ff,#4a0098);color:#fff;
+  font:700 14px "PingFang SC",sans-serif;cursor:pointer;
+}
+#panel button.ghost{background:rgba(125,0,255,.18);border-color:rgba(125,0,255,.4)}
+#panel .hint{margin-left:auto;font-size:11px;color:#8b93c8;max-width:300px;text-align:right;line-height:1.5}
+/* ===== 配色浮层面板 ===== */
+#color-panel{
+  position:fixed;top:66px;right:18px;width:312px;max-height:82vh;overflow:auto;
+  padding:14px 16px 16px;display:grid;grid-template-columns:1fr 1fr;gap:11px 12px;
+  background:linear-gradient(180deg, rgba(30,12,70,.98), rgba(12,5,35,.98));
+  border:1px solid rgba(0,198,255,.45);border-radius:14px;
+  backdrop-filter:blur(14px);
+  box-shadow:0 18px 50px rgba(0,0,0,.6);
+  color:#dfe4ff;font:600 12px/1.2 "PingFang SC",sans-serif;z-index:50;
+}
+#color-panel.hidden{display:none}
+#panel.hidden{display:none}
+#color-panel h4{
+  grid-column:1/-1;margin:0 0 2px;padding-bottom:8px;font-size:13px;color:#9ff;
+  letter-spacing:.5px;border-bottom:1px solid rgba(125,0,255,.35);
+}
+#color-panel h4 .reset{
+  float:right;cursor:pointer;font-size:11px;color:#00c6ff;font-weight:700;
+  border:1px solid rgba(0,198,255,.4);border-radius:7px;padding:2px 9px;
+}
+#color-panel h4 .reset:hover{background:rgba(0,198,255,.15)}
+#color-panel .ci{display:flex;flex-direction:column;gap:5px}
+#color-panel .ci label{font-size:11px;color:#aab2e8}
+#color-panel .ci input{
+  width:100%;height:32px;padding:0;border:1px solid rgba(125,0,255,.4);
+  border-radius:8px;background:transparent;cursor:pointer;
+}
+#color-panel .ci input:focus{outline:2px solid rgba(0,198,255,.6)}
+/* ===== 预览视口 ===== */
+#viewport{
+  flex:1;position:relative;overflow:hidden;
+  display:flex;align-items:center;justify-content:center;
+  background:radial-gradient(80% 80% at 50% 50%,#0a0030,#000);
+}
+#frame{position:relative;overflow:hidden;}
+/* ===== 舞台（视觉，定位交给 JS fit） ===== */
+#stage{
+  width:1280px;height:720px;flex-shrink:0;
+  background:radial-gradient(80% 65% at 48% 38%, var(--cy-bg1) 0%, var(--cy-bg2) 50%, var(--cy-bg3) 100%);
+  overflow:hidden;
+}
+.ambient{
+  position:absolute;left:50%;top:50%;width:980px;height:520px;
+  transform:translate(-50%,-50%);
+  background:radial-gradient(50% 60% at 50% 50%, color-mix(in srgb, var(--cy-bg1) 34%, transparent), color-mix(in srgb, var(--cy-bg1) 10%, transparent) 50%, transparent 78%);
+  filter:blur(8px);
+}
+.dots{position:absolute;inset:0;opacity:.55;background-image:radial-gradient(color-mix(in srgb, var(--cy-card3) 80%, transparent) 1.2px,transparent 1.4px);background-size:22px 22px;background-position:0 0;-webkit-mask-image:radial-gradient(120% 100% at 50% 50%,#000 35%,transparent 92%);mask-image:radial-gradient(120% 100% at 50% 50%,#000 35%,transparent 92%)}
+.dots.tl{background-position:0 0;opacity:.35;background-image:radial-gradient(color-mix(in srgb, var(--cy-bg1) 70%, transparent) 1.2px,transparent 1.4px)}
+.dots.br{background-position:11px 11px;opacity:.55;background-image:radial-gradient(color-mix(in srgb, var(--cy-card5) 70%, transparent) 1.4px,transparent 1.6px)}
+#orbit{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;opacity:0;transform-origin:50% 50%}
+#selbox{position:absolute;left:196px;top:258px;width:0;height:0;border:2.5px dashed var(--cy-sel);box-shadow:0 0 18px color-mix(in srgb, var(--cy-sel) 70%, transparent),inset 0 0 20px color-mix(in srgb, var(--cy-card3) 40%, transparent);opacity:0;pointer-events:none}
+#selbox .tick{position:absolute;width:14px;height:14px;pointer-events:none}
+#selbox .tick::before,#selbox .tick::after{content:"";position:absolute;background:color-mix(in srgb, var(--cy-sel) 60%, #ffffff);box-shadow:0 0 8px color-mix(in srgb, var(--cy-sel) 90%, transparent)}
+#selbox .tick::before{width:14px;height:2px}
+#selbox .tick::after{width:2px;height:14px}
+#selbox .tick.tl{left:-2px;top:-2px}
+#selbox .tick.tr{right:-2px;top:-2px;transform:scaleX(-1)}
+#selbox .tick.bl{left:-2px;bottom:-2px;transform:scaleY(-1)}
+#selbox .tick.br{right:-2px;bottom:-2px;transform:scale(-1,-1)}
+#rip{position:absolute;left:1084px;top:570px;width:16px;height:16px;border:3px solid var(--cy-sel);border-radius:50%;opacity:0;pointer-events:none;box-shadow:0 0 22px color-mix(in srgb, var(--cy-sel) 85%, transparent),inset 0 0 8px color-mix(in srgb, var(--cy-sel) 40%, transparent);transform:translate(-50%,-50%) scale(0)}
+#card{position:absolute;left:196px;top:258px;width:888px;height:312px;padding:5px;background:linear-gradient(120deg, var(--cy-card1) 0%, var(--cy-card3) 55%, var(--cy-card5) 100%);clip-path:polygon(30px 0,calc(100% - 30px) 0,100% 30px,100% calc(100% - 30px),calc(100% - 30px) 100%,30px 100%,0 calc(100% - 30px),0 30px);filter:drop-shadow(0 0 28px color-mix(in srgb, var(--cy-card3) 55%, transparent)) drop-shadow(0 0 14px color-mix(in srgb, var(--cy-card1) 40%, transparent)) drop-shadow(0 18px 36px rgba(0,0,0,.45));opacity:0}
+#card-inner{width:100%;height:100%;background:radial-gradient(120% 90% at 50% 30%, rgba(50,30,120,.85) 0%, rgba(20,12,55,.96) 60%, rgba(8,4,28,.98) 100%);clip-path:polygon(25px 0,calc(100% - 25px) 0,100% 25px,100% calc(100% - 25px),calc(100% - 25px) 100%,25px 100%,0 calc(100% - 25px),0 25px);position:relative}
+#tag{position:absolute;left:130px;top:160px;padding:12px 26px 16px 24px;background:linear-gradient(135deg, var(--cy-tag1) 0%, var(--cy-tag2) 100%);font:italic 900 40px/1 "Arial Black","Impact","PingFang SC","Helvetica",sans-serif;color:#fff;letter-spacing:2px;text-shadow:0 0 14px rgba(255,255,255,.6),0 1px 2px rgba(0,0,0,.7);clip-path:polygon(8px 0,100% 0,100% calc(100% - 12px),calc(100% - 8px) 100%,0 100%,0 8px);filter:drop-shadow(0 0 24px color-mix(in srgb, var(--cy-tag1) 70%, transparent)) drop-shadow(0 6px 14px rgba(0,0,0,.5));transform-origin:12px 100%;opacity:0;box-shadow:inset 0 1px 0 rgba(255,255,255,.4),inset 0 -2px 0 rgba(0,0,0,.35)}
+#tag::before{content:"";position:absolute;left:8px;right:8px;top:5px;height:42%;background:linear-gradient(180deg,rgba(255,255,255,.5),rgba(255,255,255,0) 95%);pointer-events:none;clip-path:polygon(4px 0,calc(100% - 4px) 0,100% 100%,0 100%)}
+#tag::after{content:"";position:absolute;left:-6px;top:-12px;width:38%;height:10px;background:linear-gradient(180deg,rgba(255,255,255,.75),rgba(255,255,255,.25));border-radius:1px;transform:rotate(-4deg);filter:drop-shadow(0 1px 2px rgba(0,0,0,.35));opacity:.85}
+#title{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;justify-content:center;align-items:center;pointer-events:none}
+#title .line{display:flex;justify-content:center;align-items:baseline}
+#title .line + .line{margin-top:10px}
+#title span{font:900 92px/.95 "Arial Black","Impact","Helvetica Neue","PingFang SC","Microsoft YaHei",sans-serif;color:#ffffff;-webkit-text-stroke:2.2px var(--cy-title-stroke);letter-spacing:4px;display:inline-block;filter:drop-shadow(0 0 8px color-mix(in srgb, var(--cy-title-stroke) 60%, transparent)) drop-shadow(0 4px 12px rgba(0,0,0,.4))}
+.spark{position:absolute;width:38px;height:38px;color:var(--cy-spark);filter:drop-shadow(0 0 12px color-mix(in srgb, var(--cy-spark) 80%, transparent)) drop-shadow(0 0 22px color-mix(in srgb, var(--cy-card1) 50%, transparent)) drop-shadow(0 0 36px color-mix(in srgb, var(--cy-spark) 40%, transparent));opacity:0}
+.spark.tl{left:200px;top:130px}
+.spark.tr{left:1020px;top:130px}
+.spark.br{left:960px;top:498px;width:30px;height:30px;filter:drop-shadow(0 0 10px color-mix(in srgb, var(--cy-spark) 80%, transparent)) drop-shadow(0 0 18px color-mix(in srgb, var(--cy-tag1) 55%, transparent))}
+.spark.lb{left:228px;top:498px;width:30px;height:30px;filter:drop-shadow(0 0 10px color-mix(in srgb, var(--cy-spark) 80%, transparent)) drop-shadow(0 0 18px color-mix(in srgb, var(--cy-tag1) 55%, transparent))}
+#card-beam{position:absolute;left:0;top:50%;width:55%;height:4px;background:linear-gradient(90deg, color-mix(in srgb, var(--cy-card1) 0%, transparent), color-mix(in srgb, var(--cy-card1) 85%, transparent) 50%, color-mix(in srgb, var(--cy-tag1) 70%, transparent) 100%);filter:blur(2px);transform:translateY(-50%) translateX(-110%);opacity:0;pointer-events:none}
+#cursor{position:absolute;left:0;top:0;width:76px;height:98px;opacity:0;filter:drop-shadow(0 0 14px color-mix(in srgb, var(--cy-cursor-stroke) 80%, transparent)) drop-shadow(0 0 28px color-mix(in srgb, var(--cy-card3) 60%, transparent)) drop-shadow(0 8px 14px rgba(0,0,0,.5))}
+#cursor svg{display:block}
+#cursor path{fill:var(--cy-cursor-fill);stroke:var(--cy-cursor-stroke);stroke-width:2.2;stroke-linejoin:round}
+#cursor .tail{position:absolute;left:-78px;top:36px;width:90px;height:8px;background:linear-gradient(90deg, color-mix(in srgb, var(--cy-cursor-stroke) 0%, transparent), color-mix(in srgb, var(--cy-cursor-stroke) 70%, transparent) 50%, color-mix(in srgb, var(--cy-cursor-stroke) 95%, transparent));border-radius:4px;filter:blur(2px);transform-origin:100% 50%}
+.arrows{position:absolute;font:900 38px/1 "PingFang SC",sans-serif;color:var(--cy-arrow);letter-spacing:-7px;text-shadow:0 0 14px color-mix(in srgb, var(--cy-arrow) 60%, transparent),0 0 6px color-mix(in srgb, var(--cy-arrow) 80%, transparent);opacity:0}
+.arrows.l{left:240px;bottom:148px;transform:rotate(180deg)}
+.arrows.r{left:760px;top:138px;font-size:42px;letter-spacing:-8px}
+</style>
+</head>
+<body>
+<div id="panel">
+  <div class="field">
+    <label>Part 标签</label>
+    <input id="in-tag" value="Part.02" spellcheck="false">
+  </div>
+  <div class="field">
+    <label>主标题（逐字入场）</label>
+    <input id="in-title" value="如何编辑和导出" spellcheck="false">
+  </div>
+  <button id="btn-play">▶ 播放</button>
+  <button id="btn-colors" class="ghost">🎨 配色</button>
+  <button id="btn-export" class="ghost">⬇ 导出这一版</button>
+  <div class="hint">改文字即时更新 · 🎨 调色即时生效 · 点播放看重跑动效 · 导出会生成独立 HTML（文字+配色已固化）</div>
+</div>
+
+<div id="color-panel" class="hidden">
+  <h4>配色调整<span id="btn-reset-colors" class="reset">重置</span></h4>
+  <div class="ci"><label>大背景·中心</label><input type="color" data-var="--cy-bg1" value="#3a1490"></div>
+  <div class="ci"><label>大背景·中段</label><input type="color" data-var="--cy-bg2" value="#14065a"></div>
+  <div class="ci"><label>大背景·边缘</label><input type="color" data-var="--cy-bg3" value="#05001a"></div>
+  <div class="ci"><label>卡片渐变·起</label><input type="color" data-var="--cy-card1" value="#00c6ff"></div>
+  <div class="ci"><label>卡片渐变·中</label><input type="color" data-var="--cy-card3" value="#7d00ff"></div>
+  <div class="ci"><label>卡片渐变·止</label><input type="color" data-var="--cy-card5" value="#ff5d8f"></div>
+  <div class="ci"><label>Part标签·起</label><input type="color" data-var="--cy-tag1" value="#9d2bff"></div>
+  <div class="ci"><label>Part标签·止</label><input type="color" data-var="--cy-tag2" value="#4a0098"></div>
+  <div class="ci"><label>标题描边</label><input type="color" data-var="--cy-title-stroke" value="#b069ff"></div>
+  <div class="ci"><label>鼠标·主体</label><input type="color" data-var="--cy-cursor-fill" value="#ffffff"></div>
+  <div class="ci"><label>鼠标·描边</label><input type="color" data-var="--cy-cursor-stroke" value="#b069ff"></div>
+  <div class="ci"><label>星星</label><input type="color" data-var="--cy-spark" value="#e6e4ff"></div>
+  <div class="ci"><label>选区框</label><input type="color" data-var="--cy-sel" value="#00dcff"></div>
+  <div class="ci"><label>箭头</label><input type="color" data-var="--cy-arrow" value="#a855f7"></div>
+</div>
+
+<div id="viewport">
+  <div id="frame">
+    <div id="stage">
+      <div class="ambient"></div>
+      <div class="dots"></div>
+      <div class="dots tl"></div>
+      <div class="dots br"></div>
+      <svg id="orbit" viewBox="0 0 1280 720" preserveAspectRatio="xMidYMid slice">
+        <defs>
+          <filter id="orb-glow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="6"/></filter>
+          <linearGradient id="orb-grad" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="rgba(157,78,221,0)"/>
+            <stop offset="30%" stop-color="rgba(157,78,221,.7)"/>
+            <stop offset="55%" stop-color="rgba(255,0,255,.85)"/>
+            <stop offset="80%" stop-color="rgba(157,78,221,.7)"/>
+            <stop offset="100%" stop-color="rgba(157,78,221,0)"/>
+          </linearGradient>
+        </defs>
+        <ellipse cx="640" cy="358" rx="608" ry="212" fill="none" stroke="url(#orb-grad)" stroke-width="1.6"/>
+        <ellipse cx="640" cy="358" rx="608" ry="212" fill="none" stroke="rgba(255,0,255,.35)" stroke-width="2.4" filter="url(#orb-glow)"/>
+      </svg>
+      <div id="selbox"><div class="tick tl"></div><div class="tick tr"></div><div class="tick bl"></div><div class="tick br"></div></div>
+      <div id="rip"></div>
+      <div id="card"><div id="card-inner">
+        <div id="card-beam"></div>
+        <div id="title"></div>
+      </div></div>
+      <div id="tag"></div>
+      <svg class="spark tl" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0l2.5 9.5L24 12l-9.5 2.5L12 24l-2.5-9.5L0 12l9.5-2.5z"/></svg>
+      <svg class="spark tr" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0l2.5 9.5L24 12l-9.5 2.5L12 24l-2.5-9.5L0 12l9.5-2.5z"/></svg>
+      <svg class="spark br" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0l2.5 9.5L24 12l-9.5 2.5L12 24l-2.5-9.5L0 12l9.5-2.5z"/></svg>
+      <svg class="spark lb" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0l2.5 9.5L24 12l-9.5 2.5L12 24l-2.5-9.5L0 12l9.5-2.5z"/></svg>
+      <div id="cursor">
+        <svg width="76" height="98" viewBox="0 0 32 42" fill="none">
+          <path d="M3 3 L3 32 L11 26 L15 36 L19 35 L15 25 L27 26 Z"/>
+        </svg>
+        <div class="tail"></div>
+      </div>
+      <div class="arrows l">▶▶▶▶</div>
+      <div class="arrows r">▶▶▶▶</div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============ 纯引擎（与 v2.0 拉框版一致，用于导出固化版） ============ */
+const FROZEN_JS = `
+const DURATION=5.6, PAUSE=0.8, CYCLE=DURATION+PAUSE;
+const T=document.getElementById('title');
+const chars=[...T.children];
+function cubic(t,x1,y1,x2,y2){const bx=t=>3*(1-t)*(1-t)*t*x1+3*(1-t)*t*t*x2+t*t*t;const by=t=>3*(1-t)*(1-t)*t*y1+3*(1-t)*t*t*y2+t*t*t;const dx=t=>3*(1-t)*(1-t)*x1+6*(1-t)*t*(x2-x1)+3*t*t*(1-x2);let u=t;for(let i=0;i<8;i++){const err=bx(u)-t;if(Math.abs(err)<1e-4)break;u-=err/dx(u);}return by(u);}
+const ease=t=>cubic(t,0.16,1,0.3,1);
+const easeOut=t=>cubic(t,0.22,1,0.36,1);
+const spring=t=>{if(t<=0)return 0;if(t>=1)return 1;return Math.min(1.02,1-Math.cos(t*Math.PI*1.6)*Math.exp(-t*7));};
+const bump=(s,e,t)=>{if(t<=s||t>=e)return 0;return Math.sin(((t-s)/(e-s))*Math.PI);};
+const clamp=v=>Math.max(0,Math.min(1,v));
+const lerp=(a,b,t)=>a+(b-a)*t;
+const cardEl=document.getElementById('card');
+const tagEl=document.getElementById('tag');
+const orbitEl=document.getElementById('orbit');
+const cursorEl=document.getElementById('cursor');
+const beamEl=document.getElementById('card-beam');
+const selboxEl=document.getElementById('selbox');
+const ripEl=document.getElementById('rip');
+const sparkEls=[...document.querySelectorAll('.spark')];
+const arrEls=[...document.querySelectorAll('.arrows')];
+const allAnimated=[cardEl,tagEl,orbitEl,cursorEl,beamEl,selboxEl,ripEl,...sparkEls,...arrEls,...chars];
+const A=[];
+A.push([cardEl,'co',0,1, 1.80,2.45,spring]);
+A.push([cardEl,'cs',0.92,1.0, 1.80,2.55,spring]);
+A.push([tagEl,'tx',-180,0, 2.30,2.95,easeOut]);
+A.push([tagEl,'rot',-32,-12, 2.30,2.95,spring]);
+A.push([tagEl,'ts',0.75,1.0, 2.30,2.95,spring]);
+A.push([tagEl,'op',0,1, 2.30,2.50,easeOut]);
+chars.forEach((c,i)=>{const s=2.90+i*0.07,e=s+0.55;A.push([c,'ty',28,0,s,e,easeOut]);A.push([c,'op',0,1,s,s+0.35,easeOut]);A.push([c,'cs',0.86,1.0,s,e,spring]);});
+sparkEls.forEach((el,i)=>{const s=3.40+i*0.08,e=s+0.55;A.push([el,'op',0,1,s,s+0.30,easeOut]);A.push([el,'sc',0,1,s,e,spring]);A.push([el,'rot',-90,0,s,e,spring]);});
+A.push([orbitEl,'op',0,1, 3.80,4.35,easeOut]);
+A.push([orbitEl,'osc',0.55,1.0, 3.80,4.50,spring]);
+A.push([beamEl,'op',0,1, 4.00,4.20,easeOut]);
+A.push([beamEl,'bx',-110,170, 4.00,4.70,easeOut]);
+arrEls.forEach((el,i)=>{const s=4.00+i*0.10,e=s+0.40;A.push([el,'op',0,1,s,e,easeOut]);A.push([el,'tx',36,0,s,e,easeOut]);});
+function boxWH(t){const w=getVal(0.50,1.60,0,888,easeOut,t);const h=getVal(0.50,1.60,0,312,easeOut,t);return {w,h};}
+function cursorPos(t){
+  if(t<0.50){const k=easeOut(clamp(t/0.50));return {x:lerp(1300,196,k),y:lerp(80,258,k)};}
+  if(t<1.60){const {w,h}=boxWH(t);return {x:196+w,y:258+h};}
+  if(t<2.40){const k=easeOut(clamp((t-1.90)/(2.40-1.90)));return {x:lerp(1084,984,k),y:lerp(570,412,k)};}
+  return {x:984,y:412};
+}
+function getVal(s,e,from,to,fn,t){if(t<s)return 0;if(t>=e)return to;const local=clamp((t-s)/(e-s));return lerp(from,to,fn(local));}
+function applyAll(t){
+  allAnimated.forEach(el=>{el.dataset.tx='0';el.dataset.ty='0';el.dataset.rot='0';el.dataset.sc='1';el.dataset.cs='1';el.dataset.ts='1';el.dataset.co='1';el.dataset.op='1';el.dataset.osc='1';el.dataset.bx='-110';});
+  A.forEach(([el,prop,from,to,s,e,fn])=>{el.dataset[prop]=String(getVal(s,e,from,to,fn,t));});
+  const breathe=Math.sin(Math.max(0,t-4.60)*Math.PI*1.4)*0.005;
+  const {w,h}=boxWH(t);
+  selboxEl.style.width=w+'px';selboxEl.style.height=h+'px';
+  let sx; if(t<0.50)sx=0; else if(t<0.60)sx=easeOut((t-0.50)/0.10); else if(t<2.20)sx=1; else if(t<2.55)sx=1-easeOut((t-2.20)/0.35); else sx=0;
+  selboxEl.style.opacity=String(sx);
+  const rScale=getVal(1.60,2.00,0,2.2,easeOut,t);
+  let rOp; if(t<1.60)rOp=0; else if(t<1.70)rOp=easeOut((t-1.60)/0.10)*0.95; else if(t<1.95)rOp=0.95; else if(t<2.10)rOp=0.95*(1-easeOut((t-1.95)/0.15)); else rOp=0;
+  ripEl.style.transform='translate(-50%,-50%) scale('+rScale+')';ripEl.style.opacity=String(rOp);
+  cardEl.style.opacity=cardEl.dataset.co;
+  cardEl.style.transform='scale('+(parseFloat(cardEl.dataset.cs)+breathe)+')';
+  tagEl.style.opacity=tagEl.dataset.op;
+  tagEl.style.transform='translate('+parseFloat(tagEl.dataset.tx)+'px,0) rotate('+parseFloat(tagEl.dataset.rot)+'deg) scale('+parseFloat(tagEl.dataset.ts)+')';
+  chars.forEach(c=>{c.style.opacity=c.dataset.op;c.style.transform='translateY('+parseFloat(c.dataset.ty)+'px) scale('+parseFloat(c.dataset.cs)+')';});
+  sparkEls.forEach(el=>{el.style.opacity=el.dataset.op;let baseRot=0;if(el.classList.contains('tr'))baseRot=20;else if(el.classList.contains('br'))baseRot=-15;else if(el.classList.contains('lb'))baseRot=15;el.style.transform='scale('+parseFloat(el.dataset.sc)+') rotate('+(baseRot+parseFloat(el.dataset.rot))+'deg)';});
+  beamEl.style.opacity=beamEl.dataset.op;
+  beamEl.style.transform='translateY(-50%) translateX('+parseFloat(beamEl.dataset.bx)+'%)';
+  orbitEl.style.opacity=orbitEl.dataset.op;
+  const orbitRot=(t>3.80)?(t-3.80)*14:0;
+  orbitEl.style.transform='scale('+parseFloat(orbitEl.dataset.osc)+') rotate('+orbitRot+'deg)';
+  const cp=cursorPos(t);
+  const clickScale=1-0.18*bump(0.50,0.66,t)-0.22*bump(1.60,1.82,t);
+  cursorEl.style.opacity=String(getVal(0.00,0.20,0,1,easeOut,t));
+  cursorEl.style.transform='translate('+cp.x+'px,'+cp.y+'px) scale('+clickScale+')';
+  arrEls.forEach(el=>{el.style.opacity=el.dataset.op;const baseRot=el.classList.contains('l')?'rotate(180deg) ':'';el.style.transform=baseRot+'translate('+parseFloat(el.dataset.tx)+'px,0)';});
+}
+let startTime=0,paused=false,rafId=null;
+function tick(now){if(paused)return;if(!startTime)startTime=now;const elapsed=((now-startTime)/1000)%CYCLE;applyAll(elapsed);rafId=requestAnimationFrame(tick);}
+function play(){paused=false;startTime=0;if(rafId)cancelAnimationFrame(rafId);rafId=requestAnimationFrame(tick);}
+function seek(t){paused=true;applyAll(Math.max(0,Math.min(DURATION,t)));}
+applyAll(0);play();
+`;
+
+/* ============ 模板运行层（编辑 + 实时 + 导出） ============ */
+const T=document.getElementById('title');
+const stage=document.getElementById('stage');
+const frame=document.getElementById('frame');
+const viewport=document.getElementById('viewport');
+const inTag=document.getElementById('in-tag');
+const inTitle=document.getElementById('in-title');
+const cardEl=document.getElementById('card');
+const tagEl=document.getElementById('tag');
+const orbitEl=document.getElementById('orbit');
+const cursorEl=document.getElementById('cursor');
+const beamEl=document.getElementById('card-beam');
+const selboxEl=document.getElementById('selbox');
+const ripEl=document.getElementById('rip');
+const sparkEls=[...document.querySelectorAll('.spark')];
+const arrEls=[...document.querySelectorAll('.arrows')];
+const colorPanel=document.getElementById('color-panel');
+const colorInputs=[...document.querySelectorAll('#color-panel input[type=color]')];
+let chars=[], allAnimated=[], A=[];
+
+/* 缓动 */
+function cubic(t,x1,y1,x2,y2){const bx=t=>3*(1-t)*(1-t)*t*x1+3*(1-t)*t*t*x2+t*t*t;const by=t=>3*(1-t)*(1-t)*t*y1+3*(1-t)*t*t*y2+t*t*t;const dx=t=>3*(1-t)*(1-t)*x1+6*(1-t)*t*(x2-x1)+3*t*t*(1-x2);let u=t;for(let i=0;i<8;i++){const err=bx(u)-t;if(Math.abs(err)<1e-4)break;u-=err/dx(u);}return by(u);}
+const ease=t=>cubic(t,0.16,1,0.3,1);
+const easeOut=t=>cubic(t,0.22,1,0.36,1);
+const spring=t=>{if(t<=0)return 0;if(t>=1)return 1;return Math.min(1.02,1-Math.cos(t*Math.PI*1.6)*Math.exp(-t*7));};
+const bump=(s,e,t)=>{if(t<=s||t>=e)return 0;return Math.sin(((t-s)/(e-s))*Math.PI);};
+const clamp=v=>Math.max(0,Math.min(1,v));
+const lerp=(a,b,t)=>a+(b-a)*t;
+
+function boxWH(t){const w=getVal(0.50,1.60,0,888,easeOut,t);const h=getVal(0.50,1.60,0,312,easeOut,t);return {w,h};}
+function cursorPos(t){
+  if(t<0.50){const k=easeOut(clamp(t/0.50));return {x:lerp(1300,196,k),y:lerp(80,258,k)};}
+  if(t<1.60){const {w,h}=boxWH(t);return {x:196+w,y:258+h};}
+  if(t<2.40){const k=easeOut(clamp((t-1.90)/(2.40-1.90)));return {x:lerp(1084,984,k),y:lerp(570,412,k)};}
+  return {x:984,y:412};
+}
+function getVal(s,e,from,to,fn,t){if(t<s)return 0;if(t>=e)return to;const local=clamp((t-s)/(e-s));return lerp(from,to,fn(local));}
+
+function buildTracks(){
+  A=[];
+  A.push([cardEl,'co',0,1, 1.80,2.45,spring]);
+  A.push([cardEl,'cs',0.92,1.0, 1.80,2.55,spring]);
+  A.push([tagEl,'tx',-180,0, 2.30,2.95,easeOut]);
+  A.push([tagEl,'rot',-32,-12, 2.30,2.95,spring]);
+  A.push([tagEl,'ts',0.75,1.0, 2.30,2.95,spring]);
+  A.push([tagEl,'op',0,1, 2.30,2.50,easeOut]);
+  chars.forEach((c,i)=>{const s=2.90+i*0.07,e=s+0.55;A.push([c,'ty',28,0,s,e,easeOut]);A.push([c,'op',0,1,s,s+0.35,easeOut]);A.push([c,'cs',0.86,1.0,s,e,spring]);});
+  sparkEls.forEach((el,i)=>{const s=3.40+i*0.08,e=s+0.55;A.push([el,'op',0,1,s,s+0.30,easeOut]);A.push([el,'sc',0,1,s,e,spring]);A.push([el,'rot',-90,0,s,e,spring]);});
+  A.push([orbitEl,'op',0,1, 3.80,4.35,easeOut]);
+  A.push([orbitEl,'osc',0.55,1.0, 3.80,4.50,spring]);
+  A.push([beamEl,'op',0,1, 4.00,4.20,easeOut]);
+  A.push([beamEl,'bx',-110,170, 4.00,4.70,easeOut]);
+  arrEls.forEach((el,i)=>{const s=4.00+i*0.10,e=s+0.40;A.push([el,'op',0,1,s,e,easeOut]);A.push([el,'tx',36,0,s,e,easeOut]);});
+}
+
+function buildTitle(str){
+  T.innerHTML='';
+  /* 支持 \n 换行：按行拆分，每行一个 .line，字号按最长行自适应（\r 兼容 Windows CRLF） */
+  const lines=String(str==null?'':str).replace(/\r/g,'').split('\n');
+  const n=Math.max(...lines.map(l=>[...l].length),1);
+  const fs=Math.min(92, Math.floor(820/n));
+  lines.forEach(line=>{
+    const d=document.createElement('div'); d.className='line';
+    [...line].forEach(c=>{const s=document.createElement('span');s.textContent=c===' '?'\u00a0':c;s.style.fontSize=fs+'px';d.appendChild(s);});
+    T.appendChild(d);
+  });
+  chars=[...T.querySelectorAll('span')];
+  allAnimated=[cardEl,tagEl,orbitEl,cursorEl,beamEl,selboxEl,ripEl,...sparkEls,...arrEls,...chars];
+  buildTracks();
+}
+
+function applyAll(t){
+  allAnimated.forEach(el=>{el.dataset.tx='0';el.dataset.ty='0';el.dataset.rot='0';el.dataset.sc='1';el.dataset.cs='1';el.dataset.ts='1';el.dataset.co='1';el.dataset.op='1';el.dataset.osc='1';el.dataset.bx='-110';});
+  A.forEach(([el,prop,from,to,s,e,fn])=>{el.dataset[prop]=String(getVal(s,e,from,to,fn,t));});
+  const breathe=Math.sin(Math.max(0,t-4.60)*Math.PI*1.4)*0.005;
+  const {w,h}=boxWH(t);
+  selboxEl.style.width=w+'px';selboxEl.style.height=h+'px';
+  let sx; if(t<0.50)sx=0; else if(t<0.60)sx=easeOut((t-0.50)/0.10); else if(t<2.20)sx=1; else if(t<2.55)sx=1-easeOut((t-2.20)/0.35); else sx=0;
+  selboxEl.style.opacity=String(sx);
+  const rScale=getVal(1.60,2.00,0,2.2,easeOut,t);
+  let rOp; if(t<1.60)rOp=0; else if(t<1.70)rOp=easeOut((t-1.60)/0.10)*0.95; else if(t<1.95)rOp=0.95; else if(t<2.10)rOp=0.95*(1-easeOut((t-1.95)/0.15)); else rOp=0;
+  ripEl.style.transform='translate(-50%,-50%) scale('+rScale+')';ripEl.style.opacity=String(rOp);
+  cardEl.style.opacity=cardEl.dataset.co;
+  cardEl.style.transform='scale('+(parseFloat(cardEl.dataset.cs)+breathe)+')';
+  tagEl.style.opacity=tagEl.dataset.op;
+  tagEl.style.transform='translate('+parseFloat(tagEl.dataset.tx)+'px,0) rotate('+parseFloat(tagEl.dataset.rot)+'deg) scale('+parseFloat(tagEl.dataset.ts)+')';
+  chars.forEach(c=>{c.style.opacity=c.dataset.op;c.style.transform='translateY('+parseFloat(c.dataset.ty)+'px) scale('+parseFloat(c.dataset.cs)+')';});
+  sparkEls.forEach(el=>{el.style.opacity=el.dataset.op;let baseRot=0;if(el.classList.contains('tr'))baseRot=20;else if(el.classList.contains('br'))baseRot=-15;else if(el.classList.contains('lb'))baseRot=15;el.style.transform='scale('+parseFloat(el.dataset.sc)+') rotate('+(baseRot+parseFloat(el.dataset.rot))+'deg)';});
+  beamEl.style.opacity=beamEl.dataset.op;
+  beamEl.style.transform='translateY(-50%) translateX('+parseFloat(beamEl.dataset.bx)+'%)';
+  orbitEl.style.opacity=orbitEl.dataset.op;
+  const orbitRot=(t>3.80)?(t-3.80)*14:0;
+  orbitEl.style.transform='scale('+parseFloat(orbitEl.dataset.osc)+') rotate('+orbitRot+'deg)';
+  const cp=cursorPos(t);
+  const clickScale=1-0.18*bump(0.50,0.66,t)-0.22*bump(1.60,1.82,t);
+  cursorEl.style.opacity=String(getVal(0.00,0.20,0,1,easeOut,t));
+  cursorEl.style.transform='translate('+cp.x+'px,'+cp.y+'px) scale('+clickScale+')';
+  arrEls.forEach(el=>{el.style.opacity=el.dataset.op;const baseRot=el.classList.contains('l')?'rotate(180deg) ':'';el.style.transform=baseRot+'translate('+parseFloat(el.dataset.tx)+'px,0)';});
+}
+
+/* 播放控制 */
+let startTime=0,paused=false,rafId=null;
+function tick(now){if(paused)return;if(!startTime)startTime=now;const elapsed=((now-startTime)/1000)%CYCLE;applyAll(elapsed);rafId=requestAnimationFrame(tick);}
+function play(){paused=false;startTime=0;if(rafId)cancelAnimationFrame(rafId);rafId=requestAnimationFrame(tick);}
+function seek(t){paused=true;applyAll(Math.max(0,Math.min(DURATION,t)));}
+const DURATION=5.6, PAUSE=0.8, CYCLE=DURATION+PAUSE;
+
+/* 适配缩放 */
+function fit(){
+  const vw=viewport.clientWidth, vh=viewport.clientHeight;
+  /* ⚠️ 不要给 fit 加放大上限（曾经写作 Math.min(vw/1280, vh/720, 1)）：
+     导出降级链路会把画布撑到 1080P/4K，视口大于设计尺寸时若被 1 卡住，
+     stage 就停在 1280×720 → 成片四周一圈黑边。
+     视口 = 设计尺寸（预览/主链路）时 s 本来就是 1，去掉上限无副作用。 */
+  const s=Math.min(vw/1280, vh/720);
+  stage.style.position='absolute';stage.style.left='0';stage.style.top='0';
+  stage.style.transformOrigin='top left';stage.style.transform='scale('+s+')';
+  frame.style.width=(1280*s)+'px';frame.style.height=(720*s)+'px';
+}
+window.addEventListener('resize',fit);
+
+/* ===== 配色面板 ===== */
+function applyColorFromInput(inp){document.documentElement.style.setProperty(inp.dataset.var, inp.value);}
+colorInputs.forEach(inp=>{
+  inp.addEventListener('input',()=>applyColorFromInput(inp));
+});
+document.getElementById('btn-colors').addEventListener('click',()=>{
+  colorPanel.classList.toggle('hidden');
+});
+document.getElementById('btn-reset-colors').addEventListener('click',()=>{
+  colorInputs.forEach(inp=>{
+    inp.value=inp.defaultValue;
+    applyColorFromInput(inp);
+  });
+});
+
+/* 编辑绑定 */
+function applyConfig(){
+  tagEl.textContent=inTag.value;
+  buildTitle(inTitle.value);
+}
+inTag.addEventListener('input',()=>{tagEl.textContent=inTag.value;});
+inTitle.addEventListener('input',()=>{buildTitle(inTitle.value);play();});
+document.getElementById('btn-play').addEventListener('click',()=>play());
+document.getElementById('btn-export').addEventListener('click',exportFrozen);
+
+/* 导出固化版（文字 + 配色已写入，引擎用 FROZEN_JS） */
+function buildFrozenString(){
+  applyAll(0);
+  const css=document.getElementById('tpl-style').innerHTML;
+  /* 收集当前配色，注入导出 HTML 的 :root 覆盖层 */
+  let ov='';
+  colorInputs.forEach(inp=>{ov+=inp.dataset.var+':'+inp.value+';';});
+  const override='<style id="cy-override">:root{'+ov+'}</style>';
+  const prev={position:stage.style.position,left:stage.style.left,top:stage.style.top,transform:stage.style.transform,to:stage.style.transformOrigin};
+  stage.style.position='relative';stage.style.left='';stage.style.top='';stage.style.transform='none';stage.style.transformOrigin='50% 50%';
+  const stageHTML=stage.outerHTML;
+  Object.assign(stage.style,prev);
+  const tag=inTag.value, title=inTitle.value;
+  return '<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8"><title>'+tag+' '+title+'</title><style>'+css+'</style>'+override+'<style>#stage{position:relative;transform-origin:50% 50%}\n</style></head><body>'+stageHTML+'<script>'+FROZEN_JS+'<\/script></body></html>';
+}
+function exportFrozen(){
+  const html=buildFrozenString();
+  const blob=new Blob([html],{type:'text/html'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='cyber-chapter-card-'+(inTag.value||'Part')+'.html';
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+}
+
+/* 供测试/调试用 */
+window.seek=seek; window.play=play;
+window.previewHTML=buildFrozenString;
+window.setCfg=function(tag,title){inTag.value=tag;inTitle.value=title;tagEl.textContent=tag;buildTitle(title);play();};
+window.setColor=function(varName,hex){const inp=document.querySelector('#color-panel input[data-var="'+varName+'"]');if(inp){inp.value=hex;applyColorFromInput(inp);}};
+
+/* ====== 外部宿主接管（preset-editor.html / 其他嵌入式宿主） ====== */
+function tell(m){ try{ parent.postMessage(Object.assign({source:'cyber'}, m), '*'); }catch(e){} }
+window.addEventListener('message',(e)=>{
+  const d=e.data||{};
+  /* 忽略自己发出的回声 */
+  if(d.source==='cyber') return;
+  if(!d.type) return;
+  try{
+    switch(d.type){
+      case 'cyber-cfg':
+        if(typeof d.part==='string') inTag.value=d.part;
+        if(typeof d.title==='string') inTitle.value=d.title;
+        tagEl.textContent=inTag.value;
+        /* ⚠️ 必须用 d.title 原文 buildTitle：单行 input.value 会按 HTML 规范剥掉 \n，
+           经 inTitle.value 中转会丢换行（换行预览失效的根因） */
+        buildTitle(typeof d.title==='string' ? d.title : inTitle.value);
+        if(d.replay) play();
+        tell({type:'cyber-status', msg:'配置已应用'});
+        break;
+      case 'cyber-seek':
+        if(typeof d.t==='number') seek(d.t);
+        break;
+      case 'cyber-color':
+        if(d.vars && typeof d.vars==='object'){
+          Object.keys(d.vars).forEach(k=>setColor(k, d.vars[k]));
+          tell({type:'cyber-status', msg:'配色已应用'});
+        }
+        break;
+      case 'cyber-play':
+        play();
+        tell({type:'cyber-status', msg:'已重播'});
+        break;
+      case 'cyber-embed':
+        document.getElementById('panel').classList.add('hidden');
+        document.getElementById('viewport').style.padding='0';
+        document.body.style.background='#0b0d12';
+        fit();
+        tell({type:'cyber-status', msg:'已进入宿主模式'});
+        break;
+      case 'cyber-get-html':
+        tell({type:'cyber-html', reqId:d.reqId, html: buildFrozenString()});
+        break;
+      case 'cyber-get-cfg':
+        tell({type:'cyber-cfg-reply', reqId:d.reqId, part:inTag.value, title:inTitle.value});
+        break;
+    }
+  }catch(err){ tell({type:'cyber-status', err:String(err)}); }
+});
+window.addEventListener('load',()=>tell({type:'cyber-ready'}));
+
+/* 初始化 */
+applyConfig(); fit(); play();
+</script>
+</body>
+</html>
