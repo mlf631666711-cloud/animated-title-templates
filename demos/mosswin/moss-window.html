@@ -1,0 +1,669 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>Moss Window · 竹窗苔原（多层视差纵深 + 竖条遮罩揭示）</title>
+<!--
+  风格方向（老板 2026-10-02 指定：任意主题/配色，只求高级配色 + 高级动效，元素必须与既有引擎区分）
+  配色真源 = 本地 110 组高级配色库 #1「云栖竹径｜莫兰迪森系调」（原图已人眼核过：素混凝土方窗 + 竹林）
+    --bam-bg   #192117 深墨绿底   --bam-moss  #31452F 近竹
+    --bam-jade #465E47  中竹       --bam-mist  #617B5E 雾
+    --bam-pale #89A094  浅苔/细线  --bam-paper #EDEFE6 米白（纸/字）
+  母题 = 一扇素窗望进竹林：窗框静止当前景，窗内竹竿分【远/中/近】三层做视差推进（镜头往里穿），
+        雾带横漂、光斑呼吸、竹叶摆动；标题用【竖条遮罩】像竹影落下那样扫开，再逐字上浮。
+  与既有 13 引擎的区分：无霓虹/无网格底/无街机/无蓝图纸/无 3D 卡；
+        动效动词 = 视差 dolly-in + 竖条遮罩 + 线生长 + 标本环描边；字体 = 衬线（宋体感）；
+        Part 用【竖排标签】（现有引擎全是横排章）。
+  本文件为零依赖单文件 HTML 引擎, 挂 cyber 同款 postMessage 桥:
+    host→iframe: cyber-embed / cyber-unembed / cyber-cfg{part,title,sub,replay} / cyber-color{vars}
+                 / cyber-img{img} / cyber-play / cyber-seek{t} / cyber-resume / cyber-get-html{reqId} / cyber-font
+    iframe→host: cyber-ready / cyber-html{reqId,html} / cyber-status{err}  (source 均为 'cyber')
+  铁律: 所有视觉量 = 帧号 f 的纯函数；无 Math.random（抖动走 hash1）；禁 CSS animation/transition。
+  ⚠️ 本库已付过学费的硬约束（BUG 库 R151/R152/R158 + R165~R172）—— 全部已在下方落实：
+    ① 描边件用 class .ln{fill:none}，实心件一律内联 style="fill:…"（全局 fill:none 会吃掉表现属性）；
+    ② 几何只在 buildTitle / measureSub / buildStamp 里量一次，不许进 render()；
+    ③ 「没有产品图」= href 属性缺省（写 href="" 会变成永不结束的请求 ⇒ 导出第 0 帧抓屏挂死）；
+    ④ 禁一次性闩（__xxDone）：只允许「当前值 ≠ 本帧目标值才写」的幂等写法；
+    ⑤ SVG 的 transform 属性只写裸数字、不写单位也不写 none；
+    ⑥ 同权重规则按书写顺序翻盘 ⇒ 需要覆盖时用复合选择器；HTML 文字层必须显式 z-index 高于 SVG；
+    ⑦ seg() 段前 = 0 ⇒ 不许用 (1-p)*k 当「入场前的暗度」，那会让第 0 帧最亮；
+    ⑧ 可编辑文字按【最坏输入】设计：标题行数超预算要压字号，Part/副标题禁自动折行，
+       缩宽度时字号与字距同乘 k（letter-spacing 是绝对 px）。
+-->
+<style>
+  /* 🔴 六个配色变量必须在这里定义【默认值】：
+     样式表里的 var(--bam-x, 回退) 只在 CSS 生效，而 JS 里 setAttribute('style','fill:var(--bam-x)')
+     和 setAttribute('stroke','var(--bam-x)') 都不带回退 ⇒ 宿主没发色时整棵树解析成 black，
+     描边件直接消失（实测：竹竿全黑、地平线/刻度环整条看不见）。宿主 cyber-color 只是覆盖。 */
+  :root{
+    --bam-bg:#192117; --bam-moss:#31452F; --bam-jade:#465E47;
+    --bam-mist:#617B5E; --bam-pale:#89A094; --bam-paper:#EDEFE6;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{width:100%;height:100%;background:#0d120f;overflow:hidden;}
+  body{font-family:"Noto Serif SC","Songti SC","Source Han Serif SC",serif;}
+  #wrap{position:absolute;left:50%;top:50%;width:1920px;height:1080px;margin:-540px 0 0 -960px;}
+  #stage{position:relative;width:1920px;height:1080px;overflow:hidden;transform-origin:0 0;
+    background:var(--bam-bg,#192117);}
+  #hud{position:absolute;inset:0;width:1920px;height:1080px;z-index:5;}
+  #hud .ln{fill:none;}
+  #txt{position:absolute;inset:0;z-index:9;pointer-events:none;}
+  #txt > *{position:absolute;}
+
+  /* ---------- Part 竖排标签（现有引擎没有的署名形态） ---------- */
+  #stampV{left:252px;top:382px;display:flex;flex-direction:row;align-items:flex-start;gap:14px;}
+  #partCol{display:flex;flex-direction:column;align-items:center;white-space:pre;}
+  #partTxt{display:block;white-space:pre;font-size:30px;line-height:1.16;font-weight:700;
+    letter-spacing:0;color:var(--bam-paper);text-align:center;}
+  #partTxt > span{display:block;}   /* 竖排 = 一字一行（没有这条 ⇒ 横排，与既有引擎撞形） */
+  #partRule{display:block;width:2px;height:0;background:var(--bam-pale,#89A094);opacity:.75;margin-top:10px;}
+  #partTag{font-family:"Noto Sans SC","Microsoft YaHei",sans-serif;font-size:11px;letter-spacing:3px;
+    color:var(--bam-mist,#617B5E);writing-mode:vertical-rl;margin-top:2px;}
+
+  /* ---------- 主标题（逐字上浮） ---------- */
+  #titleBox{left:320px;top:400px;width:780px;}
+  .tline{display:block;white-space:pre;position:relative;line-height:1.28;}
+  /* 🔴 .tw 里必须留一个【在流里】的字撑出宽度：两层都 absolute ⇒ inline-block 宽恒为 0，
+     整行标题会叠成一坨（实测 f080 八个字全压在同一位置）。阴影层 absolute、正文层在流里。 */
+  .tw{position:relative;display:inline-block;white-space:pre;}
+  .tf{position:relative;display:inline-block;-webkit-text-stroke-width:0;color:var(--bam-paper);}
+  .td{position:absolute;left:0;top:0;white-space:pre;-webkit-text-stroke-width:0;
+    color:var(--bam-moss);pointer-events:none;}
+
+  /* ---------- 副标题 + 标语 ---------- */
+  #rule{left:320px;top:712px;height:2px;width:0;background:var(--bam-pale,#89A094);}
+  #subBox{left:320px;top:736px;width:780px;}
+  #subTxt{display:block;white-space:pre;width:max-content;max-width:780px;
+    font-family:"Noto Sans SC","Microsoft YaHei",sans-serif;
+    font-size:24px;font-weight:600;letter-spacing:9px;color:var(--bam-pale,#89A094);}
+  #tagline{left:320px;top:790px;white-space:pre;
+    font-family:"Noto Sans SC","Microsoft YaHei",sans-serif;
+    font-size:14px;font-weight:700;letter-spacing:6px;color:var(--bam-mist,#617B5E);}
+
+  /* ---------- 标本卡标签（产品位下方） ---------- */
+  #prodTag{left:1150px;top:784px;width:400px;text-align:center;
+    font-family:"Noto Sans SC","Microsoft YaHei",sans-serif;
+    font-size:17px;font-weight:800;letter-spacing:7px;color:var(--bam-pale,#89A094);}
+  #prodSub{left:1150px;top:812px;width:400px;text-align:center;
+    font-family:"Noto Sans SC","Microsoft YaHei",sans-serif;
+    font-size:12px;font-weight:600;letter-spacing:4px;color:var(--bam-mist,#617B5E);}
+
+  /* ---------- 独立面板 ---------- */
+  #panel{position:fixed;left:14px;top:14px;z-index:50;display:flex;gap:8px;align-items:center;}
+  #panel input[type=text],#panel input:not([type=file]){background:rgba(20,26,22,.86);color:#EDEFE6;
+    border:1px solid #3c4b40;border-radius:6px;padding:6px 9px;font-size:13px;width:150px;}
+  #panel button{background:#465E47;color:#EDEFE6;border:0;border-radius:6px;padding:7px 12px;font-size:13px;cursor:pointer;}
+  body.embed #panel{display:none;}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="stage">
+    <svg id="hud" viewBox="0 0 1920 1080" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <clipPath id="winClip"><rect id="winRect" x="240" y="150" width="1440" height="780"/></clipPath>
+        <linearGradient id="gWin" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%"   style="stop-color:var(--bam-jade);stop-opacity:.55"/>
+          <stop offset="52%"  style="stop-color:var(--bam-moss);stop-opacity:.8"/>
+          <stop offset="100%" style="stop-color:var(--bam-bg);stop-opacity:1"/>
+        </linearGradient>
+        <linearGradient id="gMist" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%"   style="stop-color:var(--bam-pale);stop-opacity:0"/>
+          <stop offset="46%"  style="stop-color:var(--bam-pale);stop-opacity:.34"/>
+          <stop offset="100%" style="stop-color:var(--bam-pale);stop-opacity:0"/>
+        </linearGradient>
+        <radialGradient id="gGlow">
+          <stop offset="0%"   style="stop-color:var(--bam-paper);stop-opacity:.30"/>
+          <stop offset="60%"  style="stop-color:var(--bam-paper);stop-opacity:.07"/>
+          <stop offset="100%" style="stop-color:var(--bam-paper);stop-opacity:0"/>
+        </radialGradient>
+        <linearGradient id="gSweep" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%"   style="stop-color:var(--bam-paper);stop-opacity:0"/>
+          <stop offset="50%"  style="stop-color:var(--bam-paper);stop-opacity:.16"/>
+          <stop offset="100%" style="stop-color:var(--bam-paper);stop-opacity:0"/>
+        </linearGradient>
+        <linearGradient id="gGround" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%"   style="stop-color:var(--bam-pale);stop-opacity:0"/>
+          <stop offset="18%"  style="stop-color:var(--bam-pale);stop-opacity:.8"/>
+          <stop offset="86%"  style="stop-color:var(--bam-pale);stop-opacity:.8"/>
+          <stop offset="100%" style="stop-color:var(--bam-pale);stop-opacity:0"/>
+        </linearGradient>
+        <clipPath id="prodClip"><circle id="pcirc" cx="1350" cy="540" r="176"/></clipPath>
+      </defs>
+
+      <!-- 底色 -->
+      <rect id="bg" x="0" y="0" width="1920" height="1080" style="fill:var(--bam-bg)"/>
+      <!-- 窗洞内的世界（视差三层 + 雾 + 光 + 标本 + 地平线） -->
+      <g id="world" clip-path="url(#winClip)">
+        <rect id="winBack" x="240" y="150" width="1440" height="780" fill="url(#gWin)"/>
+        <g id="far"></g>
+        <g id="mistA"></g>
+        <g id="mid"></g>
+        <g id="glow"></g>
+        <g id="near"></g>
+        <g id="leaf"></g>
+        <g id="specG">
+          <circle id="specBack" cx="1350" cy="540" r="176" style="fill:var(--bam-bg)"/>
+          <g id="prodVec"></g>
+          <image id="prodImg" x="1174" y="364" width="352" height="352" clip-path="url(#prodClip)" preserveAspectRatio="xMidYMid slice"/>
+          <circle id="ring1" class="ln" cx="1350" cy="540" r="176" stroke-width="2.4"/>
+          <circle id="ring2" class="ln" cx="1350" cy="540" r="206" stroke-width="1.1"/>
+          <g id="ticks"></g>
+          <line id="cross1" class="ln" x1="1120" y1="540" x2="1580" y2="540" stroke-width="1"/>
+          <line id="cross2" class="ln" x1="1350" y1="310" x2="1350" y2="770" stroke-width="1"/>
+        </g>
+        <g id="ground">
+          <line id="gline" class="ln" x1="240" y1="880" x2="1680" y2="880" stroke-width="1.6"/>
+          <g id="gdots"></g>
+        </g>
+        <g id="sweep"><rect id="sweepR" x="0" y="0" width="360" height="1400" fill="url(#gSweep)"/></g>
+      </g>
+      <!-- 竖条遮罩（竹影落下揭示），在 world 之上、窗框之下 -->
+      <g id="veil" clip-path="url(#winClip)"></g>
+      <!-- 窗框：前景静止层 -->
+      <g id="frame">
+        <rect id="fTop"    x="196" y="106" width="1528" height="46" style="fill:var(--bam-paper)"/>
+        <rect id="fBottom" x="196" y="928" width="1528" height="46" style="fill:var(--bam-paper)"/>
+        <rect id="fLeft"   x="196" y="106" width="46"  height="868" style="fill:var(--bam-paper)"/>
+        <rect id="fRight"  x="1678" y="106" width="46" height="868" style="fill:var(--bam-paper)"/>
+        <rect id="fIn" class="ln" x="240" y="150" width="1440" height="780" stroke-width="1.2"/>
+      </g>
+    </svg>
+
+    <div id="txt">
+      <div id="stampV">
+        <div id="partCol"><span id="partTxt"></span><span id="partRule"></span></div>
+        <div id="partTag"></div>
+      </div>
+      <div id="titleBox"></div>
+      <div id="rule"></div>
+      <div id="subBox"><span id="subTxt"></span></div>
+      <div id="tagline"></div>
+      <div id="prodTag"></div>
+      <div id="prodSub"></div>
+    </div>
+  </div>
+</div>
+
+<div id="panel">
+  <input id="pPart" placeholder="Part" value="Part.01" />
+  <input id="pTitle" placeholder="主标题" value="重新定义随身影像" />
+  <input id="pSub" placeholder="副标题" value="MORANDI MOSS" />
+  <input id="pImg" type="file" accept="image/*" />
+  <button id="pPlay">▶ 重播</button>
+</div>
+
+<script>
+"use strict";
+/* 捕获 pristine DOM（引擎任何 mutation 之前）—— 导出固化 HTML 用 */
+var PRISTINE = '<!doctype html>\n' + document.documentElement.outerHTML;
+
+/* ---------- 缓动 / 插值（动效内核） ---------- */
+function clamp(v,a,b){ a=a===undefined?0:a; b=b===undefined?1:b; return Math.max(a,Math.min(b,v)); }
+function lerp(a,b,k){ return a+(b-a)*k; }
+function seg(t,a,b){ return clamp((t-a)/(b-a)); }
+function smoother(k){ return k*k*k*(k*(k*6-15)+10); }
+function easeOut(k){ return 1-Math.pow(1-k,3); }
+function easeInOut(k){ return k<0.5 ? 4*k*k*k : 1-Math.pow(-2*k+2,3)/2; }
+function hash1(s){ var h=Math.imul(s|0,2246822519); h=Math.imul(h^(h>>>13),3266489917); return ((h^(h>>>16))>>>0)/4294967296; }
+
+/* ---------- 时间轴 / 版面常量 ---------- */
+var FPS=30, DUR=225, HOLD=0.9, CYCLE=DUR/FPS+HOLD;
+var WX=240, WY=150, WW=1440, WH=780;          /* 窗洞 */
+var TXTL=320, TITW=780, TITY=400, TITB=700;   /* 文字带：左 / 宽 / 顶 / 底（竖向预算 = 300） */
+var SUBY=736, TAGY=790;                        /* 副标题 / 标语 顶 */
+var PCX=1350, PCY=540, PR=176;                 /* 标本环圆心 / 半径 */
+var VEIL_N=15;                                  /* 竖条遮罩条数 */
+
+/* ---------- DOM ---------- */
+function $(id){return document.getElementById(id);}
+var NS='http://www.w3.org/2000/svg';
+function mk(parent, tag, attrs){
+  var e=document.createElementNS(NS,tag), k;
+  for(k in attrs) e.setAttribute(k,attrs[k]);
+  parent.appendChild(e); return e;
+}
+var els={
+  bg:$('bg'), winBack:$('winBack'), world:$('world'),
+  far:$('far'), mid:$('mid'), near:$('near'), mistA:$('mistA'), glow:$('glow'), leaf:$('leaf'),
+  veil:$('veil'), frame:$('frame'), fIn:$('fIn'),
+  specG:$('specG'), specBack:$('specBack'), prodImg:$('prodImg'), prodVec:$('prodVec'),
+  ring1:$('ring1'), ring2:$('ring2'), ticks:$('ticks'), cross1:$('cross1'), cross2:$('cross2'),
+  gline:$('gline'), gdots:$('gdots'), sweep:$('sweep'), sweepR:$('sweepR'),
+  stampV:$('stampV'), partCol:$('partCol'), partTxt:$('partTxt'), partRule:$('partRule'), partTag:$('partTag'),
+  titleBox:$('titleBox'), rule:$('rule'), subBox:$('subBox'), subTxt:$('subTxt'), tagline:$('tagline'),
+  prodTag:$('prodTag'), prodSub:$('prodSub')
+};
+
+/* ---------- 静态构建：竹竿三层 / 雾 / 光斑 / 叶 / 遮罩条 / 刻度 / 地平线点 ---------- */
+/* 每层的竹竿位置/粗细/倾角都由 hash1(seed) 定死 ⇒ 确定性，且 render() 里只改位移 */
+/* 纵深取向：云栖竹径的实拍是【前景竹竿受光偏亮、往里渐暗】⇒ 近层用浅苔、远层用雾，
+   与「远浅近深」的常规空气透视相反，但这样三层视差才看得出谁在前。 */
+var LAYERS=[
+  {g:els.far,  n:14, w0:5,  w1:11, a:.30, c:'--bam-mist',  seed:11},
+  {g:els.mid,  n:10, w0:12, w1:22, a:.78, c:'--bam-jade',  seed:23},
+  {g:els.near, n:5,  w0:30, w1:46, a:.92, c:'--bam-pale',  seed:37}
+];
+var CULMS=[];   /* {layer,i,x,w,lean,nodeN,el,nodeEls} */
+function buildCulms(){
+  LAYERS.forEach(function(L,li){
+    for(var i=0;i<L.n;i++){
+      var r1=hash1(L.seed+i*7), r2=hash1(L.seed+i*13+3);
+      var x=WX+40+ (WW-80) * ((i+0.5+r1*0.7)/L.n);
+      var w=lerp(L.w0,L.w1,r1);
+      var lean=(r2-0.5)*3.2;                       /* 度 */
+      var g=mk(L.g,'g',{});
+      var body=mk(g,'rect',{x:(-w/2).toFixed(1), y:WY-60, width:w.toFixed(1), height:WH+140});
+      body.setAttribute('style','fill:var(' + L.c + ');opacity:'+L.a.toFixed(2)+';');
+      /* 竹节：横向短线，间距随粗细走 */
+      var nodeG=mk(g,'g',{}), nodes=[], ny, step=w*7.5+70;
+      for(ny=WY-40; ny<WY+WH+80; ny+=step){
+        nodes.push(mk(nodeG,'rect',{x:(-w/2-1.5).toFixed(1), y:ny.toFixed(1), width:(w+3).toFixed(1), height:2.2})
+          .setAttribute('style','fill:var(--bam-bg);opacity:'+(L.a*0.85).toFixed(2)+';'));
+      }
+      CULMS.push({li:li,i:i,x:x,w:w,lean:lean,g:g,body:body,nodeG:nodeG,step:step});
+    }
+  });
+}
+var MISTS=[], GLOWS=[], LEAVES=[];
+function buildAtmos(){
+  for(var i=0;i<3;i++){
+    var h=120+hash1(51+i)*130;
+    var r=mk(els.mistA,'rect',{x:WX-300, y:(WY+120+i*210).toFixed(0), width:WW+600, height:h.toFixed(0)})
+      .setAttribute('fill','url(#gMist)');
+    MISTS.push({el:els.mistA.lastChild, sp:0.6+hash1(61+i)*1.1, ph:hash1(71+i)*6.28, amp:70+hash1(81+i)*90});
+  }
+  for(var j=0;j<5;j++){
+    mk(els.glow,'circle',{cx:0, cy:0, r:(90+hash1(91+j)*110).toFixed(0), fill:'url(#gGlow)'});
+    GLOWS.push({el:els.glow.lastChild, bx:WX+120+hash1(101+j)*(WW-240), by:WY+120+hash1(111+j)*(WH-260),
+      ax:26+hash1(121+j)*46, ay:16+hash1(131+j)*34, sp:0.008+hash1(141+j)*0.012, ph:hash1(151+j)*6.28});
+  }
+  /* 竹叶：挂在近/中层竹竿上的 path 叶片，入场后持续摆动 */
+  for(var k=0;k<9;k++){
+    var rk=hash1(161+k);
+    var g=mk(els.leaf,'g',{});
+    mk(g,'path',{d:'M0 0 Q26 -13 62 0 Q26 15 0 0 Z'}).setAttribute('style','fill:var(--bam-jade);opacity:.9;');
+    mk(g,'path',{d:'M2 0 Q30 -2 60 0','class':'ln','stroke':'var(--bam-bg)','stroke-width':'1.1','opacity':'.5'});
+    LEAVES.push({g:g, x:WX+90+rk*(WW-180), y:WY+70+hash1(171+k)*(WH*0.62),
+      s:0.8+hash1(181+k)*1.15, rot:(hash1(191+k)-0.5)*110, dir:rk>0.5?1:-1, ph:hash1(201+k)*6.28});
+  }
+}
+var VEILS=[];
+function buildVeil(){
+  var bw=WW/VEIL_N;
+  for(var i=0;i<VEIL_N;i++){
+    var x=(WX+i*bw).toFixed(1), w=(bw+1.5).toFixed(1);
+    var r=mk(els.veil,'rect',{x:x, y:WY-4, width:w, height:(WH+8)})
+      .setAttribute('style','fill:var(--bam-bg);');
+    /* 前缘亮线：跟着竖条【顶边】走 —— 条是向下移出窗洞的，露出世界的边界在顶边。
+       ⚠️ 早先挂在底边 ⇒ 一起移出 clipPath ⇒ 亮线永远看不见（f034 实测抓到）。 */
+    var e=mk(els.veil,'rect',{x:x, y:WY-4, width:w, height:2.6});
+    e.setAttribute('style','fill:var(--bam-pale);');
+    VEILS.push({el:els.veil.children[i*2], edge:e, i:i, jitter:hash1(211+i)*10});
+  }
+}
+var TICKS=[];
+function buildSpec(){
+  for(var i=0;i<24;i++){
+    var a=i/24*Math.PI*2, r0=PR+16, r1=PR+(i%6===0?34:24);
+    var t=mk(els.ticks,'line',{
+      x1:(PCX+Math.cos(a)*r0).toFixed(1), y1:(PCY+Math.sin(a)*r0).toFixed(1),
+      x2:(PCX+Math.cos(a)*r1).toFixed(1), y2:(PCY+Math.sin(a)*r1).toFixed(1),
+      'stroke-width':(i%6===0?2.2:1.1)});
+    t.setAttribute('class','ln');
+    TICKS.push(t);
+  }
+  /* 无产品图时的矢量占位：一茎自绘【竹笋】（不借任何外部素材）。
+     ⚠️ 占位形必须一眼认得出：早先两笔大弧线被肉眼看成「一个钩子/数字 6」⇒ 改成
+        收尖笋体 + 三道斜鞘纹 + 两片底叶，纯几何、无外部素材。 */
+  var v=mk(els.prodVec,'g',{});
+  mk(v,'path',{d:'M'+(PCX-44)+' '+(PCY+92)+' C'+(PCX-34)+' '+(PCY+8)+' '+(PCX-16)+' '+(PCY-58)+' '+PCX+' '+(PCY-104)+
+              ' C'+(PCX+16)+' '+(PCY-58)+' '+(PCX+34)+' '+(PCY+8)+' '+(PCX+44)+' '+(PCY+92)+' Z'})
+    .setAttribute('style','fill:var(--bam-jade);opacity:.92;');
+  var BANDS=[[52,40],[4,29],[-44,17]];
+  for(var bi=0;bi<BANDS.length;bi++){
+    var by=PCY+BANDS[bi][0], bw2=BANDS[bi][1];
+    var bd=mk(v,'path',{d:'M'+(PCX-bw2)+' '+(by+11)+' Q'+PCX+' '+(by-9)+' '+(PCX+bw2)+' '+(by+11),
+      'stroke-width':2.2,'stroke':'var(--bam-bg)','opacity':'.62'});
+    bd.setAttribute('class','ln');
+  }
+  mk(v,'path',{d:'M'+(PCX-8)+' '+(PCY+78)+' C'+(PCX-74)+' '+(PCY+58)+' '+(PCX-104)+' '+(PCY+18)+' '+(PCX-100)+' '+(PCY-14)+
+              ' C'+(PCX-66)+' '+(PCY+10)+' '+(PCX-30)+' '+(PCY+44)+' '+(PCX-8)+' '+(PCY+78)+' Z'})
+    .setAttribute('style','fill:var(--bam-pale);opacity:.8;');
+  mk(v,'path',{d:'M'+(PCX+8)+' '+(PCY+78)+' C'+(PCX+70)+' '+(PCY+62)+' '+(PCX+100)+' '+(PCY+28)+' '+(PCX+96)+' '+(PCY+2)+
+              ' C'+(PCX+64)+' '+(PCY+26)+' '+(PCX+30)+' '+(PCY+50)+' '+(PCX+8)+' '+(PCY+78)+' Z'})
+    .setAttribute('style','fill:var(--bam-mist);opacity:.95;');
+  mk(v,'line',{x1:PCX,y1:(PCY+92),x2:PCX,y2:(PCY-104),'stroke-width':1.4,'stroke':'var(--bam-bg)','opacity':'.5'}).setAttribute('class','ln');
+  els.prodVecG=v;
+  for(var d=0;d<3;d++){
+    mk(els.gdots,'circle',{cx:(300+d*34), cy:880, r:5}).setAttribute('style','fill:var(--bam-pale);');
+  }
+}
+
+/* ---------- 文字构建（几何只在这里量，不进 render） ---------- */
+var cfg={part:'Part.01', title:'重新定义随身影像', sub:'MORANDI MOSS', img:''};
+var SUBW=420, SUBH=34, SUBMAX=TITW, SUBFS=24, SUBLS=9;
+var PARTFS=30, PARTMAXH=300;
+
+/* 单行缩到宽度上限：字号与字距【同乘 k】（letter-spacing 是绝对 px，只缩字号宽度不按比例降） */
+function fitOneLine(t, fs, ls, max){
+  t.style.fontSize=''; t.style.letterSpacing='';
+  var w=Math.max(t.scrollWidth, t.offsetWidth)||1;
+  if(w>max){
+    var k=max/w;
+    t.style.fontSize=(fs*k).toFixed(1)+'px'; t.style.letterSpacing=(ls*k).toFixed(1)+'px';
+    w=Math.max(t.scrollWidth, t.offsetWidth);
+    if(w>max){ k=k*max/w; t.style.fontSize=(fs*k).toFixed(1)+'px'; t.style.letterSpacing=(ls*k).toFixed(1)+'px'; w=max; }
+  }
+  return w;
+}
+function measureSub(){
+  SUBW = fitOneLine(els.subTxt, SUBFS, SUBLS, SUBMAX) || 420;
+  SUBH = els.subBox.offsetHeight || 34;
+}
+/* Part 竖排：一字一行堆叠，超竖向预算就压字号（禁自动折行 —— 折出去会压到主标题） */
+function buildStamp(){
+  els.partTxt.textContent='';
+  var s=cfg.part||'', i, sp;
+  for(i=0;i<s.length;i++){
+    sp=document.createElement('span'); sp.textContent=s.charAt(i); els.partTxt.appendChild(sp);
+  }
+  var fs=PARTFS;
+  els.partTxt.style.fontSize=fs+'px';
+  var guard=0;
+  while(els.partTxt.offsetHeight>PARTMAXH && fs>12 && guard++<40){
+    fs=Math.max(12, fs-2); els.partTxt.style.fontSize=fs+'px';
+  }
+  els.partTag.textContent='FIELD NOTE';
+}
+var TITLE={chars:[], lines:0, fs:100, lh:128, top:TITY};
+function buildTitle(){
+  els.titleBox.textContent=''; TITLE={chars:[], lines:0, fs:100, lh:128, top:TITY};
+  var raw=(cfg.title||'').replace(/\s+$/,'');
+  var lines=raw.split('\n');
+  if(lines.length===1 && raw.length>11){          /* 单行过长 ⇒ 先按空格切词再硬切两行 */
+    var sp=raw.lastIndexOf(' ', Math.ceil(raw.length/2));
+    if(sp<0) sp=Math.floor(raw.length/2);
+    lines=[raw.slice(0,sp), raw.slice(sp+1)];
+  }
+  var maxLen=Math.max.apply(null, lines.map(function(s){return s.length;}));
+  var fs=clamp(TITW/Math.max(1,maxLen), 40, 116);
+  /* 🔴 竖向预算：整条文字带（标题 → 细线 → 副标题 → 标语）必须停在窗洞底与地平线之上 */
+  var VB=Math.max(90, (SUBY-12)-TITY-SUBH-54);
+  if(lines.length*fs*1.28>VB) fs=Math.max(26, VB/(lines.length*1.28));
+  var lh=fs*1.28;
+  TITLE.fs=fs; TITLE.lh=lh; TITLE.lines=lines.length;
+  var idx=0, li, ci;
+  for(li=0;li<lines.length;li++){
+    var ln=document.createElement('div'); ln.className='tline';
+    ln.style.fontSize=fs+'px'; ln.style.lineHeight=lh+'px';
+    var t=lines[li];
+    for(ci=0;ci<t.length;ci++){
+      var w=document.createElement('span'); w.className='tw';
+      var d=document.createElement('span'); d.className='td'; d.textContent=t.charAt(ci);
+      var f=document.createElement('span'); f.className='tf'; f.textContent=t.charAt(ci);
+      w.appendChild(d); w.appendChild(f); ln.appendChild(w);
+      TITLE.chars.push({w:w, d:d, f:f, i:idx++});
+    }
+    if(!t.length){ var nb=document.createElement('span'); nb.className='tw'; nb.innerHTML='&nbsp;';
+      nb.appendChild(document.createElement('span')); ln.appendChild(nb); TITLE.chars.push({w:nb,d:null,f:null,i:idx++}); }
+    els.titleBox.appendChild(ln);
+  }
+  TITLE.n=idx;
+  /* 阴影层偏移随字号走（大标题厚、小标题薄） */
+  var sh=Math.max(2, fs*0.055).toFixed(1);
+  var i2; for(i2=0;i2<TITLE.chars.length;i2++){ if(TITLE.chars[i2].d) TITLE.chars[i2].d.style.transform='translate('+sh+'px,'+sh+'px)'; }
+}
+function setProdImg(src){
+  cfg.img=src||'';
+  /* ⚠️ 无图 = 属性缺省（不是空串）：空串会被解析成文档 URL ⇒ 永不结束的请求 ⇒ 导出第 0 帧抓屏挂死 */
+  if(cfg.img) els.prodImg.setAttribute('href', cfg.img);
+  else els.prodImg.removeAttribute('href');
+}
+function applyCfg(d){
+  var dirty=false;
+  if(d.part!==undefined){ cfg.part=d.part; dirty=true; }
+  if(d.title!==undefined){ cfg.title=d.title; dirty=true; }
+  if(d.sub!==undefined){ cfg.sub=d.sub; dirty=true; }
+  els.subTxt.textContent=cfg.sub||'';
+  /* ★ 固定串里不许出现副标题的默认文本：撞词会让两行看着像重复排版（老板 6.2s 定版帧点名） */
+  els.tagline.textContent='BOTANICAL ARCHIVE · VOL.01 · NO.014';
+  measureSub();                      /* 先量副标题实际尺寸 ⇒ buildTitle 拿它扣竖向预算 */
+  if(dirty||!TITLE.chars.length) buildTitle();
+  buildStamp();
+  var has=!!cfg.img;
+  els.prodTag.textContent = has ? 'SPECIMEN LOCKED' : 'NO SPECIMEN';
+  els.prodSub.textContent = has ? 'DROP IMAGE TO REPLACE' : 'DROP IMAGE HERE';
+}
+
+/* ---------- 逐帧渲染：一切视觉量 = f 的纯函数 ---------- */
+var RING_C=2*Math.PI*PR, RING_C2=2*Math.PI*(PR+30);
+function render(f){
+  /* ① 视差推进：镜头持续往窗里穿（到片尾仍在动，不留死帧） */
+  var dolly=smoother(seg(f,0,DUR));                    /* 0→1，全程 */
+  var push = 1 + 0.075*dolly;
+  var i, c;
+  /* 三层各自不同速度 + 轻微下沉 ⇒ 真视差 */
+  var L=[
+    {g:els.far,  s:1+0.020*dolly, dy:6*dolly,  dx:-10*dolly},
+    {g:els.mid,  s:1+0.048*dolly, dy:16*dolly, dx:-26*dolly},
+    {g:els.near, s:1+0.105*dolly, dy:34*dolly, dx:-52*dolly}
+  ];
+  for(i=0;i<L.length;i++){
+    L[i].g.setAttribute('transform','translate('+ (WX+WW/2+L[i].dx).toFixed(2) + ' ' + (WY+WH/2+L[i].dy).toFixed(2) + ') scale(' + L[i].s.toFixed(4) + ') translate(' + (-(WX+WW/2)).toFixed(2) + ' ' + (-(WY+WH/2)).toFixed(2) + ')');
+  }
+  /* 竹竿：倾角随深度轻微「被风吹」，用确定性 hash + 低频正弦 */
+  for(i=0;i<CULMS.length;i++){
+    c=CULMS[i];
+    var sway=Math.sin(f*0.021 + c.x*0.006 + c.li)*(0.5+c.li*0.55);
+    c.g.setAttribute('transform','translate('+c.x.toFixed(1)+' 0) rotate('+(c.lean+sway).toFixed(2)+' 0 '+(WY+WH/2)+')');
+  }
+  /* ② 雾带横漂 */
+  for(i=0;i<MISTS.length;i++){
+    var m=MISTS[i];
+    var mx=Math.sin(f*0.006*m.sp+m.ph)*m.amp;
+    m.el.setAttribute('transform','translate('+mx.toFixed(2)+' '+(Math.sin(f*0.004+m.ph)*10).toFixed(2)+')');
+    m.el.setAttribute('opacity',(0.16+0.10*Math.sin(f*0.010+m.ph)).toFixed(3));
+  }
+  /* ③ 光斑呼吸 */
+  for(i=0;i<GLOWS.length;i++){
+    var g2=GLOWS[i];
+    g2.el.setAttribute('cx',(g2.bx+Math.sin(f*0.008*g2.sp*60+g2.ph)*g2.ax).toFixed(1));
+    g2.el.setAttribute('cy',(g2.by+Math.cos(f*0.006*g2.sp*60+g2.ph)*g2.ay).toFixed(1));
+    g2.el.setAttribute('opacity',(0.55+0.45*Math.sin(f*0.013+g2.ph)).toFixed(3));
+  }
+  /* ④ 竹叶摆动 */
+  for(i=0;i<LEAVES.length;i++){
+    var lf=LEAVES[i];
+    var lp=envIn(f, 70+i*5, 110+i*5);
+    var ang=lf.rot+Math.sin(f*0.030+lf.ph)*7;
+    lf.g.setAttribute('transform','translate('+lf.x.toFixed(1)+' '+lf.y.toFixed(1)+') rotate('+ang.toFixed(2)+') scale('+(lf.s*lf.dir*lp).toFixed(3)+')');
+    lf.g.setAttribute('opacity', lp.toFixed(3));
+  }
+  /* ⑤ 竖条遮罩：竹影落下，露出窗内世界
+     ⚠️ 相邻条时间差必须【远小于单条时长】：早先 3.0 帧/条 + 40 帧窗 ⇒ 斜率占满 55% 窗高，
+        肉眼读成「右下角一排悬停的黑块 / 图裂了」（f048、f080 两张都抓到）。
+        现在总错开 5 帧 / 单条 32 帧 ⇒ 斜率 15%，加上前缘亮线 = 一道有意的斜向擦开。 */
+  for(i=0;i<VEILS.length;i++){
+    var v=VEILS[i];
+    var vs=14+Math.abs(i-(VEIL_N-1)/2)*1.15+v.jitter*0.02;
+    var p=easeInOut(seg(f, vs, vs+32));
+    var ty=(p*(WH+16)).toFixed(2);
+    v.el.setAttribute('transform','translate(0 '+ty+')');
+    v.edge.setAttribute('transform','translate(0 '+ty+')');
+    v.edge.setAttribute('opacity',(Math.sin(Math.PI*p)*0.75).toFixed(3));
+  }
+  /* ⑥ 地平线生长 + 标本环描边 */
+  els.gline.setAttribute('opacity', envIn(f,26,80).toFixed(3));
+  els.gline.setAttribute('stroke-dasharray', WW);
+  els.gline.setAttribute('stroke-dashoffset', (WW*(1-envIn(f,26,86))).toFixed(1));
+  els.gline.setAttribute('stroke','var(--bam-pale)');
+  var sp2=envIn(f,96,168);
+  els.ring1.setAttribute('stroke','var(--bam-pale)');
+  els.ring1.setAttribute('stroke-dasharray', RING_C.toFixed(1));
+  els.ring1.setAttribute('stroke-dashoffset', (RING_C*(1-sp2)).toFixed(1));
+  els.ring2.setAttribute('stroke','var(--bam-mist)');
+  els.ring2.setAttribute('stroke-dasharray', RING_C2.toFixed(1));
+  els.ring2.setAttribute('stroke-dashoffset', (RING_C2*(1-envIn(f,106,180))).toFixed(1));
+  els.cross1.setAttribute('stroke','var(--bam-mist)');
+  els.cross2.setAttribute('stroke','var(--bam-mist)');
+  els.cross1.setAttribute('opacity',(0.30*envIn(f,120,170)).toFixed(3));
+  els.cross2.setAttribute('opacity',(0.30*envIn(f,120,170)).toFixed(3));
+  els.specBack.setAttribute('opacity',(0.85*envIn(f,88,132)).toFixed(3));
+  for(i=0;i<TICKS.length;i++){
+    TICKS[i].setAttribute('stroke','var(--bam-pale)');
+    TICKS[i].setAttribute('opacity',(0.75*envIn(f,126+i*2.2,158+i*2.2)).toFixed(3));
+  }
+  els.gdots.setAttribute('opacity', envIn(f,60,110).toFixed(3));
+  /* 矢量占位 vs 上传图：互不闩住，每帧按目标态写（幂等比较省写） */
+  var has=!!cfg.img;
+  var pvOp=has?0:envIn(f,110,150).toFixed(3);
+  if(els.prodVecG.getAttribute('opacity')!==String(pvOp)) els.prodVecG.setAttribute('opacity', String(pvOp));
+  var piOp=has?envIn(f,132,172).toFixed(3):0;
+  if(els.prodImg.getAttribute('opacity')!==String(piOp)) els.prodImg.setAttribute('opacity', String(piOp));
+  /* 标本环整体随视差轻微推进（它在中景之后） */
+  els.specG.setAttribute('transform','translate('+ (WX+WW/2-18*dolly).toFixed(2) + ' ' + (WY+WH/2+9*dolly).toFixed(2) + ') scale(' + (1+0.030*dolly).toFixed(4) + ') translate(' + (-(WX+WW/2)).toFixed(2) + ' ' + (-(WY+WH/2)).toFixed(2) + ')');
+
+  /* ⑦ 窗框：入场时从中心展开（前 34 帧），之后静止当前景 */
+  var fe=easeOut(seg(f,0,34));
+  els.frame.setAttribute('opacity', (0.45+0.55*fe).toFixed(3));
+  els.fIn.setAttribute('stroke','var(--bam-mist)');
+  els.fIn.setAttribute('opacity',(0.55*fe).toFixed(3));
+  els.world.setAttribute('opacity', (0.35+0.65*fe).toFixed(3));
+
+  /* ⑧ 文字：竖排 Part → 细线 → 标题逐字 → 横线 → 副标题 → 标语 */
+  var stP=envIn(f,44,86);
+  /* 🔴 HTML 元素不认 opacity/transform 的【表现属性】（那是 SVG 的东西）：
+     setAttribute('opacity',…) 写在 div 上 = 静默零效果，Part 从第 0 帧就全亮（实测抓到）。 */
+  els.stampV.style.opacity=stP.toFixed(3);
+  els.stampV.style.transform='translateY('+((1-stP)*18).toFixed(2)+'px)';
+  els.partRule.style.height=(0+120*envIn(f,52,110)).toFixed(1)+'px';
+
+  var i3, ch, n=TITLE.chars.length||1;
+  for(i3=0;i3<n;i3++){
+    ch=TITLE.chars[i3];
+    if(!ch.f) continue;
+    var a=64+i3*3.4, b=a+26;
+    var p=envIn(f,a,b);
+    var sc=lerp(0.90,1,p);
+    ch.w.style.opacity=p.toFixed(3);
+    ch.w.style.transform='translateY('+((1-p)*26).toFixed(2)+'px) scale('+sc.toFixed(3)+')';
+  }
+  var rl=envIn(f, 64+n*3.4+8, 64+n*3.4+52);
+  els.rule.style.width=(TITW*rl).toFixed(1)+'px';
+  els.rule.style.opacity=rl.toFixed(3);
+  var sP=envIn(f, 118, 158);
+  els.subBox.style.opacity=sP.toFixed(3);
+  els.subBox.style.transform='translateY('+((1-sP)*14).toFixed(2)+'px)';
+  var tP=envIn(f, 138, 176);
+  els.tagline.style.opacity=(0.9*tP).toFixed(3);
+  els.prodTag.style.opacity=envIn(f,150,182).toFixed(3);
+  els.prodSub.style.opacity=(0.8*envIn(f,158,190)).toFixed(3);
+
+  /* ⑨ 收尾：一道斜光带扫过 + 整体继续推进（不停死） */
+  var sw=seg(f,178,214);
+  els.sweepR.setAttribute('transform','translate('+(lerp(-520, 2100, easeInOut(sw))).toFixed(1)+' -160) skewX(-14)');
+  els.sweep.setAttribute('opacity', (sw>0&&sw<1? 1:0).toFixed(2));
+}
+/* 入场包络：段前严格为 0（R169 —— 不许写成 (1-p) 让第 0 帧最亮） */
+function envIn(f,a,b){ return easeOut(seg(f,a,b)); }
+
+/* ---------- 主循环 ---------- */
+var rafId=0, startAt=performance.now();
+function tick(){
+  var now=performance.now();
+  var t=((now-startAt)/1000)%CYCLE;
+  render(Math.min(DUR, t*FPS));
+  rafId=requestAnimationFrame(tick);
+}
+function restart(){ startAt=performance.now(); }
+function fit(){
+  /* ⚠️ 无放大上限（导出高清链路要求） */
+  var s=Math.min(innerWidth/1920, innerHeight/1080);
+  var st=$('stage'), wr=$('wrap');
+  st.style.transform='scale('+s+')';
+  wr.style.width=(1920*s)+'px'; wr.style.height=(1080*s)+'px';
+}
+window.addEventListener('resize',fit);
+
+/* ---------- 配色 ---------- */
+var VAR_NAMES=['--bam-bg','--bam-moss','--bam-jade','--bam-mist','--bam-pale','--bam-paper'];
+function applyColors(vars){
+  var root=document.documentElement.style, k;
+  for(k in vars){ if(k.indexOf('--bam-')===0) root.setProperty(k,vars[k]); }
+}
+
+/* ---------- 自定义字体（cyber 协议） ---------- */
+function applyFont(d){
+  var name=d.family, url=d.dataURL;
+  if(!name){ var old=document.getElementById('__bamFont'); if(old) old.remove(); return; }
+  var st=document.getElementById('__bamFont')||document.createElement('style');
+  st.id='__bamFont';
+  st.textContent = url ? '@font-face{font-family("__bamfont");src:url('+url+') format("truetype");font-display:block;}' : '';
+  if(!st.parentNode) document.head.appendChild(st);
+  var fam = url ? '__bamfont' : name;
+  $('stage').style.fontFamily='"'+fam+'","Noto Serif SC","Songti SC",serif';
+}
+
+/* ---------- postMessage 桥（与 hell-dive 同协议） ---------- */
+window.addEventListener('message',function(e){
+  var d=e.data||{};
+  if(d.source!=='host')return;
+  try{
+    if(d.type==='cyber-embed'){ document.body.classList.add('embed'); fit(); }
+    else if(d.type==='cyber-unembed'){ document.body.classList.remove('embed'); fit(); }
+    else if(d.type==='cyber-cfg'){ applyCfg(d); if(d.replay)restart(); }
+    else if(d.type==='cyber-color'){ applyColors(d.vars||{}); }
+    else if(d.type==='cyber-img'){ setProdImg(d.img||''); applyCfg({}); }
+    else if(d.type==='cyber-font'){ applyFont(d); }
+    else if(d.type==='cyber-play'){ restart(); if(!rafId) rafId=requestAnimationFrame(tick); }
+    else if(d.type==='cyber-seek'){
+      if(rafId){ try{ cancelAnimationFrame(rafId); }catch(err){} rafId=0; }
+      /* ⚠️ d.t 单位是【秒】 */
+      if(typeof d.t==='number'){ try{ render(Math.min(DUR, d.t*FPS)); void document.documentElement.offsetHeight; }catch(err){} }
+    }
+    else if(d.type==='cyber-resume'){
+      startAt=performance.now(); if(!rafId) rafId=requestAnimationFrame(tick);
+    }
+    else if(d.type==='cyber-get-html'){
+      var ovr='',k2;
+      var cs=getComputedStyle(document.documentElement);
+      for(k2=0;k2<VAR_NAMES.length;k2++){ ovr+=VAR_NAMES[k2]+':'+cs.getPropertyValue(VAR_NAMES[k2]).trim()+';'; }
+      ovr=':root{'+ovr+'}';
+      /* ⚠️ 本注释里不能写 script 闭合标签的字面量 —— 它会先把自己所在的 script 截断 */
+      var boot='<script>window.__BAM_BOOT='+JSON.stringify({part:cfg.part,title:cfg.title,sub:cfg.sub,img:cfg.img||''}).replace(/</g,'\\u003c')+'<\/script>';
+      var html=PRISTINE.replace('</head>','<style id="bam-override">'+ovr+'</style>'+boot+'</head>');
+      parent.postMessage({source:'cyber',type:'cyber-html',reqId:d.reqId,html:html},'*');
+    }
+  }catch(err){ parent.postMessage({source:'cyber',type:'cyber-status',err:err.message},'*'); }
+});
+
+/* ---------- 独立面板 ---------- */
+$('pPart').addEventListener('input',function(){ applyCfg({part:this.value}); restart(); });
+$('pTitle').addEventListener('input',function(){ applyCfg({title:this.value}); restart(); });
+$('pSub').addEventListener('input',function(){ applyCfg({sub:this.value}); restart(); });
+$('pPlay').addEventListener('click',function(){ restart(); });
+$('pImg').addEventListener('change',function(){
+  var f=this.files&&this.files[0]; if(!f) return;
+  if(!/^image\//i.test(f.type||'')) return;
+  var r=new FileReader();
+  r.onload=function(){ setProdImg(r.result); applyCfg({}); restart(); };
+  r.readAsDataURL(f); this.value='';
+});
+
+/* ---------- 启动 ---------- */
+buildCulms(); buildAtmos(); buildVeil(); buildSpec();
+/* ⚠️ 顺序不能反：applyCfg 只认「传了的键」，__BAM_BOOT 里带的是固化时的用户值，
+   必须先铺默认再拿 boot 覆盖，否则固化 HTML 打开永远是模板默认字。 */
+applyCfg(cfg);
+if(window.__BAM_BOOT){ applyCfg(window.__BAM_BOOT); }
+fit();
+render(0);
+/* ★ 必须自启主循环：其它四个引擎（hell-dive/grid-blue/draft-desk 等）都有这一行。
+   漏掉的后果不是报错，是【预览永远停在第 0 帧】—— 宿主只发 cyber-embed/cyber-cfg，
+   不发 cyber-play，肉眼看上去"版式对、就是不动"，数值判据全绿。 */
+rafId=requestAnimationFrame(tick);
+parent.postMessage({source:'cyber',type:'cyber-ready'},'*');
+</script>
+</body>
+</html>
