@@ -1,0 +1,632 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>Paper Cut · 纸层隧道（满版套层撕纸 · 由外向内逐层开洞）</title>
+<!--
+  风格方向（老板 2026-10-03：Pinterest 自选参考，任意主题/配色，任意设计，只求高级配色 + 高级动效；
+  元素与构图都必须与既有 20 张引擎区分）
+  参考 = _tmp/pins1003/sheets/paper_cut_layered_depth_il.png（layered paper-cut / 纵深感套层洞）
+  配色真源 = 「goodnotes配色｜水果撞色🍉高颜值无纸化笔记」· 作者 仙草木木 · 本地 140 组高级配色库
+    data/palettes.json 第 99 条（第二张色卡），无自造色值。老板 2026-10-03 令「配色采用马卡龙色调」，
+    全库 140 组里同时满足【≥3 个高明度粉彩色 + 至少 1 个能承正文的深色】的只有这一条：
+    #A1506D 莓果 / #8283AF 雾霭蓝紫 / #CDC4D1 藕灰 / #EED1D3 淡奶 / #CFE0F0 马卡龙蓝 / #EFEEEF 杏仁白
+    角色分配按【明度阶梯】而不是按原条目顺序：杏仁白 L.857 给洞底（正文踩它）、
+    莓果 L.144 给正文 + 第二层纸、其余四色按 L 铺在四层纸上。
+  🔴★ 这仍是一组【层间同明度】配色 —— 四层纸两两只有 1.06~1.25:1，靠色相分不开。
+     本引擎的层间分离**不依赖色值**，依赖 pcCut 那道 dy16 / blur16 / 42% 黑落影 + 2.5px 杏仁白压边线，
+     所以换色不会把纵深换没（第一版换色后抽帧复验过）。
+     真正被这组色救回来的是【正文对比度】：旧 X057 六色两两最高 3.11:1（正文只有 2.99 压在洞底），
+     新组 正文莓果 vs 洞底杏仁白 = 4.67:1（AA 正文级），vs 三层纸 3.20 / 3.78 / 4.01。
+     推论照旧写进版式：**全片不许出现 22px 以下的文字**，所有可读文字只走「莓字压在杏仁白洞底」这一条链。
+     （第一版按别家引擎的惯例放了 14px 固定串 + 12px 副标，肉眼看是"糊在纸上一团灰"，
+      而所有几何判据照样全绿 —— 判据量盒子和 opacity，不量对比度。同族坑第二次撞。）
+  母题 = 套层卡纸 / 撕口洞 / 切口露芯 / 月牙二刀 / 纸屑 / 压层落影（现有引擎零撞：
+    无街机电路、无竹窗、无网点、无 blob、无液态铬、无蓝图纸、无贴纸、无金缝、无黑胶）。
+  ★ 构图 = 【满版同心洞 + 洞底承字 + 一张卡纸斜压在层上】：
+     不是左右分栏（moss-window）、不是三段（press-halftone）、不是对角斜置（pop-mint）、
+     不是通栏出血（blush-morandi / gold-seam）、不是中轴夹心（liquid-chrome）、不是左文右盘（vinyl）——
+     是「视线掉进一个由六层纸挖出来的洞」：文字落在洞底（唯一亮的一层），
+     产品卡【压在层上】并故意甩过最内圈边缘 —— 一张纸跨过另一张纸的边，
+     是这个三维堆叠能被证明的唯一瞬间。
+  动效动词 = 【由外向内逐层开洞 → 洞底亮字】。
+    （moss-window=竖条遮罩+dolly / pop-mint=backOut 弹跳 / press-halftone=三版套印收敛 /
+      blush-morandi=逐字拉焦 / liquid-chrome=液体形变吞入 / draft-desk=一笔描字 /
+      gold-seam=双域错位合拢+沿缝结疤 / vinyl=整盘旋转+扇形刻印揭示 ——
+      本引擎不推镜、不弹跳、不套印、不拉焦、不形变、不合拢、不整盘旋转，
+      全程只有「洞的边缘从 0 长到位 + 每层各自回正」。）
+  字体 = Noto Sans SC 300/400（gsam 用 200 极细、vinyl 用 700 粗 —— 本张取中间档）。
+  产品位形状 = 【直角卡纸（圆角矩形）压在层上】：既非圆 medallion、非六边补片、非拱窗、非纸堆、非贴纸。
+    ★ 第一版卡纸 248×286、图窗 216×188（横窗）——方产品图塞进横窗 = 上下各切掉 21%，
+      老板 2026-10-03 令「要能完整展示产品图 + 放大一点」⇒ 改【图窗 344×344 正方、卡纸 376×420】：
+      面积 40,608 → 118,336 px²（2.91×），且窗与产品同为 1:1 ⇒ slice 不再裁任何东西。
+      位置从 (1545,790) 挪到 (1687,760) 是为了把左边 59px 的缝让给【最坏标题右沿 1440】——
+      旋转 −7° 后卡纸的轴向外接盒 = 中心 ±(a·cos7° + b·sin7°) = ±212 ⇒ 左沿 1475、右沿 1899、
+      下沿 991（入场时再往右下各甩 44/54px，那是"滑进画面"，不算定版越界）。
+  本文件为零依赖单文件 HTML 引擎, 挂 cyber 同款 postMessage 桥:
+    host→iframe: cyber-embed / cyber-unembed / cyber-cfg{part,title,sub,replay} / cyber-color{vars}
+                 / cyber-img{img} / cyber-play / cyber-seek{t} / cyber-resume / cyber-get-html{reqId} / cyber-font
+    iframe→host: cyber-ready / cyber-html{reqId,html} / cyber-status{err}  (source 均为 'cyber')
+  铁律: 所有视觉量 = 帧号 f 的纯函数；无 Math.random（撕纸的不规则轮廓走 hash1）；禁 CSS animation/transition。
+  ⚠️ 已付过学费的硬约束（R151/R152/R158 + R165~R184 + R185~R200）全部落实：
+    ① 描边件 class .ln{fill:none}，实心件一律内联 style="fill:…"；
+    ② 几何（撕口轮廓点、月牙位置、纸屑、卡纸坐标）只在 build* 量一次，不进 render()；
+    ③ 「无产品图」= href 属性缺省（href="" = 永不结束的请求 ⇒ 导出第 0 帧抓屏挂死）；
+    ④ 禁一次性闩；只允许「当前值 ≠ 目标值才写」的幂等写法（本引擎的 d 重建有节流阈值）；
+    ⑤ SVG transform 只写裸数字，不写单位也不写 none；
+    ⑥ 同权重按书写顺序翻盘 ⇒ 覆盖用复合选择器；HTML 文字层显式 z-index 高于 SVG；
+    ⑦ seg() 段前 = 0 ⇒ 不许拿 (1-p)*k 当入场前暗度；
+    ⑧ 可编辑文字按【最坏输入】设计：超行压字号，单行缩宽时字号与字距同乘 k；
+       ★ 逐字步距按【总字数】回算（TITLE.step），长标题保证在定版帧之前全部亮完；
+    ⑨ 主循环开机自启（漏掉 = 预览停在第 0 帧，不报错、数值全绿）；
+    ⑩ ★【洞是异形的 ⇒ 文字安全半径必须按"最凹处"算，不能按标称半径算】：
+       边缘起伏幅值一旦超过 0.10·R，凹点就会把字吞掉（第一版凹口给到 0.23 ⇒ 最窄处塌到 0.61R=344，
+       标题右下角直接坐进第二层）。正解 = 幅值压到 0.93R~1.08R 的轻微波动，
+       再用「最凹 r=525」反推文字盒四角（本引擎文字盒四角最大 r=501，留 24px 余量）；
+    ⑪ ★【洞底必须是一整张铺满画面的纸，不能是一张和洞一样大的异形片】：
+       异形洞底 + 异形环 一旦对不齐（各层回正相位不同），就会透出【画布底色】= 一处假"漏光"，
+       而它长在洞的边缘上，肉眼看像设计的一部分。铺满 = 结构上不可能漏；
+    ⑫ ★【落影滤镜按尺寸分两张】：五层环各挂一份 feDropShadow 是这张图的景深来源（挂整组只有
+       最外轮廓会落影，层与层之间的影子全部消失 = 六层读成一层）；但小卡纸若共用环上那个
+       userSpaceOnUse 大区域滤镜，会按 2040×1200 白白栅格化一遍 ⇒ 大件 #pcCut、小件 #pcCutSm；
+    ⑬ ★【定版之后的"活着"不许靠位移整幅】：用一条低透明渐变矩形横向平移，
+       而不是让五张带滤镜的大路径每帧重栅格化（导出时间直接翻倍）。
+-->
+<style>
+  /* 🔴 六个配色变量必须在这里给【默认值】：JS 里 setAttribute('style','fill:var(--pc-x)')
+     不带 CSS 回退，宿主没发色时整棵树解析成 black。 */
+  :root{
+    --pc-pine:#8283AF;  --pc-plum:#A1506D; --pc-red:#CFE0F0;
+    --pc-slate:#CDC4D1; --pc-rose:#EED1D3; --pc-sage:#EFEEEF;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{width:100%;height:100%;background:#EFEAE6;overflow:hidden;}
+  body{font-family:"Noto Sans SC","Microsoft YaHei","PingFang SC",sans-serif;}
+  #wrap{position:absolute;left:50%;top:50%;width:1920px;height:1080px;margin:-540px 0 0 -960px;}
+  #stage{position:relative;width:1920px;height:1080px;overflow:hidden;transform-origin:0 0;
+    background:var(--pc-pine,#8283AF);}
+  #hud{position:absolute;inset:0;width:1920px;height:1080px;z-index:5;}
+  #hud .ln{fill:none;}
+  #txt{position:absolute;inset:0;z-index:9;pointer-events:none;}
+  #txt > *{position:absolute;}
+
+  /* ---------- Part（洞底上方） ---------- */
+  #partTxt{left:560px;top:214px;white-space:pre;font-size:26px;font-weight:300;letter-spacing:14px;
+    color:var(--pc-plum);opacity:0;}
+  #partRule{left:562px;top:268px;width:256px;height:1px;background:var(--pc-plum);opacity:.42;
+    transform-origin:0 50%;transform:scaleX(0);}
+
+  /* ---------- 主标题（洞底承字，逐字浮起） ---------- */
+  #titleBox{left:560px;top:310px;width:880px;}
+  .tline{display:block;white-space:pre;position:relative;font-weight:400;}
+  /* ⚠️ 入场动画（opacity/位移/缩放）全部写在【.tw 这一层】。
+     冒烟判据量的就是 .tw 的 computed opacity —— 写在任何子节点上都会"永远读到 1"。
+     🔴 这里的 7px / 1.07 与 JS 的 TITIN / TITSN 是同一个数，改一处必须改两处
+        （buildTitle 的竖向预算要按【入场态】的外扩量来扣，见常量区注释）。 */
+  .tw{position:relative;display:inline-block;white-space:pre;color:var(--pc-plum);opacity:0;
+    transform:translateY(7px) scale(1.07);}
+
+  /* ---------- 副标题（洞底下方） ---------- */
+  #subTxt{left:560px;top:630px;white-space:pre;font-size:30px;font-weight:300;letter-spacing:11px;
+    color:var(--pc-plum);opacity:0;}
+  #subRule{left:562px;top:684px;width:420px;height:1px;background:var(--pc-plum);opacity:.38;
+    transform-origin:0 50%;transform:scaleX(0);}
+  /* 固定串：⚠️ 不许复用副标题默认文本（R183），也不许放无出处的数字。
+     ★「SIX LAYERS」是有出处的 —— 画面里确实有六层纸（洞底 + 五层环），数得出来。
+     ★ 22px = 这组同明度配色允许的最小字号（见 header 顶部 🔴）。 */
+  #tagline{left:560px;top:706px;white-space:pre;font-size:22px;font-weight:300;letter-spacing:6px;
+    color:var(--pc-plum);opacity:0;}
+
+  /* ---------- 卡纸说明：SVG <text>，跟着卡纸一起旋转 ⇒ 不用两处同步 transform ---------- */
+  #prodTag{font-size:22px;font-weight:400;letter-spacing:3px;text-anchor:middle;opacity:0;}
+
+  /* ---------- 独立面板 ---------- */
+  #panel{position:fixed;left:14px;top:14px;z-index:50;display:flex;gap:8px;align-items:center;}
+  #panel input[type=text],#panel input:not([type=file]){background:rgba(255,255,255,.9);color:#4A3340;
+    border:1px solid #CDC4D1;border-radius:6px;padding:6px 9px;font-size:13px;width:150px;}
+  #panel button{background:#EFEEEF;color:#A1506D;border:0;border-radius:6px;padding:7px 12px;font-size:13px;cursor:pointer;}
+  body.embed #panel{display:none;}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="stage">
+    <svg id="hud" viewBox="0 0 1920 1080" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <!-- 撕口落影：洞的上唇把影子投在下面那层纸上（dy=+16 ⇒ 阴影 = 上方 16px 处的纸张）。
+             ★ 挂在【每一层环】上而不是整组：挂整组只有最外轮廓落影 = 六层读成一层。 -->
+        <filter id="pcCut" filterUnits="userSpaceOnUse" x="-60" y="-60" width="2040" height="1200">
+          <feDropShadow dx="0" dy="16" stdDeviation="16" flood-color="#000000" flood-opacity="0.42"/>
+        </filter>
+        <!-- 小件落影：默认 objectBoundingBox 自动包络（共用上面那个 2040×1200 大区域 = 白栅格化） -->
+        <filter id="pcCutSm" x="-25%" y="-25%" width="150%" height="150%">
+          <feDropShadow dx="0" dy="7" stdDeviation="8" flood-color="#000000" flood-opacity="0.34"/>
+        </filter>
+        <!-- 洞底：中心亮（灰鼠尾草）→ 靠洞壁逐级压暗（灰蓝 → 松墨）。四档 stop 各有消费者。 -->
+        <radialGradient id="gFloor" gradientUnits="userSpaceOnUse" cx="980" cy="508" r="660">
+          <stop offset="0%"   style="stop-color:var(--pc-sage)"/>
+          <stop offset="52%"  style="stop-color:var(--pc-sage)"/>
+          <stop offset="80%"  style="stop-color:var(--pc-slate)"/>
+          <stop offset="100%" style="stop-color:var(--pc-pine)"/>
+        </radialGradient>
+        <!-- 走过的光：极淡一道，负责"定版之后画面还活着"（见 header ⑬） -->
+        <linearGradient id="gGlaze" x1="0" y1="0" x2="1" y2="0.28">
+          <stop offset="0%"   style="stop-color:var(--pc-rose);stop-opacity:0"/>
+          <stop offset="46%"  style="stop-color:var(--pc-rose);stop-opacity:.085"/>
+          <stop offset="62%"  style="stop-color:var(--pc-sage);stop-opacity:.05"/>
+          <stop offset="100%" style="stop-color:var(--pc-sage);stop-opacity:0"/>
+        </linearGradient>
+        <clipPath id="pcImgClip"><rect x="1515" y="566" width="344" height="344" rx="8"/></clipPath>
+      </defs>
+
+      <!-- 画布底：第 0 帧 ring0 还没开洞 ⇒ 整幅 = 均匀松墨 = 干净全灭首帧 -->
+      <rect id="ground" x="0" y="0" width="1920" height="1080" style="fill:var(--pc-pine)"/>
+
+      <!-- ① 洞底：★ 铺满整幅的矩形，不是异形片（见 header ⑪：异形对不齐会漏出画布底色） -->
+      <path id="floor" d="M0 0H1920V1080H0Z" fill-rule="evenodd" fill="url(#gFloor)"/>
+
+      <!-- ③ 五层套纸：ring4 最深（先画）、ring0 最外（最后画 = 盖在最上）。
+             每层 = 整幅矩形 + 一个异形洞，fill-rule=evenodd ⇒ 洞以内透明、洞以外实心。 -->
+      <g id="ring4G">
+        <path id="ring4" fill-rule="evenodd" style="fill:var(--pc-rose)" filter="url(#pcCut)"/>
+        <path id="bev4"  class="ln" stroke="var(--pc-sage)" stroke-width="2.5" opacity="0"/>
+        <g id="cre4" style="fill:var(--pc-sage)" opacity="0"></g>
+      </g>
+      <g id="ring3G">
+        <path id="ring3" fill-rule="evenodd" style="fill:var(--pc-slate)" filter="url(#pcCut)"/>
+        <path id="bev3"  class="ln" stroke="var(--pc-sage)" stroke-width="2.5" opacity="0"/>
+        <g id="cre3" style="fill:var(--pc-sage)" opacity="0"></g>
+      </g>
+      <g id="ring2G">
+        <path id="ring2" fill-rule="evenodd" style="fill:var(--pc-red)" filter="url(#pcCut)"/>
+        <path id="bev2"  class="ln" stroke="var(--pc-sage)" stroke-width="2.5" opacity="0"/>
+        <g id="cre2" style="fill:var(--pc-sage)" opacity="0"></g>
+      </g>
+      <g id="ring1G">
+        <path id="ring1" fill-rule="evenodd" style="fill:var(--pc-plum)" filter="url(#pcCut)"/>
+        <path id="bev1"  class="ln" stroke="var(--pc-sage)" stroke-width="2.5" opacity="0"/>
+        <g id="cre1" style="fill:var(--pc-sage)" opacity="0"></g>
+      </g>
+      <g id="ring0G">
+        <path id="ring0" fill-rule="evenodd" style="fill:var(--pc-pine)" filter="url(#pcCut)"/>
+        <path id="bev0"  class="ln" stroke="var(--pc-sage)" stroke-width="2.5" opacity="0"/>
+        <g id="cre0" style="fill:var(--pc-sage)" opacity="0"></g>
+      </g>
+
+      <!-- ④ 纸屑：从外层切下来、落在【中下层纸】上的三小片。
+             🔴 第一版落在洞底上、且用松墨画 ⇒ 亮底压深片 = 三块"脏印子"，肉眼读成污渍不是纸。
+                正解 = 换到对比更高的深底（灰蓝 / 朱带）+ 用全片最亮的灰鼠尾草。
+             ⚠️ 绘制顺序必须在【所有层之后】—— 它们是"躺在纸堆上"的，画在层前会被外层整片盖掉。 -->
+      <g id="scraps" style="fill:var(--pc-sage)" filter="url(#pcCutSm)" opacity="0"></g>
+
+      <!-- ⑤ 走过的光（在所有纸层之上、卡纸之下） -->
+      <rect id="glaze" x="-900" y="0" width="2700" height="1080" fill="url(#gGlaze)" opacity="0"/>
+
+      <!-- ⑤ 产品卡纸：压在【所有层之上】，远角故意甩过最内圈边缘 -->
+      <g id="pcCard">
+        <rect id="cardBody" x="1499" y="550" width="376" height="420" rx="14"
+              style="fill:var(--pc-sage)" filter="url(#pcCutSm)" opacity="0"/>
+        <image id="prodImg" clip-path="url(#pcImgClip)" preserveAspectRatio="xMidYMid slice"
+               x="1515" y="566" width="344" height="344" opacity="0"/>
+        <!-- 无图占位：山纹 + 锯齿排（★ 刻意不用圆 —— 圆是 vinyl 的唱片，撞了就等于共用母题） -->
+        <g id="holder" class="ln" stroke="var(--pc-pine)" stroke-width="2.2" stroke-linecap="round" opacity="0"></g>
+        <text id="prodTag" x="1687" y="948" style="fill:var(--pc-plum)">EMPTY CARD</text>
+      </g>
+    </svg>
+
+    <div id="txt">
+      <div id="partTxt"></div>
+      <div id="partRule"></div>
+      <div id="titleBox"></div>
+      <div id="subTxt"></div>
+      <div id="subRule"></div>
+      <div id="tagline"></div>
+    </div>
+  </div>
+</div>
+
+<div id="panel">
+  <input id="pPart" placeholder="Part" value="Part.01" />
+  <input id="pTitle" placeholder="主标题" value="纸的深处有光" />
+  <input id="pSub" placeholder="副标题" value="PAPER IN LAYERS" />
+  <button id="pPlay">重播</button>
+  <input id="pImg" type="file" accept="image/*" />
+</div>
+
+<script>
+"use strict";
+/* ============================== 工具 ============================== */
+var $ = function(id){ return document.getElementById(id); };
+function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
+function seg(f,a,b){ return clamp((f-a)/(b-a),0,1); }                 /* 段前严格 0 */
+function easeOut(p){ return 1-Math.pow(1-p,3); }
+function easeInOut(p){ return p<0.5?4*p*p*p:1-Math.pow(-2*p+2,3)/2; }
+function smoother(p){ return p*p*p*(p*(p*6-15)+10); }
+function hash1(n){ var x=Math.sin(n*127.1+311.7)*43758.5453; return x-Math.floor(x); }
+function mk(parent,tag,attrs){
+  var e=document.createElementNS('http://www.w3.org/2000/svg',tag),k;
+  for(k in attrs){ if(Object.prototype.hasOwnProperty.call(attrs,k)) e.setAttribute(k,attrs[k]); }
+  parent.appendChild(e); return e;
+}
+function f2(v){ return Math.round(v*100)/100; }
+
+/* ============================== 常量 ============================== */
+var FPS=30, DUR=225, HOLD=0.9, CYCLE=DUR/FPS+HOLD;
+
+/* 五层：环号 i 越小越靠外、越晚被看见。圆心逐层【向左下漂】——
+   六层若同心，画面就是一只靶心（vinyl 的教训）。漂移之后每层被看见的月牙宽度都不一样，
+   "隧道"才是斜着往深处走的。 */
+var N_R=5, HCX=960, HCY=520, DRV_X=22, DRV_Y=-16;
+var HOLE_R=[1000, 880, 770, 665, 565];                 /* ring0 最外洞 → ring4 最内洞 */
+var WIN=[[6,52],[20,66],[34,80],[48,92],[62,108]];     /* 由外向内，每层晚 14 帧（比第一版提前 8 帧起） */
+var HOLE0=0.70;                                        /* 🔴 第 0 帧的预开度，见 render ① */
+var SETTLE_TAIL=18;                                    /* 回正比开洞晚收 18 帧 */
+
+/* 🔴 撕口边缘起伏：0.93R ~ 1.08R。**这是版式的承重墙，不是审美参数**：
+   洞底文字的安全半径 = 565*0.93 = 525，文字盒四角最大 r=501 ⇒ 留 24px 余量。
+   幅值一旦给到 0.23（第一版），最窄处塌到 0.61R=344 ⇒ 标题右下角坐进第二层。 */
+var SHAPE_N=72, FLOOR_MIN=0.93;
+
+var TITX=560, TITY=310, TITW=880, TITMAXFS=132, TITMINFS=30, TITVB=580;
+/* 🔴 逐字入场参数 = 7px 上浮 + 1.07 起缩放，CSS 的 .tw 与 render() 的 q=0 态必须一致。
+   ★ 竖向预算必须为【入场态】留量：未揭示的字 opacity=0 但 transform 已经把盒子撑大了
+     （底边净外扩 = TITIN + (TITSN-1)/2·lh）。判据 W2 量的是 getBoundingClientRect，
+     它不看 opacity ⇒ 只按静态底边算预算，长标题会在「一个字都还没亮」的帧上被判越界。 */
+var TITIN=7, TITSN=1.07, LH_K=1.16;
+var PCX=1687, PCY=760, PCREST=-7, PCROTK=-13;          /* 卡纸中心 / 静止倾角 / 入场倾角 */
+
+/* ============================== 撕口轮廓（异形洞） ============================== */
+/* 每层一条【常数】形状表：低频起伏 + 高频细 ripple + 三处浅崩口（= 手撕的"崩"）。
+   ⚠️ 不是 Math.random —— 同一 seed 永远同一形状 ⇒ seek 回来一模一样（确定性判据）。 */
+var SHAPE=[], ROT0=[];
+function buildShapes(){
+  for(var i=0;i<N_R;i++){
+    var s=i*4.37+1.13;
+    var nA=hash1(s+0.7)*Math.PI*2, nB=hash1(s+2.9)*Math.PI*2, nC=hash1(s+5.1)*Math.PI*2;
+    var NOTCH=[[nA,0.018],[nB,0.012],[nC,0.015]], W=0.55, a=[], j, n;
+    for(j=0;j<SHAPE_N;j++){
+      var t=j/SHAPE_N*Math.PI*2;
+      var v=1 + 0.034*Math.sin(2*t+s*1.7) + 0.022*Math.sin(3*t+s*2.3)
+              + 0.014*Math.sin(5*t+s*0.9) + 0.008*Math.sin(11*t+s*3.1);
+      for(n=0;n<NOTCH.length;n++){
+        var d=(t-NOTCH[n][0])%(Math.PI*2); if(d<0) d+=Math.PI*2;
+        if(d>Math.PI) d=Math.PI*2-d;
+        if(d<W) v-=NOTCH[n][1]*Math.cos(d/W*Math.PI/2);
+      }
+      a.push(Math.max(FLOOR_MIN, v));        /* 兜一道下限：以后调幅值也不会悄悄吃掉安全半径 */
+    }
+    SHAPE.push(a);
+    ROT0.push((hash1(s+9.4)-0.5)*5);         /* ±2.5° 入场歪斜 → 0 回正 */
+  }
+}
+function cx(i){ return HCX + DRV_X*i; }
+function cy(i){ return HCY + DRV_Y*i; }
+
+/* Catmull-Rom → 三次贝塞尔（闭合）。k = 开洞进度：0 ⇒ 所有轮廓点重合在圆心 ⇒ 洞面积 0 ⇒ 整张实心。 */
+function blobD(cxi, cyi, R, sh, k, rotDeg){
+  var pts=[], i, rad=rotDeg*Math.PI/180, ca=Math.cos(rad), sa=Math.sin(rad);
+  for(i=0;i<SHAPE_N;i++){
+    var a=i/SHAPE_N*Math.PI*2, r=R*sh[i]*k;
+    var dx=Math.cos(a)*r, dy=Math.sin(a)*r;
+    pts.push([cxi+dx*ca-dy*sa, cyi+dx*sa+dy*ca]);
+  }
+  var d='M0 0H1920V1080H0Z M'+f2(pts[0][0])+' '+f2(pts[0][1]);
+  for(i=0;i<SHAPE_N;i++){
+    var p0=pts[(i-1+SHAPE_N)%SHAPE_N], p1=pts[i], p2=pts[(i+1)%SHAPE_N], p3=pts[(i+2)%SHAPE_N];
+    d+='C'+f2(p1[0]+(p2[0]-p0[0])/6)+' '+f2(p1[1]+(p2[1]-p0[1])/6)+','+
+         f2(p2[0]-(p3[0]-p1[0])/6)+' '+f2(p2[1]-(p3[1]-p1[1])/6)+','+f2(p2[0])+' '+f2(p2[1]);
+  }
+  return d+'Z';
+}
+
+var els={
+  stage:$('stage'), hud:$('hud'), txt:$('txt'), ground:$('ground'), floor:$('floor'),
+  scraps:$('scraps'), glaze:$('glaze'), pcCard:$('pcCard'), cardBody:$('cardBody'),
+  prodImg:$('prodImg'), holder:$('holder'), prodTag:$('prodTag'),
+  partTxt:$('partTxt'), partRule:$('partRule'), titleBox:$('titleBox'),
+  subTxt:$('subTxt'), subRule:$('subRule'), tagline:$('tagline'),
+  ring:[], bev:[], cre:[], lastK:[], lastR:[]
+};
+for(var _i=0;_i<N_R;_i++){
+  els.ring.push($('ring'+_i)); els.bev.push($('bev'+_i)); els.cre.push($('cre'+_i));
+  els.lastK.push(-1); els.lastR.push(-999);
+}
+/* 🔴 必须在任何 build* 往 DOM 里塞生成件【之前】抓原始快照，否则固化件里带着生成节点，
+   重新打开会翻倍。 */
+var PRISTINE = '<!doctype html>\n' + document.documentElement.outerHTML;
+
+/* ============================== 静态生成件 ============================== */
+function buildCrescents(){
+  /* 月牙二刀：贴在每层洞口外侧的细月牙（= 第二刀切在洞边之外）。
+     画在【settled 形状】(k=1) 的洞口半径上，位置一次算死 ⇒ render() 只改整组 opacity。 */
+  for(var i=0;i<N_R;i++){
+    var g=els.cre[i], s=i*4.37+1.13, j, n=3;
+    for(j=0;j<n;j++){
+      var a0=hash1(s+j*6.1)*Math.PI*2, span=0.30+0.22*hash1(s+j*11.3);
+      var rIn=HOLE_R[i]*1.04, rOut=rIn+12+11*hash1(s+j*3.7);
+      var steps=10, arr1=[], arr2=[], q;
+      for(q=0;q<=steps;q++){
+        var a=a0+span*q/steps;
+        arr1.push([cx(i)+Math.cos(a)*rIn, cy(i)+Math.sin(a)*rIn]);
+        arr2.push([cx(i)+Math.cos(a)*rOut, cy(i)+Math.sin(a)*rOut]);
+      }
+      var d='M'+f2(arr1[0][0])+' '+f2(arr1[0][1]);
+      for(q=1;q<arr1.length;q++) d+='L'+f2(arr1[q][0])+' '+f2(arr1[q][1]);
+      for(q=arr2.length-1;q>=0;q--) d+='L'+f2(arr2[q][0])+' '+f2(arr2[q][1]);
+      mk(g,'path',{d:d+'Z', opacity:(0.10+0.05*hash1(s+j*2.3)).toFixed(3)});
+    }
+  }
+}
+function buildScraps(){
+  /* 三片纸屑（小四边形 + 一条二次曲线收出"卷边"）。
+     位置按【落在哪一层的带上】反推：r≈645 = 败叶玫瑰带、r≈700/735 = 灰蓝带。 */
+  var g=els.scraps, SP=[[330,762,30,-24],[392,846,24,14],[268,690,19,-8]], i, k;
+  for(i=0;i<SP.length;i++){
+    var x=SP[i][0], y=SP[i][1], w=SP[i][2], rot=SP[i][3]*Math.PI/180, h=w*0.6;
+    var ca=Math.cos(rot), sa=Math.sin(rot);
+    var qd=[[0,0],[w,0],[w*0.88,h],[w*0.12,h]], P=[];
+    for(k=0;k<qd.length;k++) P.push([x+qd[k][0]*ca-qd[k][1]*sa, y+qd[k][0]*sa+qd[k][1]*ca]);
+    mk(g,'path',{d:'M'+f2(P[0][0])+' '+f2(P[0][1])+'L'+f2(P[1][0])+' '+f2(P[1][1])+
+      'Q'+f2(P[2][0])+' '+f2(P[2][1])+' '+f2(P[3][0])+' '+f2(P[3][1])+'Z',
+      opacity:(0.42-i*0.06).toFixed(2)});
+  }
+}
+function buildHolder(){
+  /* 无图占位：三重山纹 + 一排锯齿。★ 刻意没有圆。全部落在图窗 1515..1859 × 566..910 内。 */
+  var g=els.holder, X=1687, j, d;
+  for(j=0;j<3;j++){
+    var y=690+j*36, w=48-j*8;
+    d='M'+(X-w*2)+' '+f2(y)+'L'+f2(X-w)+' '+f2(y-21)+'L'+X+' '+f2(y)+'L'+f2(X+w)+' '+f2(y-21)+'L'+f2(X+w*2)+' '+f2(y);
+    mk(g,'path',{d:d, opacity:(0.46-j*0.09).toFixed(2)});
+  }
+  d='M'+(X-84)+' 838';
+  for(j=0;j<7;j++) d+='L'+f2(X-84+j*22+11)+' 824L'+f2(X-84+(j+1)*22)+' 838';
+  mk(g,'path',{d:d, opacity:'0.30'});
+}
+function buildStatic(){ buildCrescents(); buildScraps(); buildHolder(); }
+
+/* ============================== 配置 / 文字 ============================== */
+var cfg={part:'Part.01', title:'纸的深处有光', sub:'PAPER IN LAYERS', img:''};
+var TITBASE={partTxt:26, partLS:14, partMax:470, subTxt:30, subLS:11, subMax:520, tagFS:22, tagLS:6, tagMax:520};
+
+/* 单行缩到宽度上限：字号与字距【同乘 k】（letter-spacing 是绝对 px，只缩字号宽度不按比例降） */
+function fitOneLine(t, fs, ls, max){
+  t.style.fontSize=''; t.style.letterSpacing='';
+  var w=Math.max(t.scrollWidth, t.offsetWidth)||1;
+  if(w>max){
+    var k=max/w;
+    t.style.fontSize=(fs*k).toFixed(1)+'px'; t.style.letterSpacing=(ls*k).toFixed(1)+'px';
+    w=Math.max(t.scrollWidth, t.offsetWidth);
+    if(w>max){ k=k*max/w; t.style.fontSize=(fs*k).toFixed(1)+'px'; t.style.letterSpacing=(ls*k).toFixed(1)+'px'; w=max; }
+  }
+  return w;
+}
+function measureOne(){
+  /* 🔴 细规宽度必须跟着【实测字宽】走：定宽在 Part 变长之后会"线比字短"，肉眼可读的错版。 */
+  var pw=fitOneLine(els.partTxt, TITBASE.partTxt, TITBASE.partLS, TITBASE.partMax)||120;
+  var sw=fitOneLine(els.subTxt,  TITBASE.subTxt,  TITBASE.subLS,  TITBASE.subMax)||200;
+  fitOneLine(els.tagline, TITBASE.tagFS, TITBASE.tagLS, TITBASE.tagMax);
+  els.partRule.style.width=Math.round(pw+6)+'px';
+  els.subRule.style.width =Math.round(sw*0.78)+'px';
+}
+var TITLE={lines:1, fs:112, lh:130, chars:1, step:1.6};
+function buildTitle(){
+  var box=els.titleBox; box.textContent='';
+  var raw=(cfg.title||'').replace(/\s+$/,'');
+  var lines=raw.split('\n');
+  if(lines.length===1 && raw.length>8){                /* 单行过长 ⇒ 先按空格切词再硬切两行 */
+    var sp=raw.lastIndexOf(' ', Math.ceil(raw.length/2));
+    if(sp<0) sp=Math.floor(raw.length/2);
+    lines=[raw.slice(0,sp), raw.slice(sp+1)];
+  }
+  lines=lines.slice(0,2);                               /* 竖向预算只给 2 行（下面就是副标题） */
+  var maxLen=Math.max.apply(null, lines.map(function(s){return s.length;}));
+  var fs=clamp(TITW/(Math.max(1,maxLen)*1.06), TITMINFS, TITMAXFS);
+  /* 净外扩一起进分母：lines 行占 lines·lh，入场态再吃 (TITSN-1)/2·lh */
+  var fitV=(TITVB-TITY-TITIN-1)/(LH_K*(lines.length+(TITSN-1)/2));
+  if(fs>fitV) fs=Math.max(TITMINFS, fitV);
+  var ls=Math.max(1, fs*0.018), lh=fs*LH_K, li, ci, total=0;
+  for(li=0;li<lines.length;li++){
+    var ln=document.createElement('div'); ln.className='tline';
+    ln.style.fontSize=fs.toFixed(1)+'px'; ln.style.lineHeight=lh.toFixed(1)+'px';
+    ln.style.letterSpacing=ls.toFixed(1)+'px';
+    var t=lines[li];
+    for(ci=0;ci<t.length;ci++){
+      var w=document.createElement('span'); w.className='tw';
+      w.textContent=t.charAt(ci); ln.appendChild(w);
+    }
+    if(!t.length){ var nb=document.createElement('span'); nb.className='tw'; nb.innerHTML='&nbsp;'; ln.appendChild(nb); }
+    box.appendChild(ln);
+    total+=Math.max(1,t.length);
+  }
+  TITLE.fs=fs; TITLE.lh=lh; TITLE.lines=lines.length; TITLE.chars=total;
+  /* ★ 步距按【总字数】回算：保证最后一个字在 f200 之前亮完（定版判据 W3）。
+     默认 1.6 帧/字；字数一多自动加速，否则长标题会在最后一帧还差半句没出场。 */
+  TITLE.step = total>1 ? Math.min(1.6, 62/(total-1)) : 1.6;
+}
+function setProdImg(src){
+  cfg.img=src||'';
+  /* ⚠️ 无图 = 属性缺省（不是空串）：空串会被解析成文档 URL ⇒ 永不结束的请求 ⇒ 导出第 0 帧抓屏挂死 */
+  if(cfg.img) els.prodImg.setAttribute('href', cfg.img);
+  else els.prodImg.removeAttribute('href');
+}
+function applyCfg(d){
+  var dirty=false;
+  if(d.part!==undefined){ cfg.part=d.part; dirty=true; }
+  if(d.title!==undefined){ cfg.title=d.title; dirty=true; }
+  if(d.sub!==undefined){ cfg.sub=d.sub; dirty=true; }
+  els.partTxt.textContent=cfg.part||'';
+  els.subTxt.textContent=cfg.sub||'';
+  /* ★ 固定串不许复用副标题默认文本（撞词看着像重复排版），也不许放无出处的数字 */
+  els.tagline.textContent='CUT PAPER · SIX LAYERS';
+  measureOne();
+  if(dirty||!els.titleBox.childNodes.length) buildTitle();
+  els.prodTag.textContent = cfg.img ? 'ON THE CARD' : 'EMPTY CARD';
+}
+
+/* ============================== 逐帧渲染 ============================== */
+function render(f){
+  var i;
+  /* ① ★ 招牌：五层纸由外向内逐层开洞。
+     🔴 起始洞不是 0 而是 HOLE0 —— 第一版写 k=0 起（洞面积 0 ⇒ 顶层是一整张纸把下面全盖住），
+        实测成片【前 2.5 秒（占全片 33%）是一块纯松墨空场】，第 3 帧才有一个小圆点。
+        一张"空画框"不是"入场中"，是死场：0.5s / 0.55s 两帧肉眼完全无法区分。
+        ⇒ 第 0 帧就必须是一张海报：五层洞预开 70%（同心色带已经铺满画面），
+          动效讲的是"隧道继续向内加深"，不是"从无到有"。 */
+  for(i=0;i<N_R;i++){
+    var p=seg(f, WIN[i][0], WIN[i][1]);
+    /* 开到位时带一次极小的"纸还在弹"的余振（sin 项乘 (1-p) ⇒ p=1 时精确归零，收尾干净是 1） */
+    var k=HOLE0+(1-HOLE0)*smoother(p)*(1+0.028*Math.sin(p*Math.PI*2.2)*(1-p));
+    var rot=ROT0[i]*(1-easeInOut(seg(f, WIN[i][0]+6, WIN[i][1]+SETTLE_TAIL)));
+    if(Math.abs(k-els.lastK[i])>0.0004 || Math.abs(rot-els.lastR[i])>0.004){
+      var d=blobD(cx(i), cy(i), HOLE_R[i], SHAPE[i], k, rot);
+      els.ring[i].setAttribute('d', d);
+      els.bev[i].setAttribute('d', d);        /* 同一个 d：切口露芯 = 沿洞边描一道亮芯 */
+      els.lastK[i]=k; els.lastR[i]=rot;
+    }
+    /* 露芯只在洞基本开到位之后才出现（洞还小的时候"边"是圆心里一个点，描出来是一坨） */
+    var rv=clamp((k-0.90)/0.10,0,1);
+    els.bev[i].setAttribute('opacity',(0.16*rv).toFixed(3));
+    els.cre[i].setAttribute('opacity',rv.toFixed(3));
+  }
+
+  /* ② 纸屑跟着最内层（ring4）开完之后落定 */
+  els.scraps.setAttribute('opacity', easeOut(seg(f,98,142)).toFixed(3));
+
+  /* ③ 走过的光：定版之后画面还"活着"（见 header ⑬） */
+  els.glaze.setAttribute('opacity', clamp((f-118)/46,0,1).toFixed(3));
+  els.glaze.setAttribute('transform','translate('+f2(((f*5.4)%2400)-1200)+' 0)');
+
+  /* ④ Part / 主标题（逐字浮起，不弹不糊）/ 副标题 / 固定串 */
+  els.partTxt.style.opacity = easeOut(seg(f,118,150)).toFixed(3);
+  els.partRule.style.transform='scaleX('+easeOut(seg(f,126,158)).toFixed(3)+')';
+
+  var ch=els.titleBox.querySelectorAll('.tw'), n=ch.length, step=TITLE.step;
+  for(i=0;i<n;i++){
+    var s0=132+i*step, q=easeOut(seg(f, s0, s0+15));
+    ch[i].style.opacity=q.toFixed(3);
+    ch[i].style.transform='translateY('+f2(TITIN*(1-q))+'px) scale('+(TITSN-(TITSN-1)*q).toFixed(4)+')';
+  }
+  var sp=easeOut(seg(f,186,212));
+  els.subTxt.style.opacity=sp.toFixed(3);
+  els.subRule.style.transform='scaleX('+sp.toFixed(3)+')';
+  /* 🔴 0.72 → 0.88：这组同明度配色里"暗梅压灰鼠尾草"只有 2.88:1，成品 7.1s 帧
+     肉眼实测固定串几乎看不见。同明度色板不许再靠"半透明"去弱化最小号的那行字。 */
+  els.tagline.style.opacity=(0.88*easeOut(seg(f,196,220))).toFixed(3);
+
+  /* ⑤ 产品卡纸：从右下滑入 + 从 −12° 转到 −6° + 淡入。
+        卡纸是最后一层，入场必须让位在"隧道已经开完"这个事实之后（f150 起）。 */
+  var cp=easeOut(seg(f,150,186));
+  var crank=PCROTK+(PCREST-PCROTK)*easeInOut(seg(f,150,190));
+  els.pcCard.setAttribute('transform',
+    'rotate('+crank.toFixed(3)+' '+PCX+' '+PCY+') translate('+(44*(1-cp)).toFixed(1)+' '+(54*(1-cp)).toFixed(1)+')');
+  els.cardBody.setAttribute('opacity', cp.toFixed(3));
+  els.prodImg.setAttribute('opacity', cp.toFixed(3));
+  /* 🔴 占位图案必须跟着【当前有没有图】走，而不是跟着帧号走：
+        有图时 holder 恒 0，否则上传之后山纹还压在产品图上。 */
+  els.holder.setAttribute('opacity', (cfg.img ? 0 : cp*0.92).toFixed(3));
+  /* 🔴 必须走 .style.opacity，不能 setAttribute('opacity')：#prodTag 在 CSS 里写了 opacity:0，
+        而 CSS 规则永远压过 presentation attribute ⇒ 这行"EMPTY CARD / ON THE CARD"从第一版起
+        就一个字都没上过屏（smoke 判据把它记成 0，连续两轮都当"还没到揭示帧"放过去了）。 */
+  els.prodTag.style.opacity = easeOut(seg(f,176,204)).toFixed(3);
+}
+
+/* ============================== 主循环 ============================== */
+var rafId=0, startAt=performance.now();
+function tick(){
+  var now=performance.now();
+  var t=((now-startAt)/1000)%CYCLE;
+  render(Math.min(DUR, t*FPS));
+  rafId=requestAnimationFrame(tick);
+}
+function restart(){ startAt=performance.now(); }
+function fit(){
+  /* ⚠️ 无放大上限（导出高清链路要求）。#stage 的 transform 归这里独占 ——
+     本引擎所有运动都写在 SVG 元素上，文字层只改 opacity/transform，都不碰 #stage。 */
+  var s=Math.min(innerWidth/1920, innerHeight/1080);
+  var st=$('stage'), wr=$('wrap');
+  st.style.transform='scale('+s+')';
+  wr.style.width=(1920*s)+'px'; wr.style.height=(1080*s)+'px';
+}
+window.addEventListener('resize',fit);
+
+/* ============================== 配色 ============================== */
+var VAR_NAMES=['--pc-pine','--pc-plum','--pc-red','--pc-slate','--pc-rose','--pc-sage'];
+function applyColors(vars){
+  var root=document.documentElement.style, k;
+  for(k in vars){ if(k.indexOf('--pc-')===0) root.setProperty(k,vars[k]); }
+}
+
+/* ============================== 自定义字体（cyber 协议） ============================== */
+function applyFont(d){
+  var name=d.family, url=d.dataURL;
+  if(!name){ var old=document.getElementById('__pcFont'); if(old) old.remove(); return; }
+  var st=document.getElementById('__pcFont')||document.createElement('style');
+  st.id='__pcFont';
+  st.textContent = url ? '@font-face{font-family("__pcfont");src:url('+url+') format("truetype");font-display:block;}' : '';
+  if(!st.parentNode) document.head.appendChild(st);
+  var fam = url ? '__pcfont' : name;
+  $('stage').style.fontFamily='"'+fam+'","Noto Sans SC","Microsoft YaHei",sans-serif';
+}
+
+/* ============================== postMessage 桥（与 vinyl / gold-seam 同协议） ============================== */
+window.addEventListener('message',function(e){
+  var d=e.data||{};
+  if(d.source!=='host')return;
+  try{
+    if(d.type==='cyber-embed'){ document.body.classList.add('embed'); fit(); }
+    else if(d.type==='cyber-unembed'){ document.body.classList.remove('embed'); fit(); }
+    else if(d.type==='cyber-cfg'){ applyCfg(d); if(d.replay)restart(); }
+    else if(d.type==='cyber-color'){ applyColors(d.vars||{}); }
+    else if(d.type==='cyber-img'){ setProdImg(d.img||''); applyCfg({}); }
+    else if(d.type==='cyber-font'){ applyFont(d); }
+    else if(d.type==='cyber-play'){ restart(); if(!rafId) rafId=requestAnimationFrame(tick); }
+    else if(d.type==='cyber-seek'){
+      if(rafId){ try{ cancelAnimationFrame(rafId); }catch(err){} rafId=0; }
+      /* ⚠️ d.t 单位是【秒】 */
+      if(typeof d.t==='number'){ try{ render(Math.min(DUR, d.t*FPS)); void document.documentElement.offsetHeight; }catch(err){} }
+    }
+    else if(d.type==='cyber-resume'){
+      startAt=performance.now(); if(!rafId) rafId=requestAnimationFrame(tick);
+    }
+    else if(d.type==='cyber-get-html'){
+      var ovr='',k2;
+      var cs=getComputedStyle(document.documentElement);
+      for(k2=0;k2<VAR_NAMES.length;k2++){ ovr+=VAR_NAMES[k2]+':'+cs.getPropertyValue(VAR_NAMES[k2]).trim()+';'; }
+      ovr=':root{'+ovr+'}';
+      /* ⚠️ 本注释里不能写 script 闭合标签的字面量 —— 它会先把自己所在的 script 截断 */
+      var boot='<script>window.__PCUT_BOOT='+JSON.stringify({part:cfg.part,title:cfg.title,sub:cfg.sub,img:cfg.img||''}).replace(/</g,'\\u003c')+'<\/script>';
+      var html=PRISTINE.replace('</head>','<style id="pcut-override">'+ovr+'</style>'+boot+'</head>');
+      parent.postMessage({source:'cyber',type:'cyber-html',reqId:d.reqId,html:html},'*');
+    }
+  }catch(err){ parent.postMessage({source:'cyber',type:'cyber-status',err:err.message},'*'); }
+});
+
+/* ============================== 独立面板 ============================== */
+$('pPart').addEventListener('input',function(){ applyCfg({part:this.value}); restart(); });
+$('pTitle').addEventListener('input',function(){ applyCfg({title:this.value}); restart(); });
+$('pSub').addEventListener('input',function(){ applyCfg({sub:this.value}); restart(); });
+$('pPlay').addEventListener('click',function(){ restart(); });
+$('pImg').addEventListener('change',function(){
+  var f=this.files&&this.files[0]; if(!f) return;
+  if(!/^image\//i.test(f.type||'')) return;
+  var r=new FileReader();
+  r.onload=function(){ setProdImg(r.result); applyCfg({}); restart(); };
+  r.readAsDataURL(f); this.value='';
+});
+
+/* ============================== 启动 ============================== */
+buildShapes();
+buildStatic();
+/* ⚠️ 顺序不能反：applyCfg 只认「传了的键」，__PCUT_BOOT 里带的是固化时的用户值，
+   必须先铺默认再拿 boot 覆盖，否则固化 HTML 打开永远是模板默认字。 */
+applyCfg(cfg);
+if(window.__PCUT_BOOT){ applyCfg(window.__PCUT_BOOT); }
+fit();
+render(0);
+/* ★ 必须自启主循环：漏掉的后果不是报错，是【预览永远停在第 0 帧】—— 版式全对、数值全绿，就是不动。 */
+rafId=requestAnimationFrame(tick);
+parent.postMessage({source:'cyber',type:'cyber-ready'},'*');
+</script>
+</body>
+</html>
