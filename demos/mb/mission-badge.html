@@ -1,0 +1,848 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>Mission Badge · 极坐标徽（满幅中央圆徽 · 弧形飘带刻字 + 刻度环抄写）</title>
+<!--
+  风格方向（老板 2026-10-03：Pinterest 自选参考，任意主题/配色，任意设计，只求高级配色 + 高级动效；
+  元素与构图都必须与既有 21 张引擎区分）
+  参考 = _tmp/pins1003/（mission badge / embroidered patch / watch-dial 一系接触印样）
+  配色真源 = X094（本地 140 组高级配色库现成条目，无自造色值）：
+    #301F28 茄紫灰 / #165B88 珐琅蓝 / #E9DBC1 骨白 / #2A0707 深栗黑 / #CF9FA1 藕粉 / #797F92 钢灰蓝
+  ★ 选这组的理由 = 对比度够用：骨白压茄紫灰 11.36、骨白压珐琅蓝 5.32、藕粉压茄紫灰 6.75、
+    深栗黑压骨白 13.58 ⇒ 每条文字链都 ≥5:1。
+    （同轮候选 P027 两两最高只有 2.71:1 = 任何文字都读不出来，淘汰；
+     X078 是漂亮的 Navy→Bone 任务配色但只有 5 个色，喂不饱六格配色控件，淘汰。
+     —— 这是 paper-cut 同明度坑（X057 最高 3.11）之后【第二次先用对比度表筛色板】，不再靠肉眼。）
+  母题 = 圆徽 / 骨白环带 / 刻度环 / 弧形飘带文字 / 盾形产品窗 / 四角取景框 / 绕行光点
+    （现有引擎零撞：无街机电路、无竹窗、无网点、无 blob、无液态铬、无蓝图纸、无贴纸、无金缝、
+      无黑胶盘、无套层撕纸）。
+  ★ 构图 = 【满幅中央圆徽 + 上下两条弧形飘带 + 四角取景框】：
+     不是左右分栏（moss-window）、不是三段（press-halftone）、不是对角斜置（pop-mint）、
+     不是通栏出血（blush-morandi / gold-seam）、不是中轴夹心（liquid-chrome）、不是左文右盘（vinyl）、
+     不是满版同心撕纸洞（paper-cut）—— 是「一枚钉在正中的徽章」：
+     Part 与副标题【都不在直线上】，各自骑在圆徽外缘的一条弧形飘带上；
+     主标题是全片唯一一条水平线（被圆徽夹在正中）；四角取景框把徽章"标定"住。
+     ⚠️ 同心圆只有【环带 + 外细环】两圈 —— 刻意不加第三圈内环（vinyl 的"靶心"教训）。
+  动效动词 = 【环带被一笔画抄出来 → 刻度逐格亮 → 盾落下 → 飘带沿弧滑进位 → 字从左右向中间收】。
+    （paper-cut=逐层开洞 / vinyl=整盘旋转+扇形刻印 / gsam=双域错位合拢 / draft-desk=一笔描字 /
+      liquid-chrome=液体形变吞入 / blush-morandi=逐字拉焦 / press-halftone=三版套印收敛 /
+      pop-mint=backOut 弹跳 / moss-window=竖条遮罩+dolly ——
+      本引擎不推镜、不弹跳、不套印、不拉焦、不形变、不合拢、不整盘旋转、不开洞。
+      ★ 两个独门动词：① 文字【沿弧线滑动归位】（startOffset 从飘带一端扫进正中，上下两条反向）
+                      ② 逐字【水平收拢】（左右散开 ±5px·行内位距 → 0，无缩放、无竖向位移）——
+                      与 paper-cut 的「上浮 + 放大」正面对撞，两张并排看不出一个作者。）
+  字体 = Noto Sans SC 300/400（与 paper-cut 同档，靠构图与动效拉开）。
+  产品位形状 = 【盾形（clasp）】：既非圆 medallion（vinyl）、非直角卡纸（paper-cut）、
+    非拱窗（moss-window）、非六边补片、非纸堆、非贴纸。
+  本文件为零依赖单文件 HTML 引擎, 挂 cyber 同款 postMessage 桥:
+    host→iframe: cyber-embed / cyber-unembed / cyber-cfg{part,title,sub,replay} / cyber-color{vars}
+                 / cyber-img{img} / cyber-play / cyber-seek{t} / cyber-resume / cyber-get-html{reqId} / cyber-font
+    iframe→host: cyber-ready / cyber-html{reqId,html} / cyber-status{err}  (source 均为 'cyber')
+  铁律: 所有视觉量 = 帧号 f 的纯函数；无 Math.random（刻度长短抖动走 hash1）；禁 CSS animation/transition。
+  ⚠️ 已付过学费的硬约束（R151~R200）全部落实：
+    ① 描边件 class .ln{fill:none}，实心件一律内联 style="fill:…"；
+    ② 几何（刻度、飘带路径、盾、四角框、弧长与滑动起止）只在 build* 量一次，不进 render()；
+       ★ 连弧线的 d 都由 arcD(圆心/半径/起止角) 在 build 时现算 —— 手写弧端点坐标是这一轮
+         第二次差点写错的地方（第一版把 208° 的端点算成了 328°，肉眼要到最后才发现）；
+    ③ 「无产品图」= href 属性缺省（href="" = 永不结束的请求 ⇒ 导出第 0 帧抓屏挂死）；
+    ④ 禁一次性闩；只允许「当前值 ≠ 目标值才写」的幂等写法；
+    ⑤ SVG transform 只写裸数字，不写单位也不写 none；
+    ⑥ 同权重按书写顺序翻盘 ⇒ 覆盖用复合选择器；HTML 文字层显式 z-index 高于 SVG；
+    ⑦ seg() 段前 = 0 ⇒ 不许拿 (1-p)*k 当入场前暗度；
+    ⑧ 可编辑文字按【最坏输入】设计：超行压字号；缩宽时字号与字距【同乘 k】；
+       逐字步距按【总字数】回算（TITLE.step），长标题保证在定版帧之前全部亮完；
+       ★ 弧形飘带文字按 getComputedTextLength() 实测长度缩，不靠字数估；
+    ⑨ 主循环开机自启（漏掉 = 预览停在第 0 帧，不报错、数值全绿）；
+    ⑩ ★【第 0 帧就必须是一张海报】（paper-cut 的 HOLE0 教训前置到这里）：
+       底盘预开 72% 半径、环带预抄 30% ⇒ 首帧已经是"一枚没装完的徽章"，
+       而不是"一块纯色空场"。空场不是入场中，是死场（判据量盒子和 opacity，看不见空场）；
+       🔴 但这条 2026-10-03 眼审时【只做到一半】，见 ⑯；
+    ⑪ ★【逐字入场不许用 scale>1 的静态默认值】：未揭示的字 opacity=0，但 transform 已经把
+       getBoundingClientRect 撑大 ⇒ 判据 W2 会在"一个字都还没亮"的帧上判越界。
+       本引擎入场只用 translateX（横向），竖向预算与入场态无关 = 结构上绕开这个坑；
+    ⑫ ★【文字安全区按圆算，不按矩形算】：主标题夹在圆徽里，危险点是盒子的【四角】
+       （盒宽 560 ⇒ dx=±280 ⇒ 允许 |dy| ≤ √(346²−280²)=203 ⇒ y∈[317,723]）。
+       再让给星（上沿）与盾（下沿 594 起）⇒ 实取块心 456、半高 100 ⇒ 底 ≤ 556 < TITVB 570；
+    ⑬ 60 条刻度不许 60 次属性写 ⇒ 建成【12 组 × 5 条】+ 一组整点长刻度，每帧最多 12 次 opacity 写；
+    ⑭ ★【飘带滑动不许把文字滑出路径外】：SVG 文字超出路径的部分【直接被裁掉】，
+       看着像"少字"而不是"滑入"。正解 = 起点按实测字长反推 s0 ≥ L/2 + 10 ⇒ 全程一个字都不缺；
+    ⑮ ★【内环这种"装饰性同心圆"要先问它压不压字】：第一版给底盘加了一圈 r=322 细内环，
+       它同时穿过主标题上角（r≈327 的角点）与 prodTag（r≈328）—— 数值判据全绿，肉眼看是
+       "一条线从字里横穿"。正解 = 删掉（本来也只为了"看着像徽章"），同心圆反而只剩两圈，
+       更接近"徽"而不是"靶心"。
+    ⑯ ★★★【"预开"只要后面还关着一道门，就等于没做】（2026-10-03 成片眼审抓出）：
+       为了首帧不空，我把底盘半径预开到 62%（⑩）—— 但同一层的 opacity 写成了
+       `clamp(seg(f,8,26)*1.7,0,1)`，f<8 恒为 0 ⇒ 预开的那 62% 半径被【自己的透明度闸整层抹掉】。
+       实测成片 0.1s 那一帧：画面上只有一小截环带，其余全是空场（= paper-cut HOLE0 同族，
+       只是换了个门）。r 属性的数值判据全绿、opacity 判据也全绿，因为没人把两者【合起来】问一句
+       "第 0 帧到底有几个像素是有东西的"。
+       ⇒ 正解 = 入场层的 opacity 必须带【下限】（这里 0.60 起），并且口径推广为一条通用自检：
+         **凡是靠"预开 X%"来治空场的层，逐层问一遍"还有没有别的门能把它归零"。**
+    ⑰ ★【两色径向渐变 = 泥色通道】：底盘原本 fill 直接吃 plate→ink 的径向渐变，
+       而渐变中心 (960,452) 比盘心 (960,520) 高 68px、半径 366 < 盘底距离 414
+       ⇒ 盘的下半片吃满 ink，肉眼看是【一个黑洞】，中间过渡段还是发灰的泥色（蓝→栗黑必过灰）。
+       正解 = 盘体恒为【实色】，压暗交给盖在上面的一层 ink 的 stop-opacity（上限 0.60）
+       ⇒ 盘底 = 0.6 栗黑 + 0.4 珐琅蓝 = 深蓝炭，色相留在蓝family里，读成"背光"不是"破洞"。
+       ⇒ 通用口径：**跨色相的两色之间不许直接拉渐变；要压暗就用 alpha，不要用色值插值。**
+  ★★【2026-10-03 第二轮 · 老板判「界面太过于单调了，要补充的占画面的 50-70% 占比」】
+     补一整层【星图背板】mbBg（排在 #ground 之后、所有现役元素之前，纯背景不抢戏）：
+     24 等分极坐标扇区阵（隔一填一、两档明度各自再抖）+ 24 条方位射线 + 五圈导引环
+     + 两条倾斜轨道线 + 54 颗星点 / 6 个目标菱形（全 hash1 定位）+ 四边刻度尺（约 154 道）。
+     ★ 语汇与 brass-gauge 的「机床钣金拼板」拉开：这里是【测距星图】，不是钣金；
+       颜色只用 steel / orchid 两色的低透明度 ⇒ 不新增色相，背景永远不比徽抢眼。
+     ★ 占屏大头必须是【实心扇区】：上一张（bz）的实测教训 = 只补线条层，开/关差集只有 3.3%，
+       肉眼看还是空的 ⇒ 线/点元素质积天然小，要达到面积占比必须有面。
+     ★ 防"背景穿徽"的做法 = 剪裁路径挖洞，且【洞沿必须与版面已有的边重合】（bz 的同一条铁律）：
+       洞0 = 圆 r=BG_EX 470（= 缎带外沿 464 + 6）⇒ 一个圆洞圈掉整个徽章/飘带/弧形文字，
+       比"给每条弧各挖一个洞"少七条洞沿 = 少七次"洞沿自己画出一条不属于版面的直线"；
+       另七个矩形洞 = 副翼（按 ±72px 入场位移的最坏位置给）×2、固定串、四角取景框 ×4。
+       ⚠️ 为什么必须挖：底盘与压暗层都是【带 alpha 的】（opacity 0.60~1.0），不挖洞的话
+          扇区的边会直接从徽里透出来 —— 这一层不是"挡字"，是"挡半透明的徽体本身"。
+     ★ 首帧就是海报（header ⑩+⑯ 口径）：mbBg 的入场只写 group opacity、且带 0.68 下限；
+       rotate 只加在极坐标场一个子组上（全层一起转会带着四边刻度尺跑 = "画面在打转"）。
+     ★ 配色语义同步：steel 多了"扇区·方位射线·导引环·星点·四边刻度尺"，
+       orchid 多了"轨道线·目标菱形"（六格控件含义不变，仍是那六个变量）。
+-->
+<style>
+  /* 🔴 六个配色变量必须在这里给【默认值】：JS 里 setAttribute('stroke','var(--mb-x)')
+     不带 CSS 回退，宿主没发色时整棵树解析成 black。 */
+  :root{
+    --mb-ground:#301F28; --mb-plate:#165B88;  --mb-bezel:#E9DBC1;
+    --mb-ink:#2A0707;    --mb-orchid:#CF9FA1; --mb-steel:#797F92;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{width:100%;height:100%;background:#170f14;overflow:hidden;}
+  body{font-family:"Noto Sans SC","Microsoft YaHei","PingFang SC",sans-serif;}
+  #wrap{position:absolute;left:50%;top:50%;width:1920px;height:1080px;margin:-540px 0 0 -960px;}
+  #stage{position:relative;width:1920px;height:1080px;overflow:hidden;transform-origin:0 0;
+    background:var(--mb-ground,#301F28);}
+  #hud{position:absolute;inset:0;width:1920px;height:1080px;z-index:5;}
+  #hud .ln{fill:none;}
+  #txt{position:absolute;inset:0;z-index:9;pointer-events:none;}
+  #txt > *{position:absolute;}
+
+  /* ---------- 主标题（圆徽正中，逐字水平收拢） ---------- */
+  #titleBox{left:680px;width:560px;text-align:center;}
+  .tline{display:block;white-space:pre;position:relative;font-weight:400;text-align:center;}
+  /* ⚠️ 入场动画全部写在【.tw 这一层】—— 冒烟判据量的就是 .tw 的 computed opacity，
+        写在子节点上会"永远读到 1"。
+     ★ translateX(27px) 只是静态兜底；真实散开量由 render() 按【行内位距】逐字写（SPLAY=5）。
+       入场只走横向 ⇒ 竖向预算与入场态无关（header ⑪）。 */
+  .tw{position:relative;display:inline-block;white-space:pre;color:var(--mb-bezel);opacity:0;
+    transform:translateX(27px);}
+
+  /* ---------- 固定串（全片最下方，直排居中） ---------- */
+  /* ★ 内容只讲画面上真实存在的两个元素（刻度环 / 盾形扣）⇒ 无出处数字一条不犯。 */
+  #tagline{left:660px;top:1004px;width:600px;white-space:pre;font-size:22px;font-weight:300;
+    letter-spacing:7px;text-align:center;color:var(--mb-orchid);opacity:0;}
+
+  /* ---------- 独立面板 ---------- */
+  #panel{position:fixed;left:14px;top:14px;z-index:50;display:flex;gap:8px;align-items:center;}
+  #panel input[type=text],#panel input:not([type=file]){background:rgba(255,255,255,.9);color:#231820;
+    border:1px solid #b6a9ad;border-radius:6px;padding:6px 9px;font-size:13px;width:150px;}
+  #panel button{background:#797F92;color:#E9DBC1;border:0;border-radius:6px;padding:7px 12px;font-size:13px;cursor:pointer;}
+  body.embed #panel{display:none;}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="stage">
+    <svg id="hud" viewBox="0 0 1920 1080" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <!-- 盾形内嵌剪裁：产品图吃进盾里（外圈留 13px 藕粉边 = 盾是真的、图是镶进去的）。
+             ★ 尺寸真源 = 下面 #mbShield 那一段注释，四处（clip / body / line / image）必须一起改。 -->
+        <clipPath id="mbShieldClip">
+          <path d="M858 607 H1062 V714 Q1062 788 960 832 Q858 788 858 714 Z"/>
+        </clipPath>
+        <!-- 底盘压暗层（★ 不是渐变填色，是【盖在实色盘上的一层 alpha 阴影】）：
+             🔴 第一版把 gPlate 写成 plate→ink 的径向渐变，实测成品【下半个盘是个黑洞】——
+                渐变中心在 (960,452) 而盘心在 (960,520)，盘底离中心 414 > 渐变半径 366
+                ⇒ 底部整片吃满 ink，而蓝→栗黑中间那段是发灰的泥色。
+                判据全绿（对比度、越界、纯函数都没话说），只有肉眼看得见。
+             ⇒ 正解：盘体恒为【实色珐琅蓝】，压暗交给这一层 ink 的 stop-opacity（上限 0.60）
+                ⇒ 盘底 = 0.60×栗黑 + 0.40×珐琅蓝 = 深蓝炭，仍在蓝family里，读成"背光"不是"破洞"。 -->
+        <radialGradient id="gShade" gradientUnits="userSpaceOnUse" cx="960" cy="452" r="372">
+          <stop offset="0%"   style="stop-color:var(--mb-ink);stop-opacity:0"/>
+          <stop offset="58%"  style="stop-color:var(--mb-ink);stop-opacity:0"/>
+          <stop offset="100%" style="stop-color:var(--mb-ink);stop-opacity:.60"/>
+        </radialGradient>
+        <!-- 绕行光点的晕 -->
+        <radialGradient id="gDot" cx="0.5" cy="0.5" r="0.5">
+          <stop offset="0%"   style="stop-color:var(--mb-bezel);stop-opacity:.9"/>
+          <stop offset="55%"  style="stop-color:var(--mb-bezel);stop-opacity:.28"/>
+          <stop offset="100%" style="stop-color:var(--mb-bezel);stop-opacity:0"/>
+        </radialGradient>
+        <!-- 飘带缎面衬：钢灰蓝一条渐隐带，给弧形文字一个底（不描实心，描了会和骨白环带糊在一起）。
+             ★ 两条各一把渐变：共用一条纵向渐变会让底带「两端亮、中间暗」（objectBoundingBox
+               按各自包围盒取 y），而弧的中间才是文字重心 ⇒ 上下两条必须反着来。 -->
+        <linearGradient id="gRibbon" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%"   style="stop-color:var(--mb-steel);stop-opacity:.32"/>
+          <stop offset="100%" style="stop-color:var(--mb-steel);stop-opacity:.08"/>
+        </linearGradient>
+        <linearGradient id="gRibbon2" x1="0" y1="1" x2="0" y2="0">
+          <stop offset="0%"   style="stop-color:var(--mb-steel);stop-opacity:.32"/>
+          <stop offset="100%" style="stop-color:var(--mb-steel);stop-opacity:.08"/>
+        </linearGradient>
+
+        <!-- ★ 文字走这两条弧（不可见，d 由 buildFrame 用 arcD 现算，见 header ②）。
+               约定：x=cx+r·cosθ, y=cy+r·sinθ，y 向下 ⇒ θ 递增 = 屏幕顺时针。
+               顶弧 208°→332°（过 270°=正上方，dd>0 ⇒ sweep=1）：文字直立、字身向【外】长。
+               底弧 152°→28°（过 90°=正下方，dd<0 ⇒ sweep=0）：文字直立、字身向【内】长。
+               两条都从左往右走 ⇒ 都正着读，但一条朝上弯、一条朝下弯。
+               Chrome 不认 textPath 的 side="right"，方向只能靠弧的走向做。 -->
+        <path id="pTopArc" class="ln"></path>
+        <path id="pSubArc" class="ln"></path>
+
+        <!-- ★ 背景剪裁路径（2026-10-03 老板判"太单调"补的整层背景用）：全画布矩形挖 8 个洞。
+               洞0 = 圆 r=BG_EX（把整个徽章区——含 r=436 的两条飘带与其外沿 464——一次圈掉），
+               洞1..7 = 固定串 / 两条副翼（含 ±72 位移的最坏位置）/ 四角取景框，各外扩 26。
+             ⚠️ 八个洞两两不许重叠：重叠区被 evenodd 数成"穿过两次 = 在内部"⇒ 洞被填回来。
+             ⚠️ 洞沿必须压在版面已有的边上（brass-gauge 第一版把洞沿留在实心板中间，
+                肉眼立刻浮出一块"文字后面的浅色矩形"）—— 本层洞0 之外全是线条元素，切在洞沿不显眼。 -->
+        <clipPath id="mbBgClip"><path id="mbBgClipD" clip-rule="evenodd" d="M0 0H1920V1080H0Z"/></clipPath>
+      </defs>
+
+      <!-- 画布底 -->
+      <rect id="ground" x="0" y="0" width="1920" height="1080" style="fill:var(--mb-ground)"/>
+
+      <!-- ★ 星图背板（2026-10-03 老板判"太单调"补的整层背景 · 必须在一切现役元素之前）
+             内含：测距扇区阵 → 方位射线 → 五圈导引环 → 两条轨道线 → 星点/目标菱形 → 四边刻度尺。
+             整层吃 mbBgClip：徽章、飘带、副翼、固定串、四角框永远进不去。 -->
+      <g id="mbBg" clip-path="url(#mbBgClip)" opacity="0">
+        <g id="mbBgPolar">
+          <g id="mbBgSector" style="fill:var(--mb-steel)"></g>
+          <g id="mbBgRay" class="ln" stroke="var(--mb-steel)" stroke-width="1.6" opacity="0.42"></g>
+        </g>
+        <g id="mbBgRing" class="ln" stroke="var(--mb-steel)" stroke-width="2"
+           stroke-dasharray="16 12" opacity="0.36"></g>
+        <g id="mbBgTrack" class="ln" stroke="var(--mb-orchid)" stroke-width="2.5"
+           stroke-dasharray="26 18" opacity="0.34"></g>
+        <g id="mbBgBlip" style="fill:var(--mb-steel)" opacity="0.60"></g>
+        <g id="mbBgMark" class="ln" stroke="var(--mb-orchid)" stroke-width="2.5" opacity="0.52"></g>
+        <g id="mbBgEdge" class="ln" stroke="var(--mb-steel)" stroke-width="2" opacity="0.46"></g>
+      </g>
+
+      <!-- ① 四角取景框（最先入场：先把"标定"这件事立住，徽章才像是被钉上去的） -->
+      <g id="corners" class="ln" stroke="var(--mb-steel)" stroke-width="5" stroke-linecap="square" opacity="0"></g>
+
+      <!-- ② 底盘（预开 PLATE0，见 header ⑩）：实色珐琅蓝 + 上面盖一层压暗 ⇒ 两层同心、同一个 r 一起走 -->
+      <circle id="plate" cx="960" cy="520" r="346" style="fill:var(--mb-plate)" opacity="0"/>
+      <circle id="plateShade" cx="960" cy="520" r="346" fill="url(#gShade)" opacity="0"/>
+
+      <!-- ③ 骨白环带：r=369 的粗描边（带宽 46 ⇒ 覆盖 r 346..392），一笔画抄出来 -->
+      <path id="bezelBand" class="ln" stroke="var(--mb-bezel)" stroke-width="46" opacity="0"></path>
+      <!-- 外圈细环（全片只有这两圈同心，够"徽章"不够"靶心"） -->
+      <path id="outerRing" class="ln" stroke="var(--mb-bezel)" stroke-width="3" opacity="0"></path>
+
+      <!-- ④ 刻度环：60 条 = 12 组 × 5 条（深栗黑压在骨白带里 = 13.58:1，全片最强一条链）。
+             整点长刻度单独一组，一起装在 tickRing 里 ⇒ 旋入时长短刻度一起走，不会脱节。 -->
+      <g id="tickRing">
+        <g id="tickG0"  class="ln" stroke="var(--mb-ink)" stroke-width="4" opacity="0"></g>
+        <g id="tickG1"  class="ln" stroke="var(--mb-ink)" stroke-width="4" opacity="0"></g>
+        <g id="tickG2"  class="ln" stroke="var(--mb-ink)" stroke-width="4" opacity="0"></g>
+        <g id="tickG3"  class="ln" stroke="var(--mb-ink)" stroke-width="4" opacity="0"></g>
+        <g id="tickG4"  class="ln" stroke="var(--mb-ink)" stroke-width="4" opacity="0"></g>
+        <g id="tickG5"  class="ln" stroke="var(--mb-ink)" stroke-width="4" opacity="0"></g>
+        <g id="tickG6"  class="ln" stroke="var(--mb-ink)" stroke-width="4" opacity="0"></g>
+        <g id="tickG7"  class="ln" stroke="var(--mb-ink)" stroke-width="4" opacity="0"></g>
+        <g id="tickG8"  class="ln" stroke="var(--mb-ink)" stroke-width="4" opacity="0"></g>
+        <g id="tickG9"  class="ln" stroke="var(--mb-ink)" stroke-width="4" opacity="0"></g>
+        <g id="tickG10" class="ln" stroke="var(--mb-ink)" stroke-width="4" opacity="0"></g>
+        <g id="tickG11" class="ln" stroke="var(--mb-ink)" stroke-width="4" opacity="0"></g>
+        <g id="tickMaj" class="ln" stroke="var(--mb-ink)" stroke-width="6.5" opacity="0"></g>
+      </g>
+
+      <!-- ⑤ 飘带缎面衬（比文字弧各宽 6° ⇒ 文字永远落在看得见的缎面上；d 同样 build 时现算） -->
+      <path id="ribbonTop" class="ln" stroke="url(#gRibbon)" stroke-width="56" stroke-linecap="round" opacity="0"></path>
+      <path id="ribbonSub" class="ln" stroke="url(#gRibbon2)" stroke-width="56" stroke-linecap="round" opacity="0"></path>
+
+      <!-- ⑥ 弧形文字：Part 走顶弧、副标题走底弧（SVG text，宿主按 id 读 textContent）。
+           🔴 <text> 与 <textPath> 之间【不许有换行和缩进】：宿主读的是 #partTxt.textContent，
+              而元素节点不算字 —— 中间那几个空白字符会原样混进读数里
+              （「PART.09」读成「\n    PART.09\n  」⇒ 联动判据判 FAIL，画面其实全对）。 -->
+      <text id="partTxt" opacity="0" font-size="28" font-weight="300" letter-spacing="13"
+            text-anchor="middle" style="fill:var(--mb-bezel)"><textPath id="partPath" href="#pTopArc" startOffset="50%">Part.02</textPath></text>
+      <text id="subTxt" opacity="0" font-size="27" font-weight="300" letter-spacing="10"
+            text-anchor="middle" style="fill:var(--mb-orchid)"><textPath id="subPath" href="#pSubArc" startOffset="50%">SIGNED IN ORBIT</textPath></text>
+
+      <!-- ⑦ 盾形产品窗：圆徽下沿的一枚 clasp
+           ★★【尺寸真源在这里，四处必须一起改：clipPath#mbShieldClip / shieldBody / shieldLine / prodImg】
+           2026-10-03 第二轮放大：外框 192×200 → 230×252，产品图 166×177 → 204×225（面积 +55%）。
+           老板的口径是「要可以【完整展示】我们的产品图，产品展示空间太小了 放大一点」，
+           而这一枚盾是全批次【最小】的产品位（bz 的观察窗是 508×508）⇒ 必须治。
+           ★ 竖向能长多少由三条线卡死，逐条都是真几何不是手感：
+               上界 594 = 主标题竖向预算 570 + 24 缝（header ⑫，不许再往上进）；
+               下界 846 = 盾尖吃进盘里 r=326，离盘缘 346 留 20 ⇒ 再往下就压到骨白环带；
+               半幅 115 = 肩角 (845,716) 到盘心 r=227，留 119 余量 ⇒ 宽度不是瓶颈，高度才是。
+           ★ 为了腾出这 40px 竖向空间，删掉了 #prodTag（"EMPTY SHIELD / ON THE SHIELD" 那行小字）：
+             它是【状态说明文字】不是甲方内容，而"没放图"这件事由盾里三重 V 形军衔纹自己讲；
+             留着它 = 每次想放大产品位都要先跟它抢地盘。（header ⑮ 那条"内环穿过 prodTag"的坑
+             也一并消失 —— 少一个可被装饰线穿过的元素。） -->
+      <g id="mbShield">
+        <path id="shieldBody" d="M845 594 H1075 V716 Q1075 796 960 846 Q845 796 845 716 Z"
+              style="fill:var(--mb-orchid)" opacity="0"/>
+        <path id="shieldLine" class="ln" d="M845 594 H1075 V716 Q1075 796 960 846 Q845 796 845 716 Z"
+              stroke="var(--mb-ink)" stroke-width="5" stroke-linejoin="round" opacity="0"/>
+        <image id="prodImg" clip-path="url(#mbShieldClip)" preserveAspectRatio="xMidYMid slice"
+               x="858" y="607" width="204" height="225" opacity="0"/>
+        <!-- 无图占位：三重 V 形军衔纹 + 一道横脊（★ 不用圆、不用山 —— 圆撞 vinyl 唱片、山撞 paper-cut 卡纸） -->
+        <g id="holder" class="ln" stroke="var(--mb-ink)" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" opacity="0"></g>
+      </g>
+
+      <!-- ⑧ 侧栏细线（钢灰蓝，从靠近徽章的一端向外推开） -->
+      <g id="flankL" class="ln" stroke="var(--mb-steel)" stroke-width="3" opacity="0">
+        <path d="M84 520H284"/><path d="M84 506V534"/><path d="M284 506V534"/>
+      </g>
+      <g id="flankR" class="ln" stroke="var(--mb-steel)" stroke-width="3" opacity="0">
+        <path d="M1636 520H1836"/><path d="M1836 506V534"/><path d="M1636 506V534"/>
+      </g>
+
+      <!-- ⑨ 三颗星（藕粉，压在底盘上部、主标题之上） -->
+      <g id="stars" style="fill:var(--mb-orchid)" opacity="0"></g>
+
+      <!-- ⑩ 绕行光点：定版之后画面还"活着" -->
+      <g id="orbit">
+        <circle id="orbitGlow" cx="960" cy="116" r="26" fill="url(#gDot)" opacity="0"/>
+        <circle id="orbitCore" cx="960" cy="116" r="6" style="fill:var(--mb-bezel)" opacity="0"/>
+      </g>
+    </svg>
+
+    <div id="txt">
+      <div id="titleBox"></div>
+      <div id="tagline"></div>
+    </div>
+  </div>
+</div>
+
+<div id="panel">
+  <input id="pPart" placeholder="Part" value="Part.02" />
+  <input id="pTitle" placeholder="主标题" value="极轨之上" />
+  <input id="pSub" placeholder="副标题" value="SIGNED IN ORBIT" />
+  <button id="pPlay">重播</button>
+  <input id="pImg" type="file" accept="image/*" />
+</div>
+
+<script>
+"use strict";
+/* ============================== 工具 ============================== */
+var $ = function(id){ return document.getElementById(id); };
+function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
+function seg(f,a,b){ return clamp((f-a)/(b-a),0,1); }                 /* 段前严格 0 */
+function easeOut(p){ return 1-Math.pow(1-p,3); }
+function easeInOut(p){ return p<0.5?4*p*p*p:1-Math.pow(-2*p+2,3)/2; }
+function smoother(p){ return p*p*p*(p*(p*6-15)+10); }
+function hash1(n){ var x=Math.sin(n*127.1+311.7)*43758.5453; return x-Math.floor(x); }
+function mk(parent,tag,attrs){
+  var e=document.createElementNS('http://www.w3.org/2000/svg',tag),k;
+  for(k in attrs){ if(Object.prototype.hasOwnProperty.call(attrs,k)) e.setAttribute(k,attrs[k]); }
+  parent.appendChild(e); return e;
+}
+function f2(v){ return Math.round(v*100)/100; }
+/* 度 → 弧上一点（y 向下：θ 递增 = 屏幕顺时针） */
+function ptDeg(cx,cy,r,deg){ var a=deg*Math.PI/180; return [cx+Math.cos(a)*r, cy+Math.sin(a)*r]; }
+/* 起止角 → 弧的 path d。dd>0 ⇒ sweep=1；|dd|>180 ⇒ large=1。 */
+function arcD(cx,cy,r,a0,a1){
+  var s=ptDeg(cx,cy,r,a0), e=ptDeg(cx,cy,r,a1), dd=a1-a0;
+  return 'M'+f2(s[0])+' '+f2(s[1])+'A'+r+' '+r+' 0 '+(Math.abs(dd)>180?1:0)+' '+(dd>0?1:0)+' '+f2(e[0])+' '+f2(e[1]);
+}
+
+/* ============================== 常量 ============================== */
+var FPS=30, DUR=225, HOLD=0.9, CYCLE=DUR/FPS+HOLD;
+
+var CX=960, CY=520;
+var R_PLATE=346, R_BAND=369, R_OUT=404, R_ARC=436;
+var PLATE0=0.72;                       /* 🔴 第 0 帧底盘预开半径比，见 header ⑩（必须配 opacity 下限，见 render ②） */
+var BAND0=0.30;                        /* 第 0 帧环带已抄出的比例 */
+var TICK_IN=356, TICK_OUT=374, MAJ_IN=350, MAJ_OUT=388;   /* 全部落在带区 346..392 内 */
+var N_TICK=60, N_GRP=12, PER_GRP=5;
+var ROT0=-8;                           /* 刻度环入场带 −8° 旋入 → 0 */
+
+/* 弧段角度（文字弧 124°、缎带各再宽 6°） */
+var TOP0=208, TOP1=332, SUB0=152, SUB1=28, RIB_PAD=6;
+
+/* 🔴 主标题竖向安全区由【弦半幅】反推（header ⑫）：盒宽 560 ⇒ dx=±280
+   ⇒ 允许 |dy| ≤ √(346²−280²)=203 ⇒ y∈[317,723]；再让给星（上）与盾（下沿 596 起）
+   ⇒ 实取块心 470、半高预算 100 ⇒ 块高 ≤ 200、底 ≤ 570 = TITVB。 */
+var TITX=680, TITW=560, TITCY=456, TITVB=570, TITVMAX=200;
+var TITMAXFS=104, TITMINFS=26, LH_K=1.20;
+var SPLAY=5;                           /* 逐字水平散开步距（render 的帧号函数） */
+
+/* ---------- 星图背板 mbBg（2026-10-03 老板判"太单调"补的整层背景，见 header 末段） ----------
+   ⚠️ 半径/角度全部从【现役版面常量】反算，改版面必须一起核：
+      BG_EX 470 = 飘带外沿 (R_ARC 436 + 缎带宽 56/2 = 464) + 6 ⇒ 一个圆洞圈掉整个徽章，
+      比"给每条弧各挖一个洞"少七条洞沿，也少七次"洞沿自己画出一条不属于版面的直线"。
+   ⚠️ 副翼的洞按【最坏位置】给：flankL/R 入场带 ±72px 位移（render ⑨），
+      所以横向各多留 72 + 26 ⇒ 左洞推到画布外（-40），右洞推到 1960。 */
+var BG_EX=470;                          /* 洞0：整个徽章区一次圈掉 */
+var BG_R0=478, BG_R1=1520;              /* 扇区/射线内外半径（1520 > 半对角 ⇒ 一定铺到画布边） */
+var BG_SECT=24;                         /* 24 等分、隔一填一 = 12 块实心扇区（占满外圈一半角度） */
+var BG_RINGS=[520,640,780,940,1120];    /* 五圈导引环 */
+var BG_BLIPS=54, BG_MARKS=6;            /* 星点 / 目标菱形（位置全走 hash1 ⇒ 纯函数、可复现） */
+var BG_TRACKS=[{rx:1250,ry:520,rot:-18},{rx:980,ry:1180,rot:24}];   /* 两条轨道线 */
+var BG_EDGE_STEP=40, BG_EDGE_LONG=200, BG_EDGE_LEN=14, BG_EDGE_LONG_LEN=28;
+var BG_SPIN=0.05;                       /* 度/帧：极坐标场慢转（225 帧 ≈ 11° ⇒ 只"活着"不"抢戏"） */
+var BG_PH2=0;
+var BG_HOLE=[[-40,480,350,80],[1610,480,350,80],          /* 副翼（含 ±72 位移） */
+             [620,996,680,84],                             /* 固定串 */
+             [32,32,184,136],[1704,32,184,136],            /* 四角取景框 */
+             [32,912,184,136],[1704,912,184,136]];
+
+/* ============================== DOM 索引 ============================== */
+var els={
+  stage:$('stage'), hud:$('hud'), txt:$('txt'), ground:$('ground'),
+  bg:$('mbBg'), bgPolar:$('mbBgPolar'), bgSector:$('mbBgSector'), bgRay:$('mbBgRay'),
+  bgRing:$('mbBgRing'), bgTrack:$('mbBgTrack'), bgBlip:$('mbBgBlip'),
+  bgMark:$('mbBgMark'), bgEdge:$('mbBgEdge'),
+  corners:$('corners'), plate:$('plate'), plateShade:$('plateShade'),
+  bezelBand:$('bezelBand'), outerRing:$('outerRing'),
+  tickRing:$('tickRing'), tickMaj:$('tickMaj'), tickG:[],
+  pTopArc:$('pTopArc'), pSubArc:$('pSubArc'),
+  ribbonTop:$('ribbonTop'), ribbonSub:$('ribbonSub'),
+  partTxt:$('partTxt'), partPath:$('partPath'), subTxt:$('subTxt'), subPath:$('subPath'),
+  mbShield:$('mbShield'), shieldBody:$('shieldBody'), shieldLine:$('shieldLine'),
+  prodImg:$('prodImg'), holder:$('holder'),
+  flankL:$('flankL'), flankR:$('flankR'), stars:$('stars'),
+  orbit:$('orbit'), orbitGlow:$('orbitGlow'), orbitCore:$('orbitCore'),
+  titleBox:$('titleBox'), tagline:$('tagline')
+};
+for(var _g=0;_g<N_GRP;_g++) els.tickG.push($('tickG'+_g));
+
+/* ⚠️ 必须在任何 build* 往 DOM 塞生成件【之前】抓原始快照，否则固化件带生成节点，重开翻倍。 */
+var PRISTINE = '<!doctype html>\n' + document.documentElement.outerHTML;
+
+/* ============================== 生成件（只 build 一次） ============================== */
+var BANDLEN=0, OUTLEN=0;               /* 两条整圆的周长：build 量一次，render 只用 */
+var LEN={part:0, sub:0};               /* 两条文字弧的周长（滑动起点的分母） */
+function buildFrame(){
+  /* 四角取景框：每角一条 L（长臂 132 / 短臂 84，离边 58）。
+     pathLength=100 ⇒ dashoffset 用百分比，与真实周长无关（四角一视同仁）。 */
+  var C=[[58,58,1,1],[1862,58,-1,1],[58,1022,1,-1],[1862,1022,-1,-1]], i;
+  for(i=0;i<C.length;i++){
+    var x=C[i][0], y=C[i][1], sx=C[i][2], sy=C[i][3];
+    var p=mk(els.corners,'path',{d:'M'+(x+sx*132)+' '+y+'H'+x+'V'+(y+sy*84)});
+    p.setAttribute('pathLength','100'); p.setAttribute('stroke-dasharray','100');
+  }
+  /* 两条整圆（环带 / 外细环）：从正上方开始，顺时针。 */
+  els.bezelBand.setAttribute('d', 'M'+CX+' '+f2(CY-R_BAND)+'a'+R_BAND+' '+R_BAND+' 0 1 1 0 '+f2(2*R_BAND)+
+                              'a'+R_BAND+' '+R_BAND+' 0 1 1 0 '+f2(-2*R_BAND));
+  els.outerRing.setAttribute('d', 'M'+CX+' '+f2(CY-R_OUT)+'a'+R_OUT+' '+R_OUT+' 0 1 1 0 '+f2(2*R_OUT)+
+                             'a'+R_OUT+' '+R_OUT+' 0 1 1 0 '+f2(-2*R_OUT));
+  BANDLEN=els.bezelBand.getTotalLength();
+  OUTLEN =els.outerRing.getTotalLength();
+  els.bezelBand.setAttribute('stroke-dasharray', f2(BANDLEN));
+  els.outerRing.setAttribute('stroke-dasharray', f2(OUTLEN));
+
+  /* 文字弧 + 缎带弧 */
+  els.pTopArc.setAttribute('d', arcD(CX,CY,R_ARC,TOP0,TOP1));
+  els.pSubArc.setAttribute('d', arcD(CX,CY,R_ARC,SUB0,SUB1));
+  els.ribbonTop.setAttribute('d', arcD(CX,CY,R_ARC,TOP0-RIB_PAD,TOP1+RIB_PAD));
+  els.ribbonSub.setAttribute('d', arcD(CX,CY,R_ARC,SUB0+RIB_PAD,SUB1-RIB_PAD));
+  LEN.part=safeLen(els.pTopArc, Math.PI*R_ARC*(TOP1-TOP0)/180);
+  LEN.sub =safeLen(els.pSubArc, Math.PI*R_ARC*(SUB0-SUB1)/180);
+}
+function safeLen(p, fb){ var v=0; try{ v=p.getTotalLength(); }catch(e){ v=0; } return (v>20?v:fb); }
+function buildTicks(){
+  /* 组 g 收编号 j∈[g·5, g·5+5)；j%5==0 是整点长刻度 ⇒ 另进 tickMaj。
+     短刻度各带 hash1 抖动 = 机械刻出来的"不完美"，同 seed 永远同一张 ⇒ 逐帧确定。 */
+  for(var j=0;j<N_TICK;j++){
+    var deg=-90 + j*(360/N_TICK);
+    var maj=(j%5===0);
+    var rOut=(maj?MAJ_OUT:TICK_OUT)*(maj?1:1+0.06*(hash1(j*1.37)-0.5));
+    var a=ptDeg(CX,CY,(maj?MAJ_IN:TICK_IN),deg), b=ptDeg(CX,CY,rOut,deg);
+    var line=mk(maj?els.tickMaj:els.tickG[Math.floor(j/PER_GRP)],'line',
+      {x1:f2(a[0]),y1:f2(a[1]),x2:f2(b[0]),y2:f2(b[1])});
+    if(maj) line.setAttribute('opacity','0.90');
+  }
+}
+function buildHolder(){
+  /* 无图占位：三重 V 形军衔纹 + 一道横脊。★ 随盾一起放大（旧 48/24/36 → 新 56/28/44），
+     全落在盾的 904..1016 × 642..762 上半区，不碰盾尖（盾尖是"落款"位置，压纹上去会读成错位）。 */
+  var X=960, j;
+  for(j=0;j<3;j++){
+    var y=652+j*28, w=56-j*8;
+    mk(els.holder,'path',{d:'M'+(X-w)+' '+(y+17)+'L'+X+' '+(y-10)+'L'+(X+w)+' '+(y+17),
+      opacity:(0.80-j*0.15).toFixed(2)});
+  }
+  mk(els.holder,'path',{d:'M'+(X-44)+' 762H'+(X+44), opacity:'0.32'});
+}
+function buildStars(){
+  var S=[[898,302,15,-12],[960,286,19,0],[1022,302,15,12]], i, k;
+  for(i=0;i<S.length;i++){
+    var x=S[i][0], y=S[i][1], r=S[i][2], rot=S[i][3]*Math.PI/180, d='';
+    for(k=0;k<10;k++){
+      var rr=(k%2===0)?r:r*0.42, a=-Math.PI/2+k*Math.PI/5;
+      d+=(k?'L':'M')+f2(x+Math.cos(a+rot)*rr)+' '+f2(y+Math.sin(a+rot)*rr);
+    }
+    mk(els.stars,'path',{d:d+'Z', opacity:(0.88-i*0.11).toFixed(2)});
+  }
+}
+/* ---------- 星图背板 mbBg（老板 2026-10-03：「补充一些背景元素，现在的界面太过于单调了，
+              要补充的占画面的 50-70% 占比」）----------
+   ★ 语汇与 brass-gauge 的"机床钣金拼板"拉开：这一层是【极坐标测距图】= 扇区阵 + 方位射线
+     + 导引环 + 轨道线 + 星点/目标菱形 + 四边刻度尺。全部沿用本引擎已有的"极坐标"母题，
+     不引入新色相（只用 steel / orchid 两色的低透明度 ⇒ 背景永远不比徽抢眼）。
+   ★ 占屏大头是【实心扇区】：上一张的教训（见 brass-gauge header）= 只补线条层，
+     实测开/关差集只有 3.3%，肉眼看还是空的。线/点元素的质积天然小，必须有面。 */
+function wedgeD(r0,r1,a0,a1){
+  var p0=ptDeg(CX,CY,r0,a0), p1=ptDeg(CX,CY,r0,a1),
+      p2=ptDeg(CX,CY,r1,a1), p3=ptDeg(CX,CY,r1,a0), laf=(a1-a0)>180?1:0;
+  return 'M'+f2(p0[0])+' '+f2(p0[1])+
+         'A'+r0+' '+r0+' 0 '+laf+' 1 '+f2(p1[0])+' '+f2(p1[1])+
+         'L'+f2(p2[0])+' '+f2(p2[1])+
+         'A'+r1+' '+r1+' 0 '+laf+' 0 '+f2(p3[0])+' '+f2(p3[1])+'Z';
+}
+function circleD(r){
+  return 'M'+CX+' '+f2(CY-r)+'a'+r+' '+r+' 0 1 1 0 '+f2(2*r)+'a'+r+' '+r+' 0 1 1 0 '+f2(-2*r);
+}
+function buildBgClip(){
+  var d='M0 0H1920V1080H0Z'+circleD(BG_EX), i, h;
+  for(i=0;i<BG_HOLE.length;i++){ h=BG_HOLE[i];
+    d+='M'+h[0]+' '+h[1]+'H'+f2(h[0]+h[2])+'V'+f2(h[1]+h[3])+'H'+h[0]+'Z'; }
+  $('mbBgClipD').setAttribute('d', d);
+}
+function buildBgPolar(){
+  var step=360/BG_SECT, i, a0, o;
+  for(i=0;i<BG_SECT;i+=2){
+    a0=i*step;
+    /* 隔一填一，且两档明度各自再抖一点 ⇒ 不是"半张纸刷了漆"，读成测距分区 */
+    o=(i%4?0.07+hash1(i*3.1)*0.06:0.16+hash1(i*5.7)*0.09);
+    mk(els.bgSector,'path',{d:wedgeD(BG_R0,BG_R1,a0,a0+step),'fill-opacity':o.toFixed(3)});
+  }
+  for(i=0;i<BG_SECT;i++){
+    a0=i*step;
+    mk(els.bgRay,'line',{x1:f2(ptDeg(CX,CY,BG_EX,a0)[0]),y1:f2(ptDeg(CX,CY,BG_EX,a0)[1]),
+                         x2:f2(ptDeg(CX,CY,BG_R1,a0)[0]),y2:f2(ptDeg(CX,CY,BG_R1,a0)[1])});
+  }
+}
+function buildBgRings(){
+  for(var i=0;i<BG_RINGS.length;i++) mk(els.bgRing,'path',{d:circleD(BG_RINGS[i])});
+}
+function buildBgTracks(){
+  for(var i=0;i<BG_TRACKS.length;i++){ var t=BG_TRACKS[i];
+    mk(els.bgTrack,'ellipse',{cx:CX,cy:CY,rx:t.rx,ry:t.ry,
+      transform:'rotate('+t.rot+' '+CX+' '+CY+')'}); }
+}
+function buildBgBlips(){
+  var i,r,a,p,s;
+  for(i=0;i<BG_BLIPS;i++){
+    r=BG_R0+30+hash1(i*1.7+3)*(BG_R1-BG_R0-60); a=hash1(i*2.9+11)*360; p=ptDeg(CX,CY,r,a);
+    mk(els.bgBlip,'circle',{cx:f2(p[0]),cy:f2(p[1]),r:f2(1.8+hash1(i*4.3)*2.6)});
+  }
+  for(i=0;i<BG_MARKS;i++){
+    /* 目标菱形：空心四边，比圆点多一层"标定过"的含义（★ 不用五角星 ⇒ 撞本引擎的三颗星） */
+    r=BG_R0+90+hash1(i*6.1+7)*820; a=hash1(i*3.3+23)*360; p=ptDeg(CX,CY,r,a);
+    s=13+hash1(i*8.7)*7;
+    mk(els.bgMark,'path',{d:'M'+f2(p[0])+' '+f2(p[1]-s)+'L'+f2(p[0]+s)+' '+f2(p[1])+
+                           'L'+f2(p[0])+' '+f2(p[1]+s)+'L'+f2(p[0]-s)+' '+f2(p[1])+'Z'});
+  }
+}
+function buildBgEdge(){
+  /* 四边刻度尺：每 BG_EDGE_STEP 一道短线、每 BG_EDGE_LONG 一道长线 ⇒ 画面四边"被量过" */
+  var x,y,lg;
+  for(x=0;x<=1920;x+=BG_EDGE_STEP){
+    lg=(x%BG_EDGE_LONG===0)?BG_EDGE_LONG_LEN:BG_EDGE_LEN;
+    mk(els.bgEdge,'line',{x1:x,y1:0,x2:x,y2:lg});
+    mk(els.bgEdge,'line',{x1:x,y1:1080,x2:x,y2:1080-lg});
+  }
+  for(y=0;y<=1080;y+=BG_EDGE_STEP){
+    lg=(y%BG_EDGE_LONG===0)?BG_EDGE_LONG_LEN:BG_EDGE_LEN;
+    mk(els.bgEdge,'line',{x1:0,y1:y,x2:lg,y2:y});
+    mk(els.bgEdge,'line',{x1:1920,y1:y,x2:1920-lg,y2:y});
+  }
+}
+function buildStatic(){ buildBgClip(); buildBgPolar(); buildBgRings(); buildBgTracks();
+                        buildBgBlips(); buildBgEdge();
+                        buildFrame(); buildTicks(); buildHolder(); buildStars(); }
+
+/* ============================== 配置 / 文字 ============================== */
+var cfg={part:'Part.02', title:'极轨之上', sub:'SIGNED IN ORBIT', img:''};
+/* 🔴 弧上文字实测长度预算：124°×436 = 943 长 ⇒ 900（两端各留 ~21px）。
+   文字最长只吃到 ±57°，永远在缎带 ±60° 之内（header ⑭）。 */
+var ARC={
+  part:{el:els.partTxt, path:els.partPath, fs:28, ls:13, max:900, len:0, from:20, tot:943},
+  sub: {el:els.subTxt,  path:els.subPath,  fs:27, ls:10, max:900, len:0, from:80, tot:943}
+};
+/* 弧上文字：字号与字距【同乘 k】（letter-spacing 是绝对 px，只缩字号宽度不按比例降）。
+   ★ 顺手反推「滑动起点」= (L/2 + 10)/全长 ×100 ⇒ 文字块从头到尾都完整挂在路径上。 */
+function arcLen(pathEl){ var v=0; try{ v=pathEl.getComputedTextLength(); }catch(e){ v=0; } return v||0; }
+function fitArc(o){
+  o.el.setAttribute('font-size', o.fs); o.el.setAttribute('letter-spacing', o.ls);
+  var L=arcLen(o.path);
+  if(!L) L = String(o.path.textContent||'').length*(o.fs*0.62+o.ls) || 1;   /* 兜底估算，不许除零 */
+  if(L>o.max){
+    var k=o.max/L;
+    o.el.setAttribute('font-size', Math.max(15,(o.fs*k)).toFixed(1));
+    o.el.setAttribute('letter-spacing', (o.ls*k).toFixed(1));
+    var L2=arcLen(o.path); if(L2>0) L=L2;
+  }
+  o.len=L;
+  o.from = clamp((L/2+10)/o.tot*100, 2, 50);
+}
+function measureArcs(){
+  ARC.part.tot=LEN.part||ARC.part.tot; ARC.sub.tot=LEN.sub||ARC.sub.tot;
+  fitArc(ARC.part); fitArc(ARC.sub);
+}
+
+var TITLE={lines:1, fs:96, lh:115, chars:1, step:2.0};
+function buildTitle(){
+  var box=els.titleBox; box.textContent='';
+  var raw=(cfg.title||'').replace(/\s+$/,'');
+  var lines=raw.split('\n');
+  if(lines.length===1 && raw.length>8){                /* 单行过长 ⇒ 先按空格切词再硬切两行 */
+    var sp=raw.lastIndexOf(' ', Math.ceil(raw.length/2));
+    if(sp<0) sp=Math.floor(raw.length/2);
+    lines=[raw.slice(0,sp), raw.slice(sp+1)];
+  }
+  lines=lines.slice(0,2);                              /* 竖向只给两行（下沿是盾） */
+  var maxLen=Math.max.apply(null, lines.map(function(s){return s.length;}));
+  var fs=clamp(TITW/(Math.max(1,maxLen)*1.06), TITMINFS, TITMAXFS);
+  /* ★ 块高预算 200 = lines×fs×LH_K ⇒ fs ≤ 200/(LH_K×lines)。居中于 470 ⇒ 底 ≤ 570 自动成立。 */
+  var fitV=TITVMAX/(LH_K*lines.length);
+  if(fs>fitV) fs=Math.max(TITMINFS, fitV);
+  var ls=Math.max(1, fs*0.02), lh=fs*LH_K, li, ci, total=0;
+  for(li=0;li<lines.length;li++){
+    var ln=document.createElement('div'); ln.className='tline';
+    ln.style.fontSize=fs.toFixed(1)+'px'; ln.style.lineHeight=lh.toFixed(1)+'px';
+    ln.style.letterSpacing=ls.toFixed(1)+'px';
+    var t=lines[li], n=Math.max(1,t.length);
+    for(ci=0;ci<t.length;ci++){
+      var w=document.createElement('span'); w.className='tw';
+      w.textContent=t.charAt(ci); ln.appendChild(w);
+    }
+    if(!t.length){ var nb=document.createElement('span'); nb.className='tw'; nb.innerHTML='&nbsp;'; ln.appendChild(nb); }
+    ln.setAttribute('data-n', n);                      /* 行内字数：render 用它算本行的散开中点 */
+    box.appendChild(ln);
+    total+=n;
+  }
+  TITLE.fs=fs; TITLE.lh=lh; TITLE.lines=lines.length; TITLE.chars=total;
+  /* ★ 盒子的横向参数也由常量写一遍（CSS 里那份只是静态兜底）⇒ 版式只有 TITX/TITW 一个真源。 */
+  box.style.left=TITX+'px'; box.style.width=TITW+'px';
+  box.style.top=Math.round(TITCY - lh*lines.length/2)+'px';
+  /* ★ 步距按【总字数】回算：最后一个字必须在 f200 前亮完（定版判据 W3）。 */
+  TITLE.step = total>1 ? Math.min(2.0, 66/(total-1)) : 2.0;
+}
+function setProdImg(src){
+  cfg.img=src||'';
+  /* ⚠️ 无图 = 属性缺省（不是空串）：空串会被解析成文档 URL ⇒ 永不结束的请求 ⇒ 导出第 0 帧抓屏挂死 */
+  if(cfg.img) els.prodImg.setAttribute('href', cfg.img);
+  else els.prodImg.removeAttribute('href');
+}
+function applyCfg(d){
+  var dirty=false;
+  if(d.part!==undefined){ cfg.part=d.part; dirty=true; }
+  if(d.title!==undefined){ cfg.title=d.title; dirty=true; }
+  if(d.sub!==undefined){ cfg.sub=d.sub; dirty=true; }
+  els.partPath.textContent=cfg.part||' ';
+  els.subPath.textContent =cfg.sub||' ';
+  /* ★ 固定串不许复用副标题默认文本（撞词看着像重复排版），也不许放无出处的数字 */
+  els.tagline.textContent='TICK RING · SHIELD CLASP';
+  measureArcs();
+  if(dirty||!els.titleBox.childNodes.length) buildTitle();
+}
+
+/* ============================== 逐帧渲染 ============================== */
+function render(f){
+  var i, p;
+
+  /* ⓪ 星图背板：入场只写整层 opacity，且带【下限 0.68】（header ⑩+⑯ 同一条口径 ——
+        背景层第 0 帧就必须铺满，"从 0 淡入"= 前 1 秒是空场）。
+     ★ 极坐标场（实心扇区 + 方位射线）绕徽心慢转：0.05°/帧 × 225 帧 ≈ 11.25° ⇒ 只"活着"不"抢戏"。
+       rotate 是 f 的纯函数、初相位 BG_PH2 是常数 ⇒ 重复 seek 逐帧一致。
+     ⚠️ 其余子组（导引环/轨道/星点/刻度尺）都是【不转的】—— 转的只有极坐标场一层，
+        全层一起转会带着四边刻度尺跑，读成"画面在打转"而不是"仪器在指"。 */
+  var bgp=clamp(0.68+seg(f,0,34)*0.32,0,1);
+  els.bg.setAttribute('opacity', bgp.toFixed(3));
+  els.bgPolar.setAttribute('transform',
+    'rotate('+f2(BG_PH2+BG_SPIN*f)+' '+CX+' '+CY+')');
+
+  /* ① 四角取景框：从外端拉出（pathLength=100 ⇒ dashoffset 直接用百分比） */
+  p=easeOut(seg(f,4,26));
+  els.corners.setAttribute('opacity', p.toFixed(3));
+  var cn=els.corners.childNodes;
+  for(i=0;i<cn.length;i++) cn[i].setAttribute('stroke-dashoffset', f2(100*(1-p)));
+
+  /* ② 底盘：预开 PLATE0 ⇒ 第 0 帧就是一张海报（header ⑩）。半径变化只动 r 一个属性。
+     🔴 透明度必须带【下限】而不是从 0 起：第一版写成 seg(f,8,26)*1.7 ⇒ f<8 恒为 0，
+        于是 PLATE0 预开的 62% 半径被自己的透明度闸【整层抹掉】—— 实测成片 0.1s 那一帧
+        画面上只有一小截环带（其余全空场），而 r 属性的数值判据全绿。
+        「预开」这件事只要还有一道门在后面关着，就等于没做。 */
+  p=smoother(seg(f,8,58));
+  var pr=R_PLATE*(PLATE0+(1-PLATE0)*p), po=clamp(0.60+seg(f,8,26)*0.40,0,1).toFixed(3);
+  els.plate.setAttribute('r', f2(pr));        els.plate.setAttribute('opacity', po);
+  els.plateShade.setAttribute('r', f2(pr));   els.plateShade.setAttribute('opacity', po);
+
+  /* ③ 环带 + 外圈：一笔画抄开（BAND0 预抄 30%，同样为了首帧不空） */
+  p=smoother(seg(f,10,70));
+  els.bezelBand.setAttribute('stroke-dashoffset', f2(BANDLEN*(1-(BAND0+(1-BAND0)*p))));
+  els.bezelBand.setAttribute('opacity', clamp(0.4+seg(f,10,26),0,1).toFixed(3));
+  p=smoother(seg(f,6,54));
+  els.outerRing.setAttribute('stroke-dashoffset', f2(OUTLEN*(1-p)));
+  els.outerRing.setAttribute('opacity', p.toFixed(3));
+
+  /* ④ 刻度：12 组顺时针逐格点亮（每组 16 帧窗、错 5.5 帧），整环再 −8°→0 旋入 */
+  els.tickRing.setAttribute('transform',
+    'rotate('+f2(ROT0*(1-easeInOut(seg(f,40,124))))+' '+CX+' '+CY+')');
+  for(i=0;i<N_GRP;i++){
+    p=easeOut(seg(f, 40+i*5.5, 56+i*5.5));
+    els.tickG[i].setAttribute('opacity', p.toFixed(3));
+  }
+  els.tickMaj.setAttribute('opacity', easeOut(seg(f,44,116)).toFixed(3));
+
+  /* ⑤ 盾：从上方落下 + 淡入（easeOut，不用 backOut ⇒ 不弹跳，那是 pop-mint 的地盘） */
+  p=easeOut(seg(f,70,110));
+  els.mbShield.setAttribute('transform','translate(0 '+f2(-30*(1-p))+')');
+  els.shieldBody.setAttribute('opacity', p.toFixed(3));
+  els.shieldLine.setAttribute('opacity', p.toFixed(3));
+  els.prodImg.setAttribute('opacity', p.toFixed(3));
+  /* 🔴 占位纹跟着【当前有没有图】走，不跟帧号走：有图还画占位 = 纹压在产品图上 */
+  els.holder.setAttribute('opacity', (cfg.img?0:p*0.92).toFixed(3));
+
+  /* ⑥ ★ 招牌 A：两条飘带【沿弧滑进位】。顶带从左端进、底带从右端进 ⇒ 一个回旋的势头。
+        from 由 fitArc 按实测字长反推 ⇒ 全程没有一个字被裁掉（header ⑭）。 */
+  p=easeInOut(seg(f,86,132));
+  els.partPath.setAttribute('startOffset', (ARC.part.from+(50-ARC.part.from)*p).toFixed(2)+'%');
+  els.partTxt.setAttribute('opacity', clamp((f-92)/20,0,1).toFixed(3));
+  els.ribbonTop.setAttribute('opacity', (0.95*easeOut(seg(f,80,120))).toFixed(3));
+  p=easeInOut(seg(f,150,196));
+  els.subPath.setAttribute('startOffset', (ARC.sub.from+(50-ARC.sub.from)*p).toFixed(2)+'%');
+  els.subTxt.setAttribute('opacity', clamp((f-156)/20,0,1).toFixed(3));
+  els.ribbonSub.setAttribute('opacity', (0.95*easeOut(seg(f,146,184))).toFixed(3));
+
+  /* ⑦ ★ 招牌 B：逐字【水平收拢】（±散开 → 0），无缩放、无竖向 ——
+        与 paper-cut 的「上浮 + 放大」正面对撞。散开量按【行内位距】算（不是全局序号）
+        ⇒ 每行各自对称，两行标题不会整体偏一边。 */
+  var ch=els.titleBox.querySelectorAll('.tw'), lines=els.titleBox.querySelectorAll('.tline'), idx=0;
+  for(i=0;i<lines.length;i++){
+    var n=+lines[i].getAttribute('data-n')||1;
+    for(var ci=0;ci<n;ci++){
+      var s0=104+idx*TITLE.step, q=easeOut(seg(f, s0, s0+16));
+      ch[idx].style.opacity=q.toFixed(3);
+      ch[idx].style.transform='translateX('+f2((ci-(n-1)/2)*SPLAY*(1-q))+'px)';
+      idx++;
+    }
+  }
+
+  /* ⑧ 侧栏细线（从靠近徽章的一端向外推） + 星 */
+  p=easeInOut(seg(f,140,170));
+  els.flankL.setAttribute('opacity', p.toFixed(3));
+  els.flankL.setAttribute('transform','translate('+f2(-72*(1-p))+' 0)');
+  els.flankR.setAttribute('opacity', p.toFixed(3));
+  els.flankR.setAttribute('transform','translate('+f2(72*(1-p))+' 0)');
+  els.stars.setAttribute('opacity', easeOut(seg(f,120,160)).toFixed(3));
+
+  /* ⑨ 固定串 */
+  els.tagline.style.opacity=(0.92*easeOut(seg(f,176,206))).toFixed(3);
+
+  /* ⑩ 绕行光点：f150 之后沿细环走。★ 定版之后的"活着"只动这两枚小圆 ——
+        不去改 46px 宽环带的 dashoffset（大描边件每帧改虚线 = 整圈重栅格化，导出时间翻倍）。 */
+  if(f>150){
+    var op=ptDeg(CX,CY,R_OUT,196+(f-150)*0.62);
+    els.orbitGlow.setAttribute('cx', f2(op[0])); els.orbitGlow.setAttribute('cy', f2(op[1]));
+    els.orbitCore.setAttribute('cx', f2(op[0])); els.orbitCore.setAttribute('cy', f2(op[1]));
+    var fade=clamp((f-150)/26,0,1);
+    els.orbitGlow.setAttribute('opacity', (0.55*fade).toFixed(3));
+    els.orbitCore.setAttribute('opacity', (0.95*fade).toFixed(3));
+  } else {
+    els.orbitGlow.setAttribute('opacity','0'); els.orbitCore.setAttribute('opacity','0');
+  }
+}
+
+/* ============================== 主循环 ============================== */
+var rafId=0, startAt=performance.now();
+function tick(){
+  var now=performance.now();
+  var t=((now-startAt)/1000)%CYCLE;
+  render(Math.min(DUR, t*FPS));
+  rafId=requestAnimationFrame(tick);
+}
+function restart(){ startAt=performance.now(); }
+function fit(){
+  /* ⚠️ 无放大上限（导出高清链路要求）。#stage 的 transform 归这里独占 ——
+     本引擎所有运动都写在 SVG 元素或 .tw 上，都不碰 #stage。 */
+  var s=Math.min(innerWidth/1920, innerHeight/1080);
+  var st=$('stage'), wr=$('wrap');
+  st.style.transform='scale('+s+')';
+  wr.style.width=(1920*s)+'px'; wr.style.height=(1080*s)+'px';
+}
+window.addEventListener('resize',fit);
+
+/* ============================== 配色 ============================== */
+var VAR_NAMES=['--mb-ground','--mb-plate','--mb-bezel','--mb-ink','--mb-orchid','--mb-steel'];
+function applyColors(vars){
+  var root=document.documentElement.style, k;
+  for(k in vars){ if(k.indexOf('--mb-')===0) root.setProperty(k,vars[k]); }
+}
+
+/* ============================== 自定义字体（cyber 协议） ============================== */
+function applyFont(d){
+  var name=d.family, url=d.dataURL;
+  if(!name){ var old=document.getElementById('__mbFont'); if(old) old.remove(); return; }
+  var st=document.getElementById('__mbFont')||document.createElement('style');
+  st.id='__mbFont';
+  st.textContent = url ? '@font-face{font-family("__mbfont");src:url('+url+') format("truetype");font-display:block;}' : '';
+  if(!st.parentNode) document.head.appendChild(st);
+  var fam = url ? '__mbfont' : name;
+  $('stage').style.fontFamily='"'+fam+'","Noto Sans SC","Microsoft YaHei",sans-serif';
+}
+
+/* ============================== postMessage 桥（与 vinyl / paper-cut 同协议） ============================== */
+window.addEventListener('message',function(e){
+  var d=e.data||{};
+  if(d.source!=='host')return;
+  try{
+    if(d.type==='cyber-embed'){ document.body.classList.add('embed'); fit(); }
+    else if(d.type==='cyber-unembed'){ document.body.classList.remove('embed'); fit(); }
+    else if(d.type==='cyber-cfg'){ applyCfg(d); if(d.replay)restart(); }
+    else if(d.type==='cyber-color'){ applyColors(d.vars||{}); }
+    else if(d.type==='cyber-img'){ setProdImg(d.img||''); applyCfg({}); }
+    else if(d.type==='cyber-font'){ applyFont(d); measureArcs(); }
+    else if(d.type==='cyber-play'){ restart(); if(!rafId) rafId=requestAnimationFrame(tick); }
+    else if(d.type==='cyber-seek'){
+      if(rafId){ try{ cancelAnimationFrame(rafId); }catch(err){} rafId=0; }
+      /* ⚠️ d.t 单位是【秒】 */
+      if(typeof d.t==='number'){ try{ render(Math.min(DUR, d.t*FPS)); void document.documentElement.offsetHeight; }catch(err){} }
+    }
+    else if(d.type==='cyber-resume'){
+      startAt=performance.now(); if(!rafId) rafId=requestAnimationFrame(tick);
+    }
+    else if(d.type==='cyber-get-html'){
+      var ovr='',k2;
+      var cs=getComputedStyle(document.documentElement);
+      for(k2=0;k2<VAR_NAMES.length;k2++){ ovr+=VAR_NAMES[k2]+':'+cs.getPropertyValue(VAR_NAMES[k2]).trim()+';'; }
+      ovr=':root{'+ovr+'}';
+      /* ⚠️ 本注释里不能写 script 闭合标签的字面量 —— 它会先把自己所在的 script 截断 */
+      var boot='<script>window.__MB_BOOT='+JSON.stringify({part:cfg.part,title:cfg.title,sub:cfg.sub,img:cfg.img||''}).replace(/</g,'\\u003c')+'<\/script>';
+      var html=PRISTINE.replace('</head>','<style id="mb-override">'+ovr+'</style>'+boot+'</head>');
+      parent.postMessage({source:'cyber',type:'cyber-html',reqId:d.reqId,html:html},'*');
+    }
+  }catch(err){ parent.postMessage({source:'cyber',type:'cyber-status',err:err.message},'*'); }
+});
+
+/* ============================== 独立面板 ============================== */
+$('pPart').addEventListener('input',function(){ applyCfg({part:this.value}); restart(); });
+$('pTitle').addEventListener('input',function(){ applyCfg({title:this.value}); restart(); });
+$('pSub').addEventListener('input',function(){ applyCfg({sub:this.value}); restart(); });
+$('pPlay').addEventListener('click',function(){ restart(); });
+$('pImg').addEventListener('change',function(){
+  var f=this.files&&this.files[0]; if(!f) return;
+  if(!/^image\//i.test(f.type||'')) return;
+  var r=new FileReader();
+  r.onload=function(){ setProdImg(r.result); applyCfg({}); restart(); };
+  r.readAsDataURL(f); this.value='';
+});
+
+/* ============================== 启动 ============================== */
+buildStatic();
+/* ⚠️ 顺序不能反：applyCfg 只认「传了的键」，__MB_BOOT 里带的是固化时的用户值，
+   必须先铺默认再拿 boot 覆盖，否则固化 HTML 打开永远是模板默认字。 */
+applyCfg(cfg);
+if(window.__MB_BOOT){ applyCfg(window.__MB_BOOT); }
+fit();
+render(0);
+/* ★ 必须自启主循环：漏掉的后果不是报错，是【预览永远停在第 0 帧】—— 版式全对、数值全绿，就是不动。 */
+rafId=requestAnimationFrame(tick);
+parent.postMessage({source:'cyber',type:'cyber-ready'},'*');
+</script>
+</body>
+</html>
