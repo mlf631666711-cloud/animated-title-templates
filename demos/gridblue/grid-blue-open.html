@@ -1,0 +1,576 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>Grid Blue Open · 白格蓝调标题出场（网格生长）</title>
+<!--
+  源技法: E:\melon\ai\AI\tool\语音转动画总项目\大狗\works\transition-lab\container-grow-transition.html
+          （T-A 的 W/H 相位差机制；**老板 09-20 口径：横展不做冲高回落，一次性缓入缓出展开**，见 BUG 库 R144）
+  本文件为零依赖单文件 HTML 引擎移植版, 挂 cyber 同款 postMessage 桥:
+    host→iframe: cyber-embed / cyber-unembed / cyber-cfg{part,title,sub,replay} / cyber-color{vars}
+                 / cyber-img{img:dataURL} / cyber-play / cyber-seek{t} / cyber-resume / cyber-get-html{reqId}
+    iframe→host: cyber-ready / cyber-html{reqId,html} / cyber-status{err}  (source 均为 'cyber')
+  配色变量: --gb-bg1/bg2 底纸双色, --gb-grid 网格线, --gb-card 卡白, --gb-blue 主蓝,
+            --gb-sky 浅蓝(手绘点缀), --gb-ink 标题墨蓝
+  铁律: 所有视觉量 = 帧号 f 的纯函数；无 Math.random（抖动走 hash 常量）；禁 CSS animation/transition。
+-->
+<style>
+  :root{
+    --gb-bg1:#f6f9fd; --gb-bg2:#eef3fb; --gb-grid:#dbe5f3; --gb-card:#ffffff;
+    --gb-blue:#2f6bf0; --gb-sky:#8fb7ff; --gb-ink:#16233f;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:#eef2f8;font-family:"Noto Sans SC","Microsoft YaHei",sans-serif;}
+  body{display:flex;align-items:center;justify-content:center;overflow:hidden;}
+  #wrap{position:relative;}
+  #stage{position:relative;width:1920px;height:1080px;overflow:hidden;transform-origin:top left;
+    background:linear-gradient(165deg,var(--gb-bg1) 0%,var(--gb-bg2) 100%);}
+
+  /* ===== 白网格底 ===== */
+  #gridA,#gridB{position:absolute;inset:-80px;opacity:0;}
+  #gridA{background:
+    repeating-linear-gradient(0deg,transparent 0 47px,var(--gb-grid) 47px 48px),
+    repeating-linear-gradient(90deg,transparent 0 47px,var(--gb-grid) 47px 48px);}
+  #gridB{background:
+    repeating-linear-gradient(0deg,transparent 0 239px,color-mix(in srgb,var(--gb-blue) 14%,transparent) 239px 241px),
+    repeating-linear-gradient(90deg,transparent 0 239px,color-mix(in srgb,var(--gb-blue) 14%,transparent) 239px 241px);}
+  #vign{position:absolute;inset:0;background:radial-gradient(ellipse 78% 70% at 50% 48%, transparent 55%, rgba(210,222,240,.55) 100%);pointer-events:none;}
+
+  /* ===== 起笔十字定位线 ===== */
+  .axis{position:absolute;background:transparent;opacity:0;}
+  #axH{left:200px;top:539px;width:1520px;height:2px;border-top:2px dashed color-mix(in srgb,var(--gb-blue) 45%,transparent);}
+  #axV{left:959px;top:120px;width:2px;height:840px;border-left:2px dashed color-mix(in srgb,var(--gb-blue) 45%,transparent);}
+
+  /* ===== 生长容器卡 ===== */
+  #card{position:absolute;left:400px;top:200px;width:0;height:0;overflow:hidden;
+    background:var(--gb-card);border:2px solid color-mix(in srgb,var(--gb-blue) 55%,transparent);
+    border-radius:8px;box-shadow:0 0 0 rgba(47,107,240,0);}
+  #cardGlow{position:absolute;inset:0;background:radial-gradient(ellipse 70% 90% at 82% 55%, color-mix(in srgb,var(--gb-sky) 26%,transparent), transparent 62%);opacity:0;}
+  #sweep{position:absolute;top:-30%;height:160%;width:26%;opacity:0;transform:skewX(-18deg);
+    background:linear-gradient(100deg,transparent,rgba(255,255,255,.9),color-mix(in srgb,var(--gb-sky) 30%,rgba(255,255,255,.65)),transparent);}
+
+  /* ===== 左上角方格 Part 徽标 ===== */
+  #badge{position:absolute;left:44px;top:38px;display:flex;align-items:center;gap:16px;width:max-content;}
+  #cells{display:grid;grid-template-columns:repeat(3,14px);grid-auto-rows:14px;gap:5px;}
+  .cell{border-radius:3px;background:transparent;border:1.5px solid color-mix(in srgb,var(--gb-blue) 40%,transparent);transform:scale(0);opacity:0;}
+  .cell.fill{background:var(--gb-blue);border-color:var(--gb-blue);}
+  .cell.half{background:color-mix(in srgb,var(--gb-sky) 75%,white);border-color:transparent;}
+  /* ⚠️ pre-wrap + 固定宽度：Part / 主标题 / 副标题都要吃「空格 + 回车分行」。
+     默认 normal 会把连续空格并成一个、\n 当空白吞掉 —— 用户就是抱怨「输入空格没效果」。
+     宽度必须写死（不能只给 max-width）：#badge / #subTxt 都在 #card 里，而 #card 是从
+     6px 长到 1120px 的；shrink-to-fit 的元素会跟着卡片瞬时宽度一路重排（实测 f0 时
+     两行副标题被压成 9 行、高 261px）。给死宽度 = 版式与生长过程解耦。 */
+  #partTxt{font-size:26px;font-weight:800;letter-spacing:2px;color:var(--gb-blue);opacity:0;transform:translateX(-14px);
+    white-space:pre-wrap;width:540px;}
+
+  /* ===== 主标题 ===== */
+  #titleBox{position:absolute;left:44px;top:150px;width:640px;}
+  /* pre（不是 pre-wrap）：空格与缩进照原样出，但【不自动换行】—— 断行由 buildTitle
+     按「每行≤10字」自己管，算出的 lines.length 直接决定下划线位置和副标题 top。
+     若这里再隐式换一次行，实际行数就和计算值不一致 → 副标题压在标题上。 */
+  .tline{display:block;white-space:pre;}
+  .tchar{display:inline-block;opacity:0;white-space:pre;}
+  #uline{position:absolute;left:0;width:560px;height:16px;overflow:visible;}
+  #uline path{fill:none;stroke:var(--gb-blue);stroke-width:7;stroke-linecap:round;opacity:.9;}
+  #subTxt{position:absolute;left:46px;top:0;font-size:27px;font-weight:700;letter-spacing:7px;
+    color:color-mix(in srgb,var(--gb-ink) 55%,var(--gb-blue));opacity:0;transform:translateY(16px);
+    white-space:pre-wrap;width:600px;line-height:1.45;}
+
+  /* ===== 产品 SVG ===== */
+  #prod{position:absolute;left:672px;top:96px;width:440px;height:470px;opacity:0;}
+  #prodInner{transform-origin:50% 60%;}
+  /* ===== 手绘点缀层 ===== */
+  #doodle{position:absolute;inset:0;pointer-events:none;}
+  #doodle path,#doodle circle,#doodle line{fill:none;stroke-linecap:round;stroke-linejoin:round;}
+
+  /* ===== 独立预览小面板 ===== */
+  #panel{position:fixed;left:14px;top:14px;z-index:50;display:flex;gap:8px;align-items:center;}
+  #panel input{border:1px solid #c9d6ea;border-radius:8px;padding:7px 10px;font-size:13px;background:#fff;color:#16233f;outline:none;}
+  #panel input:focus{border-color:#2f6bf0;}
+  #panel button{border:1px solid #2f6bf0;background:#2f6bf0;color:#fff;border-radius:8px;padding:7px 14px;font-size:13px;cursor:pointer;}
+  body.embed #panel{display:none;}
+</style>
+</head>
+<body>
+<div id="wrap">
+<div id="stage">
+  <div id="gridA"></div><div id="gridB"></div><div id="vign"></div>
+  <div class="axis" id="axH"></div><div class="axis" id="axV"></div>
+
+  <div id="card">
+    <div id="cardGlow"></div>
+    <div id="badge">
+      <div id="cells"></div>
+      <div id="partTxt">Part.01</div>
+    </div>
+    <div id="titleBox"></div>
+    <div id="subTxt">PIXEL CRAFT SERIES</div>
+    <div id="prod">
+      <svg id="prodSvg" viewBox="0 0 440 470" width="440" height="470">
+        <g id="prodInner">
+          <!-- 地面投影（矢量/上传图两种模式都保留，压住「贴图浮空」感） -->
+          <ellipse id="pShade" cx="220" cy="432" rx="118" ry="16" fill="#2f6bf0" opacity=".14"/>
+          <!-- ★ 可被上传图整体替换的矢量产品（宿主 cyber-img / 表单上传）
+               框 372×372 与矢量机身同量级；落地投影由 setProdImg 按实际贴图宽高重算 -->
+          <image id="prodImg" x="34" y="54" width="372" height="364" opacity="0"
+                 preserveAspectRatio="xMidYMid meet"/>
+          <g id="prodVec">
+            <!-- 主机身：白底蓝描边小相机/投影盒 -->
+            <rect x="70" y="120" width="300" height="290" rx="34" fill="var(--gb-card)" stroke="var(--gb-blue)" stroke-width="5"/>
+            <rect x="70" y="120" width="300" height="66" rx="34" fill="color-mix(in srgb,var(--gb-sky) 34%, white)" stroke="var(--gb-blue)" stroke-width="5"/>
+            <!-- 镜头 -->
+            <circle cx="220" cy="300" r="86" fill="none" stroke="var(--gb-blue)" stroke-width="6"/>
+            <circle cx="220" cy="300" r="58" fill="color-mix(in srgb,var(--gb-ink) 82%, var(--gb-blue))"/>
+            <circle cx="220" cy="300" r="30" fill="color-mix(in srgb,var(--gb-sky) 40%, white)"/>
+            <circle cx="199" cy="279" r="11" fill="#ffffff"/>
+            <!-- 顶条细节：快门 + 格栅 -->
+            <circle cx="120" cy="153" r="14" fill="var(--gb-card)" stroke="var(--gb-blue)" stroke-width="5"/>
+            <line x1="286" y1="146" x2="342" y2="146" stroke="var(--gb-blue)" stroke-width="6"/>
+            <line x1="286" y1="162" x2="342" y2="162" stroke="var(--gb-blue)" stroke-width="6"/>
+            <!-- 侧指示灯 -->
+            <circle id="pLed" cx="332" cy="380" r="8" fill="var(--gb-sky)"/>
+            <!-- 角标小刻度 -->
+            <path d="M92 386 L92 372 L106 372" stroke="color-mix(in srgb,var(--gb-blue) 60%, white)" stroke-width="4" fill="none"/>
+          </g>
+        </g>
+      </svg>
+    </div>
+    <div id="sweep"></div>
+  </div>
+
+  <svg id="doodle" width="1920" height="1080" viewBox="0 0 1920 1080">
+    <!-- 环绕产品的虚线圈 -->
+    <circle id="ring" cx="1292" cy="590" r="252" stroke="var(--gb-sky)" stroke-width="3.5" stroke-dasharray="3 16" opacity="0"/>
+    <!-- 标题下方箭头：指向产品 -->
+    <path id="arrow" pathLength="1" d="M1075 806 C 1168 826, 1236 780, 1256 690" stroke="var(--gb-blue)" stroke-width="5" opacity="0"/>
+    <path id="arrowHead" pathLength="1" d="M1240 712 L1258 684 L1272 716" stroke="var(--gb-blue)" stroke-width="5" opacity="0"/>
+    <!-- 十字星光 ✧ ×3 -->
+    <path class="spark" data-cx="452" data-cy="299" d="M452 316 l0 -34 M435 299 l34 0" stroke="var(--gb-blue)" stroke-width="6" opacity="0"/>
+    <path class="spark" data-cx="1180" data-cy="230" d="M1180 246 l0 -32 M1164 230 l32 0" stroke="var(--gb-sky)" stroke-width="5" opacity="0"/>
+    <path class="spark" data-cx="640" data-cy="880" d="M640 894 l0 -28 M627 880 l26 0" stroke="var(--gb-blue)" stroke-width="5" opacity="0"/>
+    <g class="spark4"><path d="M360 470 c 5 20, 9 24, 29 29 c -20 5 -24 9 -29 29 c -5 -20 -9 -24 -29 -29 c 20 -5 24 -9 29 -29 z" fill="var(--gb-sky)" stroke="var(--gb-blue)" stroke-width="3"/></g>
+    <g class="spark4"><path d="M1620 260 c 4 16, 7 19, 23 23 c -16 4 -19 7 -23 23 c -4 -16 -7 -19 -23 -23 c 16 -4 19 -7 23 -23 z" fill="var(--gb-card)" stroke="var(--gb-blue)" stroke-width="3.5"/></g>
+    <g class="spark4"><path d="M1708 782 c 5 20, 9 24, 29 29 c -20 5 -24 9 -29 29 c -5 -20 -9 -24 -29 -29 c 20 -5 24 -9 29 -29 z" fill="var(--gb-blue)" stroke="var(--gb-blue)" stroke-width="0"/></g>
+    <!-- 加号 ×2 -->
+    <path class="plus" d="M268 726 h44 M290 704 v44" stroke="var(--gb-blue)" stroke-width="5.5" opacity="0"/>
+    <path class="plus" d="M1538 176 h34 M1555 159 v34" stroke="var(--gb-sky)" stroke-width="5.5" opacity="0"/>
+    <!-- 斜小方框 ×2 -->
+    <rect class="tilt" x="240" y="200" width="26" height="26" stroke="var(--gb-sky)" stroke-width="4" opacity="0"/>
+    <rect class="tilt" x="1662" y="460" width="34" height="34" stroke="var(--gb-blue)" stroke-width="4" opacity="0"/>
+    <!-- 卡外三颗点（节奏器） -->
+    <g id="dots"><circle cx="1248" cy="948" r="7" fill="var(--gb-blue)"/><circle cx="1286" cy="952" r="7" fill="var(--gb-sky)"/><circle cx="1324" cy="948" r="7" fill="color-mix(in srgb,var(--gb-blue) 40%, white)"/></g>
+  </svg>
+</div>
+</div>
+
+<div id="panel">
+  <input id="pPart" placeholder="Part 标签" value="Part.01" style="width:120px">
+  <input id="pTitle" placeholder="主标题（空格/回车上自动缩排）" value="重新定义随身影像" style="width:220px">
+  <input id="pSub" placeholder="副标（英文大写）" value="PIXEL CRAFT SERIES" style="width:200px">
+  <button id="pPlay">▶ 播放</button>
+</div>
+
+<script>
+"use strict";
+/* 捕获 pristine DOM（引擎任何 mutation 之前）—— 导出固化 HTML 用 */
+var PRISTINE = '<!doctype html>\n' + document.documentElement.outerHTML;
+
+/* ---------- 缓动 / 插值（动效内核四件套） ---------- */
+function clamp(v,a,b){ a=a===undefined?0:a; b=b===undefined?1:b; return Math.max(a,Math.min(b,v)); }
+function lerp(a,b,k){ return a+(b-a)*k; }
+function seg(t,a,b){ return clamp((t-a)/(b-a)); }
+function smoother(k){ return k*k*k*(k*(k*6-15)+10); }           /*  smootherstep */
+function easeOut(k){ return 1-Math.pow(1-k,3); }
+function easeInOut(k){ return k<0.5 ? 4*k*k*k : 1-Math.pow(-2*k+2,3)/2; }   /* 三次缓入缓出 */
+function spring(x){ /* 欠阻尼弹簧近似：略带过冲后收敛 */
+  if(x<=0) return 0; if(x>=1.35) return 1;
+  var t=Math.min(1,x/1.35);
+  return 1 - Math.pow(1-t,2.2)*Math.cos(t*Math.PI*2.4);
+}
+/* 关键帧查表：T=[[f0,v0],[f1,v1]...]，段内 smootherstep（相位感来自节点配置） */
+function tab(T,f){
+  var n=T.length;
+  if(f<=T[0][0])return T[0][1];
+  if(f>=T[n-1][0])return T[n-1][1];
+  for(var i=1;i<n;i++){ if(f<=T[i][0]){ var k=seg(f,T[i-1][0],T[i][0]); return lerp(T[i-1][1],T[i][1],smoother(k)); } }
+}
+/* 确定性抖动（替代 random）：同 seed 永远同值 */
+function hash1(s){ var h=Math.imul(s|0,2246822519); h=Math.imul(h^(h>>>13),3266489917); return ((h^(h>>>16))>>>0)/4294967296; }
+function env(f,a,b){ return easeOut(seg(f,a,b)); }              /* 0→1 入场包络 */
+function out(f,a,b){ return 1-easeOut(seg(f,a,b)); }            /* 1→0 退场包络 */
+
+/* ---------- 时间轴常量 ---------- */
+var FPS=30, DUR=195, HOLD=0.9, CYCLE=DUR/FPS+HOLD;
+
+/* ---------- DOM ---------- */
+function $(id){return document.getElementById(id);}
+var els={
+  gridA:$('gridA'), gridB:$('gridB'), axH:$('axH'), axV:$('axV'),
+  card:$('card'), cardGlow:$('cardGlow'), sweep:$('sweep'),
+  cells:$('cells'), partTxt:$('partTxt'),
+  titleBox:$('titleBox'), subTxt:$('subTxt'),
+  prod:$('prod'), prodInner:$('prodInner'), pLed:$('pLed'),
+  ring:$('ring'), arrow:$('arrow'), arrowHead:$('arrowHead'),
+  dots:$('dots')
+};
+var sparks=[].slice.call(document.querySelectorAll('#doodle .spark'));
+var spark4s=[].slice.call(document.querySelectorAll('#doodle .spark4'));
+var pluses=[].slice.call(document.querySelectorAll('#doodle .plus'));
+var tilts=[].slice.call(document.querySelectorAll('#doodle .tilt'));
+
+/* 方格徽标：9 格，5 实心/2 半/2 空（固定构图，非随机） */
+var CELLP=[1,2,0, 2,1,1, 0,1,2];
+for(var ci=0;ci<9;ci++){
+  var d=document.createElement('div'); d.className='cell'+(CELLP[ci]===1?' fill':CELLP[ci]===2?' half':'');
+  els.cells.appendChild(d);
+}
+var cellEls=[].slice.call(els.cells.children);
+
+/* ---------- 容器生长曲线（★ 一次性展开：单调、无回弹、无平台） ----------
+   不用关键帧表：tab() 段内 smootherstep 会在每个节点把速度打到 0，
+   多节点 = 多次「停一下再走」= 肉眼看到的卡顿。宽/高各一条三次缓入缓出
+   （easeInOutCubic）一次拉到定形；"展开感"靠 H 的窗口整体后置 10 帧保留。 */
+function growDim(f,a,b,w0,w1){ return lerp(w0,w1,easeInOut(clamp(seg(f,a,b)))); }
+
+/* ---------- 配置 / 标题构建 ---------- */
+var cfg={part:"Part.01", title:"重新定义随身影像", sub:"PIXEL CRAFT SERIES", img:""};
+var charEls=[], uline=null, subY=0;
+
+function buildTitle(){
+  els.titleBox.innerHTML='';
+  charEls=[];
+  var raw=(cfg.title||'').replace(/\r/g,'');
+  var hard=raw.split('\n').filter(function(s,i,a){ return s.length||a.length===1; });
+  if(!hard.length) hard=[' '];
+  /* 超长行自动断行（每行≤10字，字号随行长缩放）：标题区宽 640、.tline 是 pre（不自动换行），
+     不断行 + 字号下限会让长标题横穿产品区。
+     ★ 有空格时先按【词边界】切，别把「明动」这种词劈成两半 —— 空格现在是可以输入的了。 */
+  var lines=[];
+  hard.forEach(function(s){
+    if(s.length<=10){ lines.push(s); return; }
+    var cur='';
+    s.split(/(\s+)/).filter(function(w){ return w.length; }).forEach(function(w){
+      if(cur && (cur+w).replace(/\s+$/,'').length>10){ lines.push(cur.replace(/\s+$/,'')); cur=''; }
+      if(w.length>10){                       // 单词本身超长：退回硬切
+        for(var k=0;k<w.length;k+=10) lines.push(w.slice(k,k+10));
+        return;
+      }
+      cur+=w;
+    });
+    if(cur.replace(/\s+$/,'').length) lines.push(cur.replace(/\s+$/,''));
+  });
+  var maxLen=Math.max.apply(null,lines.map(function(s){return s.length;}));
+  var fs=clamp(600/Math.max(1,maxLen),36,96);
+  var lh=fs*1.32;
+  for(var li=0;li<lines.length;li++){
+    var ld=document.createElement('div'); ld.className='tline';
+    ld.style.fontSize=fs+'px'; ld.style.lineHeight=lh+'px'; ld.style.fontWeight='900';
+    ld.style.color='var(--gb-ink)'; ld.style.letterSpacing=(fs>70?2:5)+'px';
+    var s=lines[li];
+    for(var i=0;i<s.length;i++){
+      var sp=document.createElement('span'); sp.className='tchar'; sp.textContent=s[i];
+      ld.appendChild(sp); charEls.push(sp);
+    }
+    els.titleBox.appendChild(ld);
+  }
+  /* 手绘下划线（波浪 path），宽度按最后一行字数估 */
+  var lastLen=lines[lines.length-1].length||1;
+  var uw=Math.min(600, fs*lastLen*1.02);
+  var svg='<svg id="uline" style="position:absolute;left:0;top:'+(lines.length*lh+6)+'px;width:'+uw+'px;height:16px;overflow:visible">'
+    +'<path d="M4 10 Q '+uw*0.17+' 2, '+uw*0.36+' 9 T '+uw*0.68+' 8 T '+uw*0.95+' 10" pathLength="1"/></svg>';
+  var box=document.createElement('div'); box.innerHTML=svg;
+  els.titleBox.appendChild(box.firstChild);
+  uline=document.getElementById('uline').querySelector('path');
+  uline.style.strokeDasharray='1'; uline.style.strokeDashoffset='1';
+  /* subTxt 是 #card 的直接子元素（不在 titleBox 内），要加 titleBox 的 top:150 偏移，
+     否则副标题会压在首行标题上 */
+  subY=150+lines.length*lh+34;
+  els.subTxt.style.top=subY+'px';
+  els.subTxt.style.fontSize=clamp(fs*0.32,20,30)+'px';
+}
+function applyCfg(c){
+  if(c.part!=null){ cfg.part=c.part; els.partTxt.textContent=c.part; }
+  if(c.title!=null){ cfg.title=c.title; buildTitle(); }
+  if(c.sub!=null){ cfg.sub=c.sub; els.subTxt.textContent=c.sub; if(!c.sub) els.subTxt.style.opacity=0; }
+  if(c.img!=null){ setProdImg(c.img); }
+}
+
+/* ---------- 产品位：矢量 ⇄ 上传图 ----------
+   用 SVG <image>（不是 DOM <img>）塞进 #prodInner ⇒ 滑入 / 悬浮 / 旋转 / blur 那套
+   逐帧变换原样生效，不用给图片另写一份动画。先 new Image() 解码成功再换 href，
+   否则导出逐帧抓图时会拍到「图还没解码」的空帧。 */
+function setProdImg(src){
+  var vec=document.getElementById('prodVec'), im=document.getElementById('prodImg');
+  if(!vec||!im) return;
+  src = src || '';
+  cfg.img = src;
+  if(!src){ im.setAttribute('opacity','0'); im.removeAttribute('href'); vec.style.display=''; resetShade(); return; }
+  if(im.getAttribute('href')===src){ im.setAttribute('opacity','1'); vec.style.display='none'; return; }
+  var probe=new Image();
+  probe.onload=function(){
+    im.setAttribute('href',src); im.setAttribute('opacity','1'); vec.style.display='none';
+    fitShade(probe.naturalWidth, probe.naturalHeight);
+  };
+  probe.onerror=function(){ parent.postMessage({source:'cyber',type:'cyber-status',err:'产品图解码失败'},'*'); };
+  probe.src=src;
+}
+
+/* 地面投影跟着实际贴图走：meet 之后照片真正占的宽高由图片自身比例决定，
+   照片（裁过透明边）底边即产品底边，投影必须压在它下面几像素，否则读成「贴纸浮空」。
+   ⚠️ rx 每帧由 render() 的呼吸公式写（见下方 shadeBase/shadeSwing），这里只改基准值 ——
+   直接 setAttribute('rx') 会被下一帧覆盖成矢量版的宽度（R147）。 */
+var SHADE0={cx:220,cy:432,ry:16}, shadeBase=112, shadeSwing=8;
+function resetShade(){
+  var s=document.getElementById('pShade'); if(!s) return;
+  shadeBase=112; shadeSwing=8;
+  s.setAttribute('cx',220); s.setAttribute('cy',SHADE0.cy); s.setAttribute('ry',SHADE0.ry);
+}
+function fitShade(nw,nh){
+  var s=document.getElementById('pShade'), e=document.getElementById('prodImg');
+  if(!s||!e||!nw||!nh) return;
+  var bx=+e.getAttribute('x'), by=+e.getAttribute('y'), bw=+e.getAttribute('width'), bh=+e.getAttribute('height');
+  var k=Math.min(bw/nw, bh/nh), dw=nw*k, dh=nh*k;
+  shadeBase=Math.max(70, dw*0.42); shadeSwing=+(shadeBase*0.07).toFixed(1);
+  s.setAttribute('cx', bx+bw/2);
+  s.setAttribute('cy', Math.min(SHADE0.cy, by+(bh+dh)/2+10));
+  s.setAttribute('ry', Math.max(10, SHADE0.ry*dw/224).toFixed(1));
+}
+
+/* ---------- 逐帧渲染（纯函数） ---------- */
+var _varCache={};
+function cssVar(name){
+  if(!_varCache[name]) _varCache[name]=getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  return _varCache[name];
+}
+function render(f){
+  /* ① 白网格底：淡入 + 极缓慢视差（sin，防死帧） */
+  var gIn=env(f,0,14);
+  els.gridA.style.opacity=gIn*0.9;
+  els.gridB.style.opacity=gIn*0.9;
+  var dx=Math.sin(f*0.014)*6, dy=f*0.06;
+  els.gridA.style.transform='translate('+(dx*0.5)+'px,'+(dy%48-24)+'px)';
+  els.gridB.style.transform='translate('+dx+'px,'+(dy*0.35%240-120)+'px)';
+
+  /* ② 起笔十字定位线：f4 拉开，f34 随生长淡出 */
+  var axIn=env(f,4,14), axOut=out(f,32,46);
+  var axO=axIn*axOut*0.9;
+  els.axH.style.opacity=axO; els.axH.style.transform='scaleX('+spring(axIn)+')';
+  els.axV.style.opacity=axO; els.axV.style.transform='scaleY('+spring(axIn*0.9)+')';
+
+  /* ③ 容器生长：宽 f10-66 一次展开，高 f20-78 滞后跟进（相位差 = 展开感） */
+  var cw=growDim(f,10,66,6,1120), ch=growDim(f,20,78,6,680);
+  els.card.style.width=cw+'px'; els.card.style.height=ch+'px';
+  els.card.style.borderRadius=lerp(8,22,seg(f,40,110))+'px';
+  var shA=clamp(seg(f,26,60));
+  els.card.style.boxShadow='0 '+(26*shA)+'px '+(70*shA)+'px rgba(47,107,240,'+(0.12*shA)+')';
+  els.cardGlow.style.opacity=clamp(seg(f,58,96))*0.95;
+
+  /* 高光扫带：f150-172 掠过一次 */
+  var sw=seg(f,150,172);
+  els.sweep.style.opacity=(sw>0&&sw<1)?Math.sin(sw*Math.PI)*0.75:0;
+  els.sweep.style.left=lerp(-30,115,sw)+'%';
+
+  /* ④ 方格 Part 徽标：f48 起格子 spring 逐个弹入 */
+  var badgeClip=clamp(seg(f,44,70));
+  for(var i=0;i<cellEls.length;i++){
+    var t0=f-(48+i*2.4);
+    var e=t0<=0?0:spring(clamp(t0/16,0,1.35)/1.35);
+    cellEls[i].style.transform='scale('+e+') rotate('+((1-e)*(hash1(i)*90-45))+'deg)';
+    cellEls[i].style.opacity=clamp(t0/5);
+    /* 一格偶发「闪烁呼吸」：f160-180 期间 3 号格脉冲 */
+    var blink=(i===4)?Math.max(0,Math.sin(seg(f,150,176)*Math.PI))*0.45:0;
+    cellEls[i].style.filter=blink?'brightness('+(1+blink)+')':'none';
+  }
+  els.partTxt.style.opacity=badgeClip;
+  els.partTxt.style.transform='translateX('+((1-easeOut(seg(f,50,64)))*-14)+'px)';
+
+  /* ⑤ 主标题：逐字入场 spring + 位移 + 动态模糊；持期微呼吸 */
+  for(var j=0;j<charEls.length;j++){
+    var st=58+j*2.6, dt=f-st;
+    if(dt<=0){ charEls[j].style.opacity=0; continue; }
+    var e2=spring(clamp(dt/18,0,1.35)/1.35);
+    var wob=Math.sin(f*0.032+j*1.7)*1.4*clamp(seg(f,st+18,st+40));
+    charEls[j].style.opacity=clamp(dt/5);
+    charEls[j].style.transform='translateY('+((1-e2)*56+wob)+'px) scale('+(0.65+0.35*e2)+')';
+    /* 静止后必须写 none：常驻 blur(0px) 会让每字挂独立合成层，栅格化不稳定且拖慢导出 */
+    charEls[j].style.filter=(dt>=18)?'none':'blur('+((1-e2)*7)+'px)';
+  }
+  /* 手绘下划线：f96 起描线（pathLength=1 dashoffset 1→0） */
+  if(uline){
+    var ul=smoother(seg(f,96,116));
+    uline.style.strokeDashoffset=String(1-ul);
+    uline.style.opacity=ul>0?0.92:0;
+  }
+  /* 副标 */
+  var sb=clamp(seg(f,120,142));
+  els.subTxt.style.opacity=cfg.sub? sb*0.95 : 0;
+  els.subTxt.style.transform='translateY('+((1-easeOut(sb))*16)+'px)';
+
+  /* ⑥ 产品：f66 右侧滑入 + blur 收 + spring；持期悬浮呼吸 */
+  var pd=f-66;
+  if(pd>0){
+    var pe=spring(clamp(pd/22,0,1.35)/1.35);
+    els.prod.style.opacity=clamp(pd/6);
+    els.prod.style.transform='translateX('+((1-pe)*170)+'px)';
+    els.prod.style.filter=(pd>=24)?'none':'blur('+((1-pe)*10)+'px)';
+    var fl=Math.sin(f*0.045)*9, fr=Math.sin(f*0.03)*1.4;
+    els.prodInner.setAttribute('transform','translate(0 '+fl.toFixed(2)+') rotate('+fr.toFixed(2)+' 220 300)');
+    els.pShadeOpa=0.10+0.05*(1+Math.sin(f*0.045))/2;
+    var shade=document.getElementById('pShade');
+    if(shade){ shade.setAttribute('opacity', els.pShadeOpa.toFixed(3)); shade.setAttribute('rx', (shadeBase+shadeSwing*Math.sin(f*0.045)).toFixed(1)); }
+    els.pLed.style.opacity=0.35+0.65*Math.max(0,Math.sin(f*0.10));
+  } else { els.prod.style.opacity=0; }
+
+  /* ⑦ 手绘点缀层 —— 密度担当 */
+  /* 虚线圈：f100 描出 + 常速转 + 呼吸 */
+  var ri=smoother(seg(f,100,128));
+  els.ring.style.opacity=ri*0.95;
+  els.ring.style.strokeDasharray=(ri*1583.4)+' 9999';
+  els.ring.setAttribute('transform','rotate('+((f*0.55)%360)+' 1292 590)');
+  els.ring.setAttribute('r', 252+Math.sin(f*0.03)*7);
+  /* 指示箭头：f106 描线 → 箭头落 */
+  var ai=smoother(seg(f,106,126));
+  els.arrow.style.opacity=ai>0?0.9:0;
+  els.arrow.style.strokeDasharray='1'; els.arrow.style.strokeDashoffset=String(1-ai);
+  els.arrow.setAttribute('pathLength','1');
+  var ah=smoother(seg(f,124,136));
+  els.arrowHead.style.opacity=ah;
+  els.arrowHead.style.strokeDasharray='1'; els.arrowHead.style.strokeDashoffset=String(1-ah);
+  els.arrowHead.setAttribute('pathLength','1');
+  /* 十字星光：f92 起错开闪入 → 持续绕自身中心旋转 + twinkle */
+  for(var k1=0;k1<sparks.length;k1++){
+    var sIn=env(f,92+k1*10,102+k1*10);
+    var tw=sIn*(0.55+0.45*Math.sin(f*0.09+k1*2.1));
+    sparks[k1].style.opacity=tw;
+    var scx=+sparks[k1].getAttribute('data-cx'), scy=+sparks[k1].getAttribute('data-cy');
+    var ssc=0.7+0.3*sIn+0.12*Math.sin(f*0.07+k1);
+    sparks[k1].setAttribute('transform','translate('+scx+' '+scy+') rotate('+((f*1.4+k1*40)%360)+') scale('+ssc.toFixed(3)+') translate('+(-scx)+' '+(-scy)+')');
+  }
+  /* 四角星 ✦：spring 弹入 → 呼吸缩放 */
+  for(var k2=0;k2<spark4s.length;k2++){
+    var b=f-(98+k2*8), e3=b<=0?0:spring(clamp(b/16,0,1.35)/1.35);
+    var cx=[375,1632,1722][k2], cy=[515,283,811][k2];
+    spark4s[k2].style.opacity=e3*0.96;
+    var sc=e3*(0.9+0.16*Math.sin(f*0.06+k2*2.4));
+    spark4s[k2].setAttribute('transform','translate('+cx+' '+cy+') scale('+sc.toFixed(3)+') rotate('+((f*0.5+k2*24)%360)+') translate('+(-cx)+' '+(-cy)+')');
+  }
+  /* 加号：淡入 + 慢转 */
+  for(var k3=0;k3<pluses.length;k3++){
+    var pIn=env(f,102+k3*9,116+k3*9);
+    pluses[k3].style.opacity=pIn*0.9;
+    var px=[290,1555][k3], py=[726,171][k3];
+    pluses[k3].setAttribute('transform','rotate('+(pIn*90+f*0.9)+' '+px+' '+py+')');
+  }
+  /* 斜方框：弹入后摇摆 */
+  for(var k4=0;k4<tilts.length;k4++){
+    var tb=f-(110+k4*7), e4=tb<=0?0:spring(clamp(tb/14,0,1.35)/1.35);
+    var tx=[253,1679][k4], ty=[213,477][k4];
+    tilts[k4].style.opacity=e4*0.9;
+    tilts[k4].setAttribute('transform','rotate('+(45+e4*10+Math.sin(f*0.05+k4)*6)+' '+tx+' '+ty+')');
+  }
+  /* 三点节奏器：逐点点亮循环 */
+  var dotOn=clamp(seg(f,132,146));
+  els.dots.style.opacity=dotOn;
+  var kids=els.dots.children;
+  for(var k5=0;k5<kids.length;k5++){
+    var ph=Math.max(0,Math.sin((f-132)*0.16-k5*0.9));
+    kids[k5].setAttribute('r',7+ph*3.5);
+    kids[k5].style.opacity=0.45+0.55*ph;
+  }
+}
+
+/* ---------- 播放循环 ---------- */
+var startAt=performance.now(), rafId=0;
+function tick(now){
+  var t=((now-startAt)/1000)%CYCLE;
+  render(Math.min(DUR, t*FPS));
+  rafId=requestAnimationFrame(tick);
+}
+function restart(){ startAt=performance.now(); }
+function fit(){
+  /* ⚠️ 无放大上限（导出高清链路要求） */
+  var s=Math.min(innerWidth/1920, innerHeight/1080);
+  var st=document.getElementById('stage'), wr=document.getElementById('wrap');
+  st.style.transform='scale('+s+')';
+  wr.style.width=(1920*s)+'px'; wr.style.height=(1080*s)+'px';
+}
+window.addEventListener('resize',fit);
+
+/* ---------- 配色 ---------- */
+var VAR_NAMES=['--gb-bg1','--gb-bg2','--gb-grid','--gb-card','--gb-blue','--gb-sky','--gb-ink'];
+function applyColors(vars){
+  var root=document.documentElement.style, k;
+  for(k in vars){ if(k.indexOf('--gb-')===0) root.setProperty(k,vars[k]); }
+  _varCache={};
+}
+
+/* ---------- 自定义字体（cyber 协议） ---------- */
+function applyFont(d){
+  var name=d.family, url=d.dataURL;
+  if(!name){ var old=document.getElementById('__gbFont'); if(old) old.remove(); return; }
+  var st=document.getElementById('__gbFont')||document.createElement('style');
+  st.id='__gbFont';
+  st.textContent = url ? '@font-face{font-family:"__gbfont";src:url('+url+') format("truetype");font-display:block;}' : '';
+  if(!st.parentNode) document.head.appendChild(st);
+  var fam = url ? '__gbfont' : name;
+  document.getElementById('stage').style.fontFamily='"'+fam+'","Noto Sans SC","Microsoft YaHei",sans-serif';
+}
+
+/* ---------- postMessage 桥（与 part02-opener 同协议） ---------- */
+window.addEventListener('message',function(e){
+  var d=e.data||{};
+  if(d.source!=='host')return;
+  try{
+    if(d.type==='cyber-embed'){ document.body.classList.add('embed'); fit(); }
+    else if(d.type==='cyber-unembed'){ document.body.classList.remove('embed'); fit(); }
+    else if(d.type==='cyber-cfg'){ applyCfg(d); if(d.replay)restart(); }
+    else if(d.type==='cyber-color'){ applyColors(d.vars||{}); }
+    else if(d.type==='cyber-img'){ setProdImg(d.img||''); }
+    else if(d.type==='cyber-font'){ applyFont(d); }
+    else if(d.type==='cyber-play'){ restart(); if(!rafId) rafId=requestAnimationFrame(tick); }
+    else if(d.type==='cyber-seek'){
+      /* 导出用：取消 rAF，由宿主逐帧驱动 render(帧号)
+         ⚠️ render 后强制同步 layout flush，并把截图排到「下一动画帧」的回调里执行——
+         直接 post 会让宿主的抓帧抢在合成器重栅格化 blur 层之前，拍到中间态
+         （实测同帧双截图在 Part 徽标区有稳定像素差，flush+callback 后消失）。 */
+      if(rafId){ try{ cancelAnimationFrame(rafId); }catch(err){} rafId=0; }
+      if(typeof d.t==='number'){ try{ render(Math.min(DUR, d.t*FPS)); void document.documentElement.offsetHeight; }catch(err){} }
+    }
+    else if(d.type==='cyber-resume'){
+      startAt=performance.now(); if(!rafId) rafId=requestAnimationFrame(tick);
+    }
+    else if(d.type==='cyber-get-html'){
+      var ovr='',k2;
+      var host={}; var cs=getComputedStyle(document.documentElement);
+      for(k2=0;k2<VAR_NAMES.length;k2++){ var vn=VAR_NAMES[k2]; host[vn]=cs.getPropertyValue(vn).trim(); }
+      ovr=':root{'+VAR_NAMES.map(function(vn){return vn+':'+host[vn];}).join(';')+'}';
+      /* 上传的产品图必须一起进固化页（PRISTINE 抓的是加载时的原始 DOM，运行期换的 href 不在里面）；
+         \u003c 转义防止 data/blob URL 里出现闭合 script 标签把固化页截断
+         ⚠️ 本注释里也不能写那个闭合标签的字面量 —— 它会先把自己所在的 script 截断 */
+      var boot='<script>window.__GB_BOOT='+JSON.stringify({part:cfg.part,title:cfg.title,sub:cfg.sub,img:cfg.img||''}).replace(/</g,'\\u003c')+'<\/script>';
+      var html=PRISTINE.replace('</head>','<style id="gb-override">'+ovr+'</style>'+boot+'</head>');
+      parent.postMessage({source:'cyber',type:'cyber-html',reqId:d.reqId,html:html},'*');
+    }
+  }catch(err){ parent.postMessage({source:'cyber',type:'cyber-status',err:err.message},'*'); }
+});
+
+/* ---------- 独立面板 ---------- */
+$('pPart').addEventListener('input',function(){ applyCfg({part:this.value}); restart(); });
+$('pTitle').addEventListener('input',function(){ applyCfg({title:this.value}); restart(); });
+$('pSub').addEventListener('input',function(){ applyCfg({sub:this.value}); restart(); });
+$('pPlay').addEventListener('click',function(){ restart(); });
+
+/* ---------- 启动 ---------- */
+if(window.__GB_BOOT){ applyCfg(window.__GB_BOOT); }
+applyCfg(cfg);
+fit();
+render(0);
+rafId=requestAnimationFrame(tick);
+parent.postMessage({source:'cyber',type:'cyber-ready'},'*');
+/* 调试暴露 */
+window.seek=function(sec){ startAt=performance.now()-sec*1000; };
+window.play=restart;
+window.__gbRender=render; window.__gbDUR=DUR;
+</script>
+</body>
+</html>
