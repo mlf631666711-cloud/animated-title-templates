@@ -1,0 +1,607 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>Blush Morandi · 柔焦莫兰迪（垂直三段 · 重心在下 1/3 · 左下拱窗 + 右下右对齐标题）</title>
+<!--
+  风格方向（老板 2026-10-02：任意主题/配色，只求高级配色 + 高级动效；元素与构图都必须与既有引擎区分）
+  配色真源 = 本地 110 组高级配色库 #64「莫兰迪 · 低饱和温柔系」（原始权重 63/19.4/13.1/2.5）
+    --bm-cream   #F9ECE9 奶油底（63%）      --bm-peach #FDD6CE 浅桃（19.4%）
+    --bm-pink    #FDA4B5 粉（13.1%）        --bm-rose  #D36894 深玫瑰灰（2.5%，主强调）
+    --bm-ink     #5B4A52 灰紫墨（正文·细线）—— 该笔记自陈「选色时加入灰调是关键」，由 rose 降饱和压暗所得
+    --bm-sage    #A9B7A4 灰豆绿（第二强调）—— 同笔记 CP 清单点名「雾霾蓝、燕麦色、灰豆绿、脏粉」
+    ★ 六个变量在引擎里【全部有真实消费点】—— 配色盘上摆一个没人读的变量 = 骗用户「改了没反应是我眼瞎」。
+  ★ 构图 = 【垂直三段 · 重心压在下 1/3】（老板点名「不用一直都是一个左右设计」）：
+    上段（0→420）只有两枚角标 + 两条细波浪线，几乎全空；中段（420→690）是柔焦色块带；
+    下段（690→1080）才是内容：左下一块【越过画布底边的圆拱窗】放产品，右下是【右对齐】的细斜体标题。
+    ⇒ 视线落点在画面下缘，且左右两坨质量都坐在同一水平带上；
+      既不是 14 的左文右图竖向分栏，也不是 15 的对角斜置，更不是 16 的通栏报头 + 右下出血。
+  母题 = 有机 blob 色块 / 柔焦渐变 / 细正弦波浪线 / 圆拱窗（arch）/ 同心弧。
+    （现有引擎无一模一样的语汇：16 是网点与套准十字、15 是星芒与贴纸、14 是竹与标本环、13 是电流走线与街机；
+     产品位这里是【圆拱形 + 内部地平线】，不是矩形出血框 / 圆角贴纸 / 圆环 / 六边形。）
+  动效动词 = blob【持续呼吸形变】（r(θ) 是 f 的纯函数，全片不停）+ 文字【焦点拉动 blur→sharp】
+    + 细线【路径描绘】（dashoffset）+ 拱窗【上浮 + 拉焦】。
+    （14 = 视差 dolly + 竖条遮罩；15 = backOut 逐字弹性 pop + 星芒自旋；16 = 三版套印收敛 + 遮罩上推 + 网点显影。
+     本引擎【无弹跳、无套印副本、无遮罩上推、无 dolly】，招牌是「从虚到实」的对焦感。）
+  字体 = 细斜体衬线混排（Georgia 走拉丁、Noto Serif SC 走汉字，weight 400 + 正字距）
+    —— 与 16 的 900 负字距工业黑体、15 的 900 压印黑体、14 的直立衬线大字全部相反。
+  ★ 屏上零数字：本引擎所有固定串都是【性质描述】（LOW CHROMA / SOFT FOCUS），没有任何
+    「60 LPI」这类编得出来的规格数字 —— 无出处的数字不上屏。
+  本文件为零依赖单文件 HTML 引擎, 挂 cyber 同款 postMessage 桥:
+    host→iframe: cyber-embed / cyber-unembed / cyber-cfg{part,title,sub,replay} / cyber-color{vars}
+                 / cyber-img{img} / cyber-play / cyber-seek{t} / cyber-resume / cyber-get-html{reqId} / cyber-font
+    iframe→host: cyber-ready / cyber-html{reqId,html} / cyber-status{err}  (source 均为 'cyber')
+  铁律: 所有视觉量 = 帧号 f 的纯函数；无 Math.random（形态抖动走 hash1）；禁 CSS animation/transition。
+  ⚠️ 已付过学费的硬约束（BUG 库 R151/R152/R158 + R165~R172）全部落实：
+    ① 描边件 class .ln{fill:none}，实心件一律内联 style="fill:…"；
+    ② 几何只在 build*/measure* 里量一次，不进 render()；
+    ③ 「无产品图」= href 属性缺省（href="" 会变成永不结束的请求 ⇒ 导出第 0 帧抓屏挂死）；
+    ④ 禁一次性闩；只允许「当前值 ≠ 目标值才写」的幂等写法；
+    ⑤ SVG transform 只写裸数字，不写单位也不写 none；
+    ⑥ 同权重按书写顺序翻盘 ⇒ 覆盖用复合选择器；HTML 文字层显式 z-index 高于 SVG；
+    ⑦ seg() 段前 = 0 ⇒ 不许拿 (1-p)*k 当入场前暗度；
+    ⑧ 可编辑文字按【最坏输入】设计：超行压字号，单行缩宽时字号与字距同乘 k；
+    ⑨ ★ 主循环必须开机自启（rafId=requestAnimationFrame(tick)），漏掉的后果是预览停在第 0 帧，
+       不报错、数值全绿。
+    ⑩ ★ PRISTINE 必须在任何 build* 塞生成件【之前】抓，否则固化件带上一轮节点、重开翻倍。
+    ⑪ ★ 柔焦一律用【径向渐变透明衰减】做，不用 feGaussianBlur / 长窗口 CSS blur：
+       225 帧逐帧重栅格化一个大模糊层会把导出拖死；CSS blur 只在拉焦窗口内写，
+       归零后必须写回 'none'（不是 'blur(0px)'，后者会永久保留滤镜层）。
+-->
+<style>
+  /* 🔴 六个配色变量必须在这里给【默认值】：JS 里 setAttribute('style','fill:var(--bm-x)') 不带 CSS 回退，
+     宿主没发色时整棵树解析成 black。 */
+  :root{
+    --bm-cream:#F9ECE9; --bm-peach:#FDD6CE; --bm-pink:#FDA4B5;
+    --bm-rose:#D36894; --bm-ink:#5B4A52; --bm-sage:#A9B7A4;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{width:100%;height:100%;background:#e7dcd8;overflow:hidden;}
+  body{font-family:Georgia,"Noto Serif SC","Songti SC","Microsoft YaHei",serif;}
+  #wrap{position:absolute;left:50%;top:50%;width:1920px;height:1080px;margin:-540px 0 0 -960px;}
+  #stage{position:relative;width:1920px;height:1080px;overflow:hidden;transform-origin:0 0;
+    background:var(--bm-cream,#F9ECE9);}
+  #hud{position:absolute;inset:0;width:1920px;height:1080px;z-index:5;}
+  #hud .ln{fill:none;}
+  #txt{position:absolute;inset:0;z-index:9;pointer-events:none;}
+  #txt > *{position:absolute;}
+
+  /* ---------- 上段：两枚角标（左上 Part / 右上元信息），刻意做小做轻 ---------- */
+  #partTxt{left:150px;top:88px;white-space:pre;font-size:23px;font-weight:400;font-style:italic;
+    letter-spacing:7px;color:var(--bm-rose);}
+  #partRule{left:150px;top:126px;width:190px;height:1px;background:var(--bm-rose);transform-origin:0 50%;}
+  #meta{left:980px;top:96px;width:790px;text-align:right;white-space:pre;
+    font-size:14px;font-weight:400;letter-spacing:6px;color:var(--bm-ink);}
+
+  /* ---------- 下段右侧：右对齐的细斜体标题（重心压在下 1/3 的关键） ----------
+     横向预算 790（970→1760）：左下拱窗占 150→770，两坨之间留 200 缝 ⇒ 长标题永不与拱窗重叠。
+     竖向预算：副标题条在 628，标题顶 690，底边收到 1000 ⇒ 可用 310。
+     3 行 × fs × 1.16 ≤ 310 ⇒ fs ≤ 89；1~2 行时按宽度另算，上限 132。 */
+  #titleBox{left:970px;top:690px;width:790px;}
+  /* 🔴 这里【不能】写 overflow:hidden：本引擎逐字走的是 CSS blur 拉焦，模糊光晕会溢出字身盒，
+     一旦裁切就看到一排方框边 —— 遮罩上推才需要 overflow，逐字淡入不需要。
+     nowrap 是给 buildTitle 的「量真实字面宽」用的：允许折行的话 scrollWidth 恒等于容器宽，
+     超行判据永远量不到 ⇒ 长标题会静默溢出到拱窗上。 */
+  .tl{display:block;position:relative;white-space:nowrap;text-align:right;}
+  .ch{display:inline-block;white-space:pre;font-style:italic;font-weight:400;}
+
+  /* ---------- 副标题 + 一条自己画出来的玫瑰色细线（path draw） ---------- */
+  #subTxt{left:970px;top:628px;width:790px;text-align:right;white-space:pre;
+    font-size:23px;font-weight:400;letter-spacing:6px;color:var(--bm-ink);}
+  #caption{left:970px;top:1030px;width:790px;text-align:right;white-space:pre;
+    font-size:13px;font-weight:400;letter-spacing:5px;color:var(--bm-rose);}
+
+  /* ---------- 拱窗标签（贴在拱窗右上方的空白里，不与标题抢位置） ---------- */
+  #prodTag{left:150px;top:392px;width:620px;font-size:15px;font-weight:400;letter-spacing:6px;
+    color:var(--bm-ink);}
+
+  /* ---------- 独立面板 ---------- */
+  #panel{position:fixed;left:14px;top:14px;z-index:50;display:flex;gap:8px;align-items:center;}
+  #panel input[type=text],#panel input:not([type=file]){background:rgba(255,255,255,.9);color:#5B4A52;
+    border:1px solid #d8c8c2;border-radius:6px;padding:6px 9px;font-size:13px;width:150px;}
+  #panel button{background:#5B4A52;color:#F9ECE9;border:0;border-radius:6px;padding:7px 12px;font-size:13px;cursor:pointer;}
+  body.embed #panel{display:none;}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="stage">
+    <svg id="hud" viewBox="0 0 1920 1080" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <!-- 柔焦 = 径向渐变把 alpha 拉到 0：零滤镜成本，视觉上却是失焦色团。
+             ★ 不用 feGaussianBlur —— 225 帧逐帧重栅格化大模糊层会把导出拖死。 -->
+        <radialGradient id="gPeach"><stop offset="0%"   style="stop-color:var(--bm-peach);stop-opacity:.92"/>
+          <stop offset="58%" style="stop-color:var(--bm-peach);stop-opacity:.62"/>
+          <stop offset="100%" style="stop-color:var(--bm-peach);stop-opacity:0"/></radialGradient>
+        <radialGradient id="gPink"><stop offset="0%"   style="stop-color:var(--bm-pink);stop-opacity:.86"/>
+          <stop offset="58%" style="stop-color:var(--bm-pink);stop-opacity:.55"/>
+          <stop offset="100%" style="stop-color:var(--bm-pink);stop-opacity:0"/></radialGradient>
+        <!-- ★ gRose 的 alpha 明显低于其它三个：深玫瑰 #D36894 只有 2.5% 权重，是「一点颜料」不是「一块色」；
+           按其它三档的 alpha 铺 ⇒ 柔焦团在画面正中糊成一颗淤青，正好毁掉莫兰迪的「低饱和」。 -->
+        <radialGradient id="gRose"><stop offset="0%"   style="stop-color:var(--bm-rose);stop-opacity:.46"/>
+          <stop offset="58%" style="stop-color:var(--bm-rose);stop-opacity:.26"/>
+          <stop offset="100%" style="stop-color:var(--bm-rose);stop-opacity:0"/></radialGradient>
+        <radialGradient id="gSage"><stop offset="0%"   style="stop-color:var(--bm-sage);stop-opacity:.78"/>
+          <stop offset="58%" style="stop-color:var(--bm-sage);stop-opacity:.48"/>
+          <stop offset="100%" style="stop-color:var(--bm-sage);stop-opacity:0"/></radialGradient>
+        <!-- 拱窗内的地平线渐变（先落形撑住下半屏；有产品图时垫在图后面） -->
+        <linearGradient id="gArch" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" style="stop-color:var(--bm-cream)"/>
+          <stop offset="62%" style="stop-color:var(--bm-peach)"/>
+          <stop offset="100%" style="stop-color:var(--bm-pink)"/>
+        </linearGradient>
+        <clipPath id="archClip"><path id="archClipPath"/></clipPath>
+      </defs>
+
+      <rect id="bg" x="0" y="0" width="1920" height="1080" style="fill:var(--bm-cream)"/>
+
+      <!-- 有机 blob 色块（上段 + 中段，全片持续呼吸） -->
+      <g id="blobs"></g>
+
+      <!-- 细正弦波浪线：两条，靠 dashoffset 自己画出来（path draw） -->
+      <g id="waves"></g>
+
+      <!-- 副标题下方那条玫瑰细线：也是描绘出来 -->
+      <path id="subRule" class="ln" stroke-width="1.6" stroke="var(--bm-rose)"/>
+
+      <!-- 左下圆拱窗：故意越过画布底边（下 1/3 的质量中心） -->
+      <g id="archG">
+        <g id="archInner" clip-path="url(#archClip)">
+          <path id="archFill" style="fill:url(#gArch)"/>
+          <g id="archArt"></g>
+          <image id="prodImg" x="150" y="430" width="620" height="730" preserveAspectRatio="xMidYMid slice"/>
+        </g>
+        <path id="archEdge" class="ln" stroke-width="1.8" stroke="var(--bm-rose)"/>
+        <path id="archEdge2" class="ln" stroke-width="1" stroke="var(--bm-ink)"/>
+      </g>
+    </svg>
+
+    <div id="txt">
+      <div id="partTxt"></div>
+      <div id="partRule"></div>
+      <div id="meta"></div>
+      <div id="subTxt"></div>
+      <div id="titleBox"></div>
+      <div id="caption"></div>
+      <div id="prodTag"></div>
+    </div>
+  </div>
+</div>
+
+<div id="panel">
+  <input id="pPart" placeholder="Part" value="Part.01" />
+  <input id="pTitle" placeholder="主标题" value="莫兰迪柔雾" />
+  <input id="pSub" placeholder="副标题" value="BLUSH MORANDI" />
+  <button id="pPlay">重播</button>
+  <input id="pImg" type="file" accept="image/*" />
+</div>
+
+<script>
+"use strict";
+/* ============================== 工具 ============================== */
+var $ = function(id){ return document.getElementById(id); };
+function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
+function seg(f,a,b){ return clamp((f-a)/(b-a),0,1); }                 /* 段前严格 0 */
+function easeOut(p){ return 1-Math.pow(1-p,3); }
+function easeInOut(p){ return p<0.5?4*p*p*p:1-Math.pow(-2*p+2,3)/2; }
+/* 本引擎不用 backOut（那是 pop-mint 的动词），也不用 press 硬回弹（那是 16 的）；
+   入场一律 easeInOut —— 「慢慢对上焦」的手感。 */
+function hash1(n){ var x=Math.sin(n*127.1+311.7)*43758.5453; return x-Math.floor(x); }
+function mk(parent,tag,attrs){
+  var e=document.createElementNS('http://www.w3.org/2000/svg',tag),k;
+  for(k in attrs){ if(Object.prototype.hasOwnProperty.call(attrs,k)) e.setAttribute(k,attrs[k]); }
+  parent.appendChild(e); return e;
+}
+/* ⚠️ 只在「值真的变了」时写属性：CDP 逐帧导出时每帧要跑满 225 次，无谓写属性会拖慢栅格化 */
+function setA(el,k,v){ v=String(v); if(el.getAttribute(k)!==v) el.setAttribute(k,v); }
+function setS(el,k,v){ v=String(v); if(el.style[k]!==v) el.style[k]=v; }
+
+/* ============================== 常量 ============================== */
+var FPS=30, DUR=225, HOLD=0.9, CYCLE=DUR/FPS+HOLD;
+var TITX=970, TITY=690, TITW=790, TITMAXFS=132, TITMINFS=26, TITLH=1.16;
+var ARCH={x:150,w:620,yTop:430,yBot:1160};      /* 拱窗：底边越过画布 = 下 1/3 的质量中心 */
+ARCH.r = ARCH.w/2;
+var BLOBS_DEF=[
+  /* cx, cy, R, 渐变, 呼吸相位, 振幅 */
+  [330,205,250,'url(#gPeach)',0.0,0.135],
+  [1560,165,212,'url(#gPink)',1.7,0.115],
+  [1120,352,134,'url(#gRose)',3.1,0.160],
+  [795,118,170,'url(#gSage)',4.6,0.120],
+  [1858,520,196,'url(#gPink)',2.3,0.130]
+];
+var BL_N=36;                                     /* blob 采样点数：36 点 + 中点二次平滑 = 看不出折角 */
+
+var els={
+  stage:$('stage'), bg:$('bg'), blobs:$('blobs'), waves:$('waves'), subRule:$('subRule'),
+  archG:$('archG'), archInner:$('archInner'), archFill:$('archFill'), archArt:$('archArt'),
+  archClipPath:$('archClipPath'), archEdge:$('archEdge'), archEdge2:$('archEdge2'),
+  prodImg:$('prodImg'),
+  partTxt:$('partTxt'), partRule:$('partRule'), meta:$('meta'),
+  titleBox:$('titleBox'), subTxt:$('subTxt'), caption:$('caption'), prodTag:$('prodTag')
+};
+/* 🔴 必须在任何 build* 往 DOM 里塞生成件【之前】抓原始快照，否则固化件里带着上一轮的节点，
+   重新打开会翻倍。 */
+var PRISTINE = '<!doctype html>\n' + document.documentElement.outerHTML;
+
+/* ============================== 拱形路径（build 期算一次） ============================== */
+function archPath(x,w,yTop,yBot){
+  var r=w/2;
+  /* M 左下起 → 左侧上到肩 → 顶部半圆（sweep=1 才是「驼峰」）→ 右侧下到肩 → 底边闭合 */
+  return 'M '+x+' '+(yTop+r)+' A '+r+' '+r+' 0 0 1 '+(x+w)+' '+(yTop+r)+
+         ' L '+(x+w)+' '+yBot+' L '+x+' '+yBot+' Z';
+}
+function archOutPath(dx){   /* 外描边：整体放大 dx（四边 + 顶部半径同步），得到同心的第二条拱线 */
+  return archPath(ARCH.x-dx, ARCH.w+dx*2, ARCH.yTop-dx, ARCH.yBot+dx);
+}
+
+/* ============================== 静态构建（只跑一次，几何不进 render） ============================== */
+var BLOBS=[], WAVES=[], ART=[], SUBRULE_LEN=0, EDGE_LEN=0, EDGE2_LEN=0;
+
+function buildArch(){
+  var d=archPath(ARCH.x,ARCH.w,ARCH.yTop,ARCH.yBot);
+  els.archClipPath.setAttribute('d',d);
+  els.archFill.setAttribute('d',d);
+  /* 🔴 dasharray 是静态量 ⇒ 放 build。放 render 里每帧重写 = 白付 225 次栅格化重建的代价 */
+  els.archEdge.setAttribute('d',archOutPath(16));
+  els.archEdge2.setAttribute('d',archOutPath(26));
+  EDGE_LEN=Math.ceil(els.archEdge.getTotalLength());
+  EDGE2_LEN=Math.ceil(els.archEdge2.getTotalLength());
+  els.archEdge.setAttribute('stroke-dasharray',EDGE_LEN+' '+EDGE_LEN);
+  els.archEdge2.setAttribute('stroke-dasharray',EDGE2_LEN+' '+EDGE2_LEN);
+}
+function buildBlobs(){
+  for(var i=0;i<BLOBS_DEF.length;i++){
+    var b=BLOBS_DEF[i];
+    var e=mk(els.blobs,'path',{fill:b[3]});
+    BLOBS.push({e:e,cx:b[0],cy:b[1],R:b[2],ph:b[4],amp:b[5],i:i});
+  }
+}
+function wavePath(y0,amp,k,ph,x0,x1){
+  var d='',x;
+  for(x=x0;x<=x1;x+=12){ d+=(d?' L ':'M ')+x+' '+(y0+Math.sin((x-x0)*k+ph)*amp).toFixed(1); }
+  return d;
+}
+function buildWaves(){
+  /* 两条细正弦：一条粉、一条灰豆绿，横贯上段 —— 上段「几乎全空」就是靠它们撑住而不显空 */
+  var P=[[268,26,0.0125,0.0,'var(--bm-pink)',1.8],[338,17,0.0092,1.9,'var(--bm-sage)',1.4]];
+  for(var i=0;i<P.length;i++){
+    var e=mk(els.waves,'path',{d:wavePath(P[i][0],P[i][1],P[i][2],P[i][3],150,1770)});
+    e.setAttribute('class','ln');
+    e.setAttribute('stroke',P[i][4]); e.setAttribute('stroke-width',P[i][5]);
+    var L=Math.ceil(e.getTotalLength());
+    e.setAttribute('stroke-dasharray',L+' '+L);
+    WAVES.push({e:e,L:L});
+  }
+  /* 副标题下的玫瑰细线：先给一条直线几何，长度在 build 里量 */
+  els.subRule.setAttribute('d','M 970 664 L 1760 664');
+  SUBRULE_LEN=Math.ceil(els.subRule.getTotalLength());
+  els.subRule.setAttribute('stroke-dasharray',SUBRULE_LEN+' '+SUBRULE_LEN);
+}
+function buildArt(){
+  /* 无产品图占位：拱窗内的【同心弧 + 地平线 + 一枚小日】—— 莫兰迪静物抽象，
+     与 14 的竹、16 的半调玫瑰环、15 的星爆都不同形。 */
+  var cx=ARCH.x+ARCH.w/2, base=ARCH.yBot-40, i;
+  var band=mk(els.archArt,'rect',{x:ARCH.x,y:880,width:ARCH.w,height:280});
+  band.setAttribute('style','fill:var(--bm-pink);opacity:.30;');
+  var rr=[210,300,390], st=['var(--bm-rose)','var(--bm-ink)','var(--bm-sage)'], wd=[2.2,1.4,1.4], op=[.75,.42,.62];
+  for(i=0;i<rr.length;i++){
+    var e=mk(els.archArt,'path',{d:'M '+(cx-rr[i])+' '+base+' A '+rr[i]+' '+rr[i]+' 0 0 1 '+(cx+rr[i])+' '+base,
+      'stroke-width':wd[i]});
+    e.setAttribute('class','ln'); e.setAttribute('stroke',st[i]);
+    e.setAttribute('opacity',op[i]);
+    var L=Math.ceil(e.getTotalLength());
+    e.setAttribute('stroke-dasharray',L+' '+L);
+    ART.push({e:e,L:L,i:i});
+  }
+  var sun=mk(els.archArt,'circle',{cx:cx-96,cy:812,r:44});
+  sun.setAttribute('style','fill:var(--bm-sage);opacity:.55;');
+  ART.sun=sun;
+}
+
+/* ============================== 文字构建 + 最坏输入预算 ============================== */
+var cfg={part:'Part.01', title:'莫兰迪柔雾', sub:'BLUSH MORANDI', img:''};
+var SUBMAX=790, SUBFS=23, SUBLS=6, CAPMAX=790, CAPFS=13, CAPLS=5, PARTMAX=420, PARTFS=23, PARTLS=7;
+var SUB_LS=SUBLS, PART_LS=PARTLS;      /* 缩完后的实际字距，见 measureOne */
+var META_LS=6, CAP_LS=5;               /* 固定串（不可编辑）⇒ 不会被 fitOneLine 缩，字距用常量即可 */
+
+/* 单行缩到宽度上限：字号与字距【同乘 k】（letter-spacing 是绝对 px，只缩字号宽度不按比例降） */
+function fitOneLine(t, fs, ls, max){
+  t.style.fontSize=''; t.style.letterSpacing='';
+  var w=Math.max(t.scrollWidth, t.offsetWidth)||1;
+  if(w>max){
+    var k=max/w;
+    t.style.fontSize=(fs*k).toFixed(1)+'px'; t.style.letterSpacing=(ls*k).toFixed(1)+'px';
+    w=Math.max(t.scrollWidth, t.offsetWidth);
+    if(w>max){ k=k*max/w; t.style.fontSize=(fs*k).toFixed(1)+'px'; t.style.letterSpacing=(ls*k).toFixed(1)+'px'; w=max; }
+  }
+  return w;
+}
+function measureOne(){
+  fitOneLine(els.subTxt, SUBFS, SUBLS, SUBMAX);
+  fitOneLine(els.caption, CAPFS, CAPLS, CAPMAX);
+  fitOneLine(els.partTxt, PARTFS, PARTLS, PARTMAX);
+  /* 🔴 把【缩完之后的实际字距】记下来给 render 用：render 每帧要动字距（收口动画），
+     若它按字面常量 SUBLS/PARTLS 回写，长副标题刚被 fitOneLine 压小的字距会被顶回去 ⇒ 又溢出。
+     「测量」和「逐帧驱动」必须共用同一个值，否则前者白做。 */
+  SUB_LS=parseFloat(els.subTxt.style.letterSpacing)||SUBLS;
+  PART_LS=parseFloat(els.partTxt.style.letterSpacing)||PARTLS;
+}
+var TITLE={lines:[], n:1, fs:96, lh:111};
+function fillTitle(box, lines, fs, lh){
+  box.textContent='';
+  var out=[], li;
+  for(li=0;li<lines.length;li++){
+    var ln=document.createElement('div'); ln.className='tl';
+    ln.style.fontSize=fs+'px'; ln.style.lineHeight=lh+'px';
+    var chars=[], txt=lines[li]||' ', ci;
+    for(ci=0;ci<txt.length;ci++){
+      var s=document.createElement('span'); s.className='ch';
+      /* 空格必须用 nbsp + inline-block：裸空格在 inline-block 里宽度会塌成 0 ⇒ 「半调 套印」糊成「半调套印」 */
+      s.textContent = txt[ci]===' ' ? '\u00A0' : txt[ci];
+      ln.appendChild(s); chars.push(s);
+    }
+    box.appendChild(ln); out.push(chars);
+  }
+  return out;
+}
+function buildTitle(){
+  var raw=(cfg.title||'').replace(/\s+$/,'');
+  var lines=raw.split('\n');
+  if(lines.length===1 && raw.length>7){            /* 单行过长 ⇒ 先按空格切词再硬切两行 */
+    var sp=raw.lastIndexOf(' ', Math.ceil(raw.length/2));
+    if(sp<0) sp=Math.ceil(raw.length/2);
+    lines=[raw.slice(0,sp), raw.slice(sp+1)];
+  }
+  lines=lines.slice(0,3);                          /* 竖向预算只给 3 行 */
+  var maxLen=Math.max.apply(null, lines.map(function(s){return s.length;}));
+  var fs=clamp(TITW/Math.max(1,maxLen), TITMINFS, TITMAXFS);
+  var VB=1000-TITY;                                /* 底边收到 1000，下面留给 caption */
+  if(lines.length*fs*TITLH>VB) fs=Math.max(20, VB/(lines.length*TITLH));
+  var lh=fs*TITLH, i;
+  TITLE.lines=fillTitle(els.titleBox,lines,fs,lh);
+  TITLE.n=lines.length; TITLE.fs=fs; TITLE.lh=lh;
+  /* 🔴 字面宽才是真判据：CJK 前进取约 1.0fs、拉丁约 0.52fs，只按「字数」估字号 ⇒ 长拉丁词必溢出。
+     量法用【逐字 offsetWidth 求和】而不是 .tl.scrollWidth —— 右对齐 + nowrap 溢出时 scrollWidth
+     的口径随浏览器对溢出方向的处理而变，逐字盒宽恒等于真实墨宽。最多缩两轮，避免来回震荡。 */
+  for(i=0;i<2;i++){
+    var over=1, r;
+    for(r=0;r<TITLE.lines.length;r++){
+      var row=TITLE.lines[r], wSum=0, c;
+      for(c=0;c<row.length;c++) wSum+=row[c].offsetWidth;
+      if(wSum>TITW) over=Math.max(over, wSum/TITW);
+    }
+    if(over<=1.001) break;
+    fs=fs/over; lh=fs*TITLH;
+    TITLE.lines=fillTitle(els.titleBox,lines,fs,lh);
+    TITLE.fs=fs; TITLE.lh=lh;
+  }
+}
+function setProdImg(src){
+  cfg.img=src||'';
+  /* ⚠️ 无图 = 属性缺省（不是空串）：空串会被解析成文档 URL ⇒ 永不结束的请求 ⇒ 导出第 0 帧抓屏挂死 */
+  if(cfg.img) els.prodImg.setAttribute('href', cfg.img);
+  else els.prodImg.removeAttribute('href');
+}
+function applyCfg(d){
+  var dirty=false;
+  if(d.part!==undefined){ cfg.part=d.part; dirty=true; }
+  if(d.title!==undefined){ cfg.title=d.title; dirty=true; }
+  if(d.sub!==undefined){ cfg.sub=d.sub; dirty=true; }
+  els.partTxt.textContent=cfg.part||'';
+  els.subTxt.textContent=cfg.sub||'';
+  /* ★ 固定串里不许出现副标题的默认文本（撞词会看着像重复排版）；也一律不带编造的数字规格 */
+  els.meta.textContent='MORANDI · LOW CHROMA STUDY';
+  els.caption.textContent='SOFT FOCUS · BLENDED PIGMENTS';
+  measureOne();
+  if(dirty||!TITLE.lines.length) buildTitle();
+  els.prodTag.textContent = cfg.img ? 'IMAGE IN ARCH' : 'DROP IMAGE HERE';
+}
+
+/* ============================== 逐帧渲染（纯函数） ============================== */
+function blobPath(cx,cy,R,amp,ph,f){
+  /* r(θ) = R·(1 + amp·sin(3θ+φ+f·ω1) + 0.62amp·sin(5θ−φ−f·ω2))：两阶低频形变 = 「有机」而非「抖动」 */
+  var pts=[], i, n=BL_N;
+  for(i=0;i<n;i++){
+    var a=i/n*6.283185;
+    var rr=R*(1 + amp*Math.sin(3*a+ph+f*0.021) + amp*0.62*Math.sin(5*a-ph*1.7-f*0.017));
+    pts.push([cx+Math.cos(a)*rr, cy+Math.sin(a)*rr*0.86]);
+  }
+  /* 中点二次平滑：闭合曲线不需要解方程，视觉已经足够圆 */
+  var mid=function(p,q){ return [(p[0]+q[0])/2,(p[1]+q[1])/2]; };
+  var m0=mid(pts[n-1],pts[0]), d='M '+m0[0].toFixed(1)+' '+m0[1].toFixed(1);
+  for(i=0;i<n;i++){
+    var p=pts[i], q=pts[(i+1)%n], m=mid(p,q);
+    d+=' Q '+p[0].toFixed(1)+' '+p[1].toFixed(1)+' '+m[0].toFixed(1)+' '+m[1].toFixed(1);
+  }
+  return d+' Z';
+}
+function render(f){
+  var i, k;
+
+  /* ① blob：入场淡入 + 全片持续呼吸（本引擎「活着」的信号，任何一帧 d 都在变） */
+  for(i=0;i<BLOBS.length;i++){
+    var b=BLOBS[i];
+    setA(b.e,'d',blobPath(b.cx,b.cy,b.R,b.amp,b.ph,f));
+    var inP=easeInOut(seg(f, 4+i*9, 4+i*9+46));
+    setA(b.e,'opacity',(inP*0.9).toFixed(3));
+  }
+
+  /* ② 细波浪线：dashoffset 描绘（画完之后继续缓慢流动，不停死） */
+  for(i=0;i<WAVES.length;i++){
+    var w=WAVES[i], st=14+i*16;
+    var wp=easeInOut(seg(f,st,st+56));
+    setA(w.e,'stroke-dashoffset',(w.L*(1-wp)).toFixed(1));
+    setA(w.e,'opacity',seg(f,st,st+10).toFixed(3));
+  }
+
+  /* ③ Part 角标 + 它下面那条 190 短线：淡入 + 字距从开到紧（对焦感的一部分） */
+  var pp=easeInOut(seg(f,8,46));
+  setS(els.partTxt,'opacity',pp.toFixed(3));
+  setS(els.partTxt,'letterSpacing',(PART_LS*(2.14-1.14*pp)).toFixed(2)+'px');
+  setS(els.partRule,'transform','scaleX('+easeOut(seg(f,18,52)).toFixed(3)+')');
+  setS(els.partRule,'opacity',seg(f,18,30).toFixed(3));
+  /* 元信息：字距收口 */
+  var mp=easeInOut(seg(f,30,70));
+  setS(els.meta,'opacity',(0.82*mp).toFixed(3));
+  setS(els.meta,'letterSpacing',(META_LS*(2.0-1.0*mp)).toFixed(2)+'px');
+
+  /* ④ 主标题：逐字【焦点拉动】blur→sharp + 极小上浮（不是弹跳、不是遮罩上推、不是套印副本）
+        🔴 归零后必须写回 'none'：留着 blur(0px) 会永久挂一个滤镜层，225 帧白付栅格化代价。 */
+  var ci=0;
+  for(i=0;i<TITLE.lines.length;i++){
+    var row=TITLE.lines[i];
+    for(k=0;k<row.length;k++,ci++){
+      var st2=84+ci*2.2, q=easeInOut(seg(f,st2,st2+30));
+      var t=row[k];
+      setS(t,'opacity',q.toFixed(3));
+      setS(t,'filter', q>=0.999 ? 'none' : 'blur('+(13*(1-q)).toFixed(1)+'px)');
+      setS(t,'transform','translateY('+((1-q)*11).toFixed(1)+'px)');
+    }
+  }
+
+  /* ⑤ 副标题淡入 + 玫瑰细线描绘出来 */
+  var sp=easeInOut(seg(f,132,168));
+  setS(els.subTxt,'opacity',sp.toFixed(3));
+  setS(els.subTxt,'letterSpacing',(SUB_LS*(1.9-0.9*sp)).toFixed(2)+'px');
+  setA(els.subRule,'stroke-dashoffset',(SUBRULE_LEN*(1-easeInOut(seg(f,140,186)))).toFixed(1));
+
+  /* ⑥ 拱窗：上浮 + 拉焦（内部图/占位件拉焦，外描边保持 crisp）
+       ★ 时间轴压过一轮：原本拱线 f=96 才起笔 ⇒ 0~3.2s 下半屏全空，
+         成片前 43% 是「上重下轻」，与本引擎「重心在下 1/3」的构图口径正好相反。
+         肉眼抽帧才看得见 —— 数值判据量的是定版帧，全绿也照不出这段空窗。 */
+  var ap=easeInOut(seg(f,44,124));
+  els.archG.setAttribute('transform','translate(0 '+((1-ap)*46).toFixed(1)+')');
+  els.archG.setAttribute('opacity', seg(f,44,66).toFixed(3));
+  setA(els.archInner,'filter', ap>=0.999 ? 'none' : 'blur('+(22*(1-ap)).toFixed(1)+'px)');
+  /* 双拱线描绘：先玫瑰后灰紫，错开 12 帧 */
+  setA(els.archEdge,'stroke-dashoffset',(EDGE_LEN*(1-easeInOut(seg(f,72,150)))).toFixed(1));
+  setA(els.archEdge2,'stroke-dashoffset',(EDGE2_LEN*(1-easeInOut(seg(f,84,166)))).toFixed(1));
+  /* 占位同心弧逐条描绘 + 小日淡入 */
+  for(i=0;i<ART.length;i++){
+    var a=ART[i], st3=92+i*16;
+    setA(a.e,'stroke-dashoffset',(a.L*(1-easeInOut(seg(f,st3,st3+58)))).toFixed(1));
+    setA(a.e,'opacity',(0.9*seg(f,st3,st3+12)).toFixed(3));
+  }
+  setA(ART.sun,'opacity',(0.55*easeInOut(seg(f,132,172))).toFixed(3));
+  /* 拱窗内的地平线渐变【先于描边落形】：描边要到 f=72 才起笔，若渐变也等到 f=132，
+     下半屏就要空到 4 秒 —— 抽帧实测「上重下轻」，与本引擎「重心在下 1/3」的构图口径相反。
+     有产品图时它垫在图后面（图铺满 clip 区，看不见），所以不必按 has 分叉。 */
+  setA(els.archFill,'opacity',easeInOut(seg(f,48,116)).toFixed(3));
+
+  /* ⑥b 页脚小字：淡入 + 字距收口。
+        🔴 这条差点漏：caption 只在 CSS 里给了样式、render 里【没写 opacity】⇒ 它从第 0 帧就亮着，
+        开场是一屏空白里挂着一行小字。入场件必须逐个在 render 里被「点亮」，
+        少写一条不会报错，只会让开场脏 —— 数值判据全绿，肉眼才看得见。 */
+  var cp=easeInOut(seg(f,168,202));
+  setS(els.caption,'opacity',cp.toFixed(3));
+  setS(els.caption,'letterSpacing',(CAP_LS*(1.9-0.9*cp)).toFixed(2)+'px');
+
+  /* ⑦ 占位 vs 上传图：互不闩住，每帧按目标态写（幂等比较省写）
+     ⚠️ archFill 已挪到 ⑥ 里【先落形】，这里别再写它 —— 后写的会把先落的盖回 0。 */
+  var has=!!cfg.img, dev=easeInOut(seg(f,132,182));
+  setA(els.archArt,'opacity',has?0:dev.toFixed(3));
+  setA(els.prodImg,'opacity',has?dev.toFixed(3):0);
+  setS(els.prodTag,'opacity',(0.85*easeInOut(seg(f,168,202))).toFixed(3));
+}
+
+/* ---------- 主循环 ---------- */
+var rafId=0, startAt=performance.now();
+function tick(){
+  var now=performance.now();
+  var t=((now-startAt)/1000)%CYCLE;
+  render(Math.min(DUR, t*FPS));
+  rafId=requestAnimationFrame(tick);
+}
+function restart(){ startAt=performance.now(); }
+var fitScale=1;
+function fit(){
+  /* ⚠️ 无放大上限（导出高清链路要求） */
+  var s=Math.min(innerWidth/1920, innerHeight/1080);
+  var wr=$('wrap');
+  wr.style.width=(1920*s)+'px'; wr.style.height=(1080*s)+'px';
+  /* 🔴 #wrap 被缩了，但 #stage 是定死 1920×1080 + overflow:hidden ⇒ 不写这条缩放，
+     小窗口里只会看到画面的【左上角一块】，而文件尺寸/像素判据照样全绿。 */
+  els.stage.style.transform='scale('+s+')';
+  fitScale=s;
+}
+window.addEventListener('resize',fit);
+
+/* ---------- 配色 ---------- */
+var VAR_NAMES=['--bm-cream','--bm-peach','--bm-pink','--bm-rose','--bm-ink','--bm-sage'];
+function applyColors(vars){
+  var root=document.documentElement.style, k;
+  for(k in vars){ if(k.indexOf('--bm-')===0) root.setProperty(k,vars[k]); }
+}
+
+/* ---------- 自定义字体（cyber 协议） ---------- */
+function applyFont(d){
+  var name=d.family, url=d.dataURL;
+  if(!name){ var old=document.getElementById('__bmFont'); if(old) old.remove(); return; }
+  var st=document.getElementById('__bmFont')||document.createElement('style');
+  st.id='__bmFont';
+  st.textContent = url ? '@font-face{font-family("__bmfont");src:url('+url+') format("truetype");font-display:block;}' : '';
+  if(!st.parentNode) document.head.appendChild(st);
+  var fam = url ? '__bmfont' : name;
+  $('stage').style.fontFamily='"'+fam+'",Georgia,"Noto Serif SC","Microsoft YaHei",serif';
+}
+
+/* ---------- postMessage 桥（与 press-halftone / pop-mint 同协议） ---------- */
+window.addEventListener('message',function(e){
+  var d=e.data||{};
+  if(d.source!=='host')return;
+  try{
+    if(d.type==='cyber-embed'){ document.body.classList.add('embed'); fit(); }
+    else if(d.type==='cyber-unembed'){ document.body.classList.remove('embed'); fit(); }
+    else if(d.type==='cyber-cfg'){ applyCfg(d); if(d.replay)restart(); }
+    else if(d.type==='cyber-color'){ applyColors(d.vars||{}); }
+    else if(d.type==='cyber-img'){ setProdImg(d.img||''); applyCfg({}); }
+    else if(d.type==='cyber-font'){ applyFont(d); }
+    else if(d.type==='cyber-play'){ restart(); if(!rafId) rafId=requestAnimationFrame(tick); }
+    else if(d.type==='cyber-seek'){
+      if(rafId){ try{ cancelAnimationFrame(rafId); }catch(err){} rafId=0; }
+      /* ⚠️ d.t 单位是【秒】 */
+      if(typeof d.t==='number'){ try{ render(Math.min(DUR, d.t*FPS)); void document.documentElement.offsetHeight; }catch(err){} }
+    }
+    else if(d.type==='cyber-resume'){
+      startAt=performance.now(); if(!rafId) rafId=requestAnimationFrame(tick);
+    }
+    else if(d.type==='cyber-get-html'){
+      var ovr='',k2;
+      var cs=getComputedStyle(document.documentElement);
+      for(k2=0;k2<VAR_NAMES.length;k2++){ ovr+=VAR_NAMES[k2]+':'+cs.getPropertyValue(VAR_NAMES[k2]).trim()+';'; }
+      ovr=':root{'+ovr+'}';
+      /* ⚠️ 本注释里不能写 script 闭合标签的字面量 —— 它会先把自己所在的 script 截断 */
+      var boot='<script>window.__BLUSHM_BOOT='+JSON.stringify({part:cfg.part,title:cfg.title,sub:cfg.sub,img:cfg.img||''}).replace(/</g,'\\u003c')+'<\/script>';
+      var html=PRISTINE.replace('</head>','<style id="blushm-override">'+ovr+'</style>'+boot+'</head>');
+      parent.postMessage({source:'cyber',type:'cyber-html',reqId:d.reqId,html:html},'*');
+    }
+  }catch(err){ parent.postMessage({source:'cyber',type:'cyber-status',err:err.message},'*'); }
+});
+
+/* ---------- 独立面板 ---------- */
+$('pPart').addEventListener('input',function(){ applyCfg({part:this.value}); restart(); });
+$('pTitle').addEventListener('input',function(){ applyCfg({title:this.value}); restart(); });
+$('pSub').addEventListener('input',function(){ applyCfg({sub:this.value}); restart(); });
+$('pPlay').addEventListener('click',function(){ restart(); });
+$('pImg').addEventListener('change',function(){
+  var f=this.files&&this.files[0]; if(!f) return;
+  if(!/^image\//i.test(f.type||'')) return;
+  var r=new FileReader();
+  r.onload=function(){ setProdImg(r.result); applyCfg({}); restart(); };
+  r.readAsDataURL(f); this.value='';
+});
+
+/* ---------- 启动 ---------- */
+buildArch(); buildBlobs(); buildWaves(); buildArt();
+/* ⚠️ 顺序不能反：applyCfg 只认「传了的键」，__BLUSHM_BOOT 里带的是固化时的用户值，
+   必须先铺默认再拿 boot 覆盖，否则固化 HTML 打开永远是模板默认字。 */
+applyCfg(cfg);
+if(window.__BLUSHM_BOOT){ applyCfg(window.__BLUSHM_BOOT); }
+fit();
+render(0);
+/* ★ 必须自启主循环：漏掉的后果不是报错，是【预览永远停在第 0 帧】—— 版式全对、数值全绿，就是不动。 */
+rafId=requestAnimationFrame(tick);
+parent.postMessage({source:'cyber',type:'cyber-ready'},'*');
+</script>
+</body>
+</html>
