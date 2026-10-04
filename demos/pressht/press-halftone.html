@@ -1,0 +1,610 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>Press Halftone · 套印半调（报头通栏 + 右下出血压图 + 三版套准）</title>
+<!--
+  风格方向（老板 2026-10-02：任意主题/配色，只求高级配色 + 高级动效；元素与构图都必须与既有引擎区分）
+  配色真源 = 本地 110 组高级配色库 #27 + #104「朱红 × 钴蓝 × 米白」（ riso 双色印刷的经典三色对）
+    --ph-paper   #EFE9DC 米白报纸底   --ph-ink     #191B1F 墨黑（主版）
+    --ph-verm    #D93A21 朱红 A 版    --ph-cobalt  #1F44C8 钴蓝 B 版
+    --ph-cobalt2 #5B7BE8 亮钴蓝（压图套准框 + 网点场）
+    --ph-stone   #BFB49E 石灰（裁切标记 + 细线 + 页脚）
+    ★ 六个变量在引擎里【全部有真实消费点】—— 配色盘上摆一个没人读的变量 = 骗用户「改了没反应是我眼瞎」。
+  ★ 构图 = 【报头通栏 + 右下角出血压图】（老板点名「不用一直都是一个左右设计」）：
+    顶部一条通栏报头（刊号章 + 元信息 + 双细线）横贯 120→1800；主标题压在【左侧栏】且只占
+    120→1120；产品图是一块【故意越过画布右边和下边】的出血印张（1230→1970 / 520→1120），
+    既不是「左文右图」的竖向分栏（右边那半被压图吃掉了），也没有中轴对称。
+    下半区左角铺网点场配页脚，右下被压图压住 ⇒ 重心在【右下】，与 14/15 两版都不同。
+  母题 = 半调网点 / 套准十字 / 裁切标记 / 报头双细线 / 出血框（现有引擎没有的语汇：无霓虹、无街机、
+    无竹窗、无蓝图纸、无星芒贴纸；产品位是【矩形出血印张 + 网点显影】，不是圆环/圆窗/六边形/圆角贴纸）。
+  动效动词 = 三版套印错位【收敛】（朱红/钴蓝两版从 ±26px 压回零位）+ 逐行【遮罩上推】（不是逐字弹）
+    + 网点半径【对角扫描波】持续呼吸 + 套准十字浮动归位 + 压图【网点显影】揭示。
+    （moss-window = 视差 dolly + 竖条遮罩；pop-mint = backOut 逐字弹性 pop + 星芒自旋；本引擎无 dolly、无逐字弹。）
+  字体 = 工业黑体紧字距（900 + 负字距 + 微横向压缩），且【朱红版只描边不填充】⇒ 一眼是套印稿不是压印海报。
+  本文件为零依赖单文件 HTML 引擎, 挂 cyber 同款 postMessage 桥:
+    host→iframe: cyber-embed / cyber-unembed / cyber-cfg{part,title,sub,replay} / cyber-color{vars}
+                 / cyber-img{img} / cyber-play / cyber-seek{t} / cyber-resume / cyber-get-html{reqId} / cyber-font
+    iframe→host: cyber-ready / cyber-html{reqId,html} / cyber-status{err}  (source 均为 'cyber')
+  铁律: 所有视觉量 = 帧号 f 的纯函数；无 Math.random（抖动走 hash1）；禁 CSS animation/transition。
+  ⚠️ 已付过学费的硬约束（BUG 库 R151/R152/R158 + R165~R172）全部落实：
+    ① 描边件 class .ln{fill:none}，实心件一律内联 style="fill:…"；
+    ② 几何只在 build*/measure* 里量一次，不进 render()；
+    ③ 「无产品图」= href 属性缺省（href="" 会变成永不结束的请求 ⇒ 导出第 0 帧抓屏挂死）；
+    ④ 禁一次性闩；只允许「当前值 ≠ 目标值才写」的幂等写法；
+    ⑤ SVG transform 只写裸数字，不写单位也不写 none；
+    ⑥ 同权重按书写顺序翻盘 ⇒ 覆盖用复合选择器；HTML 文字层显式 z-index 高于 SVG；
+    ⑦ seg() 段前 = 0 ⇒ 不许拿 (1-p)*k 当入场前暗度；
+    ⑧ 可编辑文字按【最坏输入】设计：超行压字号，单行缩宽时字号与字距同乘 k；
+    ⑨ ★ 主循环必须开机自启（rafId=requestAnimationFrame(tick)），漏掉的后果是预览停在第 0 帧，
+       不报错、数值全绿 —— moss-window 刚踩过。
+    ⑩ ★ PRISTINE 必须在任何 build* 塞生成件【之前】抓，否则固化件带上一轮节点、重开翻倍。
+-->
+<style>
+  /* 🔴 六个配色变量必须在这里给【默认值】：JS 里 setAttribute('style','fill:var(--ph-x)') 不带 CSS 回退，
+     宿主没发色时整棵树解析成 black。 */
+  :root{
+    --ph-paper:#EFE9DC; --ph-ink:#191B1F; --ph-verm:#D93A21;
+    --ph-cobalt:#1F44C8; --ph-cobalt2:#5B7BE8; --ph-stone:#BFB49E;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{width:100%;height:100%;background:#ded7c7;overflow:hidden;}
+  body{font-family:"Noto Sans SC","Microsoft YaHei","PingFang SC",sans-serif;}
+  #wrap{position:absolute;left:50%;top:50%;width:1920px;height:1080px;margin:-540px 0 0 -960px;}
+  #stage{position:relative;width:1920px;height:1080px;overflow:hidden;transform-origin:0 0;
+    background:var(--ph-paper,#EFE9DC);}
+  #hud{position:absolute;inset:0;width:1920px;height:1080px;z-index:5;}
+  #hud .ln{fill:none;}
+  #txt{position:absolute;inset:0;z-index:9;pointer-events:none;}
+  #txt > *{position:absolute;}
+
+  /* ---------- 报头：刊号章（左）+ 元信息（右）+ 双细线 ---------- */
+  #partTab{left:120px;top:62px;padding:0 22px;height:58px;display:flex;align-items:center;}
+  #tabBg{position:absolute;inset:0;background:var(--ph-verm);}
+  #partTxt{position:relative;white-space:pre;font-size:26px;font-weight:900;letter-spacing:6px;
+    color:var(--ph-paper);line-height:1;}
+  #meta{left:1200px;top:88px;width:600px;text-align:right;white-space:pre;
+    font-size:17px;font-weight:800;letter-spacing:5px;color:var(--ph-ink);}
+
+  /* ---------- 主标题（左栏，逐行遮罩上推 + 三版套印收敛） ----------
+     横向预算 1000（120→1120）：压图出血框从 x=1230 起，留 110 缝 ⇒ 长标题永不与压图重叠。
+     竖向预算：报头双细线在 150/162 ⇒ top=250 起；副标题条顶在 770 ⇒ 可用 496。
+     3 行 × fs × 1.10 ≤ 496 ⇒ fs ≤ 150.3，正好等于 TITMAXFS ⇒ 满 3 行也不压线。 */
+  #titleBox{left:120px;top:250px;width:1000px;}
+  .plate{display:block;}
+  /* 墨版在流里（决定盒高）；朱/蓝两版 absolute 叠在同一位置 ⇒ 三份排版完全一致 */
+  #plK{position:relative;}
+  #plV,#plC{position:absolute;left:0;top:0;width:1000px;}
+  /* 🔴 混印走 multiply：朱 × 蓝 叠出深紫，这才是双色套印的肉眼特征；
+     normal 混印只是三张字片互相盖。 */
+  #plV{mix-blend-mode:multiply;}
+  #plC{mix-blend-mode:multiply;}
+  /* padding 是给 overflow 留【可见余量】：CJK 900 字面 + 拉丁下沿在 line-height 1.10 的盒里会被裁掉半截 */
+  .tl{display:block;overflow:hidden;position:relative;padding:0.02em 0 0.14em 0;}
+  /* 🔴 translateY 遮罩位移要按「含 padding 的整高」算：.ti 高 = lh，170% 才盖过 lh + 0.16em。
+     横向压 0.94 = 工业黑体的「挤」，与 pop-mint 的自然宽区分；两者必须写在同一个 transform 里，
+     分两次赋值会互相覆盖。 */
+  .ti{display:inline-block;white-space:pre;font-weight:900;letter-spacing:-6px;transform-origin:0 50%;}
+  #plK .ti{color:var(--ph-ink);}
+  /* ★ 朱红版【只描边】：与 pop-mint 的实心压印副本彻底区分，且描边版偏位时读起来就是套印稿 */
+  #plV .ti{color:transparent;-webkit-text-stroke:2.2px var(--ph-verm);}
+  #plC .ti{color:var(--ph-cobalt);opacity:.62;}
+
+  /* ---------- 副标题：墨底反白通栏条（clip-path 从左裁开，不是弹入） ---------- */
+  #subBar{left:120px;top:770px;height:78px;display:flex;align-items:center;padding:0 28px;
+    background:var(--ph-ink);will-change:clip-path;}
+  #subTxt{white-space:pre;font-size:30px;font-weight:900;letter-spacing:8px;
+    color:var(--ph-paper);line-height:1;}
+
+  /* ---------- 页脚小字（左下，网点场之下） ---------- */
+  #tagline{left:120px;top:1044px;white-space:pre;font-size:14px;font-weight:800;
+    letter-spacing:6px;color:var(--ph-stone);}
+
+  /* ---------- 压图标签（出血框正上方，x=1230 起） ---------- */
+  #prodTag{left:1230px;top:452px;width:640px;font-size:19px;font-weight:900;letter-spacing:7px;
+    color:var(--ph-ink);}
+  #prodSub{left:1230px;top:481px;width:640px;font-size:12px;font-weight:800;letter-spacing:4px;
+    color:var(--ph-cobalt);}
+
+  /* ---------- 独立面板 ---------- */
+  #panel{position:fixed;left:14px;top:14px;z-index:50;display:flex;gap:8px;align-items:center;}
+  #panel input[type=text],#panel input:not([type=file]){background:rgba(255,255,255,.9);color:#191B1F;
+    border:1px solid #bdb5a2;border-radius:6px;padding:6px 9px;font-size:13px;width:150px;}
+  #panel button{background:#191B1F;color:#EFE9DC;border:0;border-radius:6px;padding:7px 12px;font-size:13px;cursor:pointer;}
+  body.embed #panel{display:none;}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="stage">
+    <svg id="hud" viewBox="0 0 1920 1080" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <!-- 网点显影：mask 里只有【白点】⇒ 点长满 = 压图全显；点为 0 = 全隐。
+             这是本引擎的招牌动作，不是普通淡入。 -->
+        <mask id="dotMask" maskUnits="userSpaceOnUse" x="1180" y="470" width="860" height="670">
+          <g id="maskDots"></g>
+        </mask>
+        <clipPath id="bleedClip"><rect id="blkClipRect" x="1230" y="520" width="740" height="600"/></clipPath>
+      </defs>
+
+      <rect id="bg" x="0" y="0" width="1920" height="1080" style="fill:var(--ph-paper)"/>
+
+      <!-- 裁切标记（四角，从角上长出来） -->
+      <g id="crops"></g>
+
+      <!-- 报头双细线：粗线墨、细线石灰（通栏 = 本引擎构图的第一记号） -->
+      <rect id="rule1" x="120" y="150" width="1680" height="4"   style="fill:var(--ph-ink)"/>
+      <rect id="rule2" x="120" y="162" width="1680" height="1.5" style="fill:var(--ph-stone)"/>
+
+      <!-- 网点场（左下 3 行 × 20 列，半径走对角扫描波，全程不停） -->
+      <g id="dots"></g>
+
+      <!-- 假拟「正文」的细规线：填标题与副标题条之间的中部留白（见 render ④b 的自适应闸门） -->
+      <g id="copy"></g>
+
+      <!-- 套准十字：三枚，进场时错位、随后缓慢归位并持续微浮 -->
+      <g id="regs"></g>
+
+      <!-- 产品出血印张：故意越过画布右/下边缘（出血），外沿再套一枚亮钴蓝套准框 -->
+      <g id="prodG">
+        <rect id="blkBack" x="1230" y="520" width="740" height="600" style="fill:var(--ph-ink);opacity:.10"/>
+        <g mask="url(#dotMask)">
+          <rect id="blkPaper" x="1230" y="520" width="740" height="600" style="fill:var(--ph-paper)"/>
+          <g id="prodVec"></g>
+          <image id="prodImg" x="1230" y="520" width="740" height="600" clip-path="url(#bleedClip)" preserveAspectRatio="xMidYMid slice"/>
+        </g>
+        <rect id="blkEdge" class="ln" x="1230" y="520" width="740" height="600" stroke-width="4" stroke="var(--ph-cobalt2)"/>
+        <g id="blkReg"></g>
+      </g>
+    </svg>
+
+    <div id="txt">
+      <div id="partTab"><span id="tabBg"></span><span id="partTxt"></span></div>
+      <div id="meta"></div>
+      <div id="titleBox">
+        <div class="plate" id="plV"></div>
+        <div class="plate" id="plC"></div>
+        <div class="plate" id="plK"></div>
+      </div>
+      <div id="subBar"><span id="subTxt"></span></div>
+      <div id="tagline"></div>
+      <div id="prodTag"></div>
+      <div id="prodSub"></div>
+    </div>
+  </div>
+</div>
+
+<div id="panel">
+  <input id="pPart" placeholder="Part" value="Part.01" />
+  <input id="pTitle" placeholder="主标题" value="半调套印版" />
+  <input id="pSub" placeholder="副标题" value="PRESS HALFTONE" />
+  <button id="pPlay">重播</button>
+  <input id="pImg" type="file" accept="image/*" />
+</div>
+
+<script>
+"use strict";
+/* ============================== 工具 ============================== */
+var $ = function(id){ return document.getElementById(id); };
+function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
+function seg(f,a,b){ return clamp((f-a)/(b-a),0,1); }                 /* 段前严格 0 */
+function easeOut(p){ return 1-Math.pow(1-p,3); }
+function easeInOut(p){ return p<0.5?4*p*p*p:1-Math.pow(-2*p+2,3)/2; }
+/* 本引擎不用 backOut（那是 pop-mint 的动词）；压印用「快进 + 短回弹一档」的硬手感 */
+function press(p){ return p<0.72 ? easeOut(p/0.72) : 1 - 0.055*Math.sin((p-0.72)/0.28*Math.PI); }
+function hash1(n){ var x=Math.sin(n*127.1+311.7)*43758.5453; return x-Math.floor(x); }
+function mk(parent,tag,attrs){
+  var e=document.createElementNS('http://www.w3.org/2000/svg',tag),k;
+  for(k in attrs){ if(Object.prototype.hasOwnProperty.call(attrs,k)) e.setAttribute(k,attrs[k]); }
+  parent.appendChild(e); return e;
+}
+/* ⚠️ 只在「值真的变了」时写属性：CDP 逐帧导出时每帧要跑满 225 次，无谓写属性会拖慢栅格化 */
+function setA(el,k,v){ v=String(v); if(el.getAttribute(k)!==v) el.setAttribute(k,v); }
+function setS(el,k,v){ v=String(v); if(el.style[k]!==v) el.style[k]=v; }
+
+/* ============================== 常量 ============================== */
+var FPS=30, DUR=225, HOLD=0.9, CYCLE=DUR/FPS+HOLD;
+var TITX=120, TITY=250, TITW=1000, TITMAXFS=150, TITMINFS=40, TITLH=1.10;
+var BLK={x:1230,y:520,w:740,h:600};            /* 出血印张：右/下都越过画布 */
+var FIELD={x:120,y:856,cols:20,rows:3,sx:50,sy:56};
+var MASKG={cols:13,rows:11};
+
+var els={
+  stage:$('stage'), bg:$('bg'), crops:$('crops'), rule1:$('rule1'), rule2:$('rule2'),
+  dots:$('dots'), regs:$('regs'), maskDots:$('maskDots'), copy:$('copy'),
+  prodG:$('prodG'), blkBack:$('blkBack'), blkEdge:$('blkEdge'), blkReg:$('blkReg'), blkPaper:$('blkPaper'),
+  prodImg:$('prodImg'), prodVec:$('prodVec'),
+  partTab:$('partTab'), tabBg:$('tabBg'), partTxt:$('partTxt'), meta:$('meta'),
+  plV:$('plV'), plC:$('plC'), plK:$('plK'),
+  subBar:$('subBar'), subTxt:$('subTxt'), tagline:$('tagline'),
+  prodTag:$('prodTag'), prodSub:$('prodSub')
+};
+/* 🔴 必须在任何 build* 往 DOM 里塞生成件【之前】抓原始快照，否则固化件里带着上一轮的节点，
+   重新打开会翻倍。 */
+var PRISTINE = '<!doctype html>\n' + document.documentElement.outerHTML;
+
+/* ============================== 静态构建（只跑一次，几何不进 render） ============================== */
+var CROPS=[], DOTS=[], REGS=[], MDOTS=[], COPY=[], PRODV=null;
+
+function buildCrops(){
+  /* 四角裁切标记：每角一横一竖，从角点向外生长 */
+  var M=44, L=46, P=[[M,M,-1,-1],[1920-M,M,1,-1],[M,1080-M,-1,1],[1920-M,1080-M,1,1]];
+  for(var i=0;i<P.length;i++){
+    var g=mk(els.crops,'g',{}), x=P[i][0], y=P[i][1], sx=P[i][2], sy=P[i][3];
+    var h=mk(g,'line',{x1:x,y1:y,x2:x+sx*L,y2:y,'stroke-width':3});
+    var v=mk(g,'line',{x1:x,y1:y,x2:x,y2:y+sy*L,'stroke-width':3});
+    h.setAttribute('class','ln'); v.setAttribute('class','ln');
+    h.setAttribute('stroke','var(--ph-stone)'); v.setAttribute('stroke','var(--ph-stone)');
+    CROPS.push({g:g,h:h,v:v,x:x,y:y,sx:sx,sy:sy,L:L});
+  }
+}
+function buildDots(){
+  /* 网点场：半径不写死，逐帧按对角扫描波算；颜色按 hash1 在三版之间分派（网点分色是印刷语汇） */
+  for(var r=0;r<FIELD.rows;r++)for(var c=0;c<FIELD.cols;c++){
+    var i=r*FIELD.cols+c, x=FIELD.x+c*FIELD.sx, y=FIELD.y+r*FIELD.sy;
+    var g=mk(els.dots,'g',{});
+    var ci=mk(g,'circle',{cx:0,cy:0,r:8});
+    var pick=Math.floor(hash1(11+i*3)*3);
+    ci.setAttribute('style','fill:var(--ph-'+(pick===0?'verm':(pick===1?'cobalt2':'ink'))+');opacity:'+(0.30+hash1(57+i)*0.42).toFixed(2)+';');
+    DOTS.push({g:g,x:x,y:y,i:i,ph:(c*0.42+r*0.30)});
+  }
+}
+function buildCopy(){
+  /* 「正文细规线」：报头版的中部留白不靠装饰填，靠【假拟正文的行】填 —— 这是印刷稿的语汇，
+     不是新元素族。宽度走 hash1 做出参差右沿（齐左不齐右 = 真实排版）。 */
+  var W=[928,864,946,792,908,640], i;
+  for(i=0;i<W.length;i++){
+    var y=520+i*30;
+    var e=mk(els.copy,'rect',{x:120,y:y,width:W[i],height:6});
+    e.setAttribute('style','fill:var(--ph-stone);opacity:'+(0.55+hash1(300+i)*0.35).toFixed(2)+';');
+    COPY.push({e:e, w:W[i], i:i});
+  }
+}
+function regMark(parent,x,y,arm){  /* 套准十字：两版各一枚（错位 = 没套准，这是印刷里最经典的一处「对不上」） */
+  var g=mk(parent,'g',{});
+  var a=mk(g,'g',{}), b=mk(g,'g',{});
+  function cross(t,st,w){
+    var l1=mk(t,'line',{x1:-arm,y1:0,x2:arm,y2:0,'stroke-width':w});
+    var l2=mk(t,'line',{x1:0,y1:-arm,x2:0,y2:arm,'stroke-width':w});
+    var c=mk(t,'circle',{cx:0,cy:0,r:arm*0.62,'stroke-width':w});
+    l1.setAttribute('class','ln'); l2.setAttribute('class','ln'); c.setAttribute('class','ln');
+    l1.setAttribute('stroke',st); l2.setAttribute('stroke',st); c.setAttribute('stroke',st);
+    return t;
+  }
+  cross(a,'var(--ph-ink)',2.4); cross(b,'var(--ph-verm)',1.6);
+  return {g:g, a:a, b:b, x:x, y:y};
+}
+function buildRegs(){
+  /* 三枚刻意摆在「不均衡」的位置：右上、左下、中右 —— 与四角均衡分布的装饰件区分 */
+  var P=[[1750,236,26],[1168,1006,20],[1180,300,15]];
+  for(var i=0;i<P.length;i++) REGS.push({r:regMark(els.regs,P[i][0],P[i][1],P[i][2]), i:i});
+}
+function buildMaskDots(){
+  /* 显影网点：铺满出血框，r_max ≥ 格对角半距 ⇒ 长满后无缝 */
+  var sx=BLK.w/MASKG.cols, sy=BLK.h/MASKG.rows, R=Math.ceil(Math.sqrt(sx*sx+sy*sy)/2)+2;
+  for(var r=0;r<MASKG.rows;r++)for(var c=0;c<MASKG.cols;c++){
+    var x=BLK.x+(c+0.5)*sx, y=BLK.y+(r+0.5)*sy;
+    var e=mk(els.maskDots,'circle',{cx:x.toFixed(1),cy:y.toFixed(1),r:0,fill:'#fff'});
+    MDOTS.push({e:e,x:x,y:y,R:R,k:(c/MASKG.cols)*0.62+(r/MASKG.rows)*0.38});
+  }
+}
+function buildBlkReg(){
+  /* 印张自己的套准角规：与四角裁切标记同形但更小（同一语汇族，不是新元素） */
+  var L=22;
+  function arm(x,y,dx,dy){
+    var l=mk(els.blkReg,'line',{x1:x,y1:y,x2:x+dx*L,y2:y+dy*L,'stroke-width':3});
+    l.setAttribute('class','ln'); l.setAttribute('stroke','var(--ph-cobalt2)'); return l;
+  }
+  arm(BLK.x-14,BLK.y-14,1,0); arm(BLK.x-14,BLK.y-14,0,1);
+  /* 🔴 dasharray 是静态量 ⇒ 放 build。放 render 里每帧重写 = 白付 225 次栅格化重建的代价 */
+  els.blkEdge.setAttribute('stroke-dasharray','34 18');
+}
+function buildProdVec(){
+  /* 无产品图占位：一枚【自绘半调玫瑰环 + 空心圆】（与 pop-mint 的星爆、moss-window 的竹笋都不同形） */
+  var g=mk(els.prodVec,'g',{}), cx=BLK.x+BLK.w/2, cy=BLK.y+BLK.h/2, ring, i, n;
+  for(ring=1;ring<=4;ring++){
+    n=ring*7;
+    for(i=0;i<n;i++){
+      var a=i/n*6.283185+ring*0.35, rr=ring*58;
+      var e=mk(g,'circle',{cx:(cx+Math.cos(a)*rr).toFixed(1), cy:(cy+Math.sin(a)*rr).toFixed(1),
+        r:(7+ring*2.4).toFixed(1)});
+      e.setAttribute('style','fill:var(--ph-'+(ring%2?'cobalt':'verm')+');opacity:'+(0.85-ring*0.11).toFixed(2)+';');
+    }
+  }
+  var oc=mk(g,'circle',{cx:cx,cy:cy,r:26}); oc.setAttribute('style','fill:var(--ph-ink)');
+  PRODV=g;
+}
+
+/* ============================== 文字构建 + 最坏输入预算 ============================== */
+var cfg={part:'Part.01', title:'半调套印版', sub:'PRESS HALFTONE', img:''};
+var SUBMAX=880, SUBFS=30, SUBLS=8, TABMAX=420, TABFS=26, TABLS=6;
+
+/* 单行缩到宽度上限：字号与字距【同乘 k】（letter-spacing 是绝对 px，只缩字号宽度不按比例降） */
+function fitOneLine(t, fs, ls, max){
+  t.style.fontSize=''; t.style.letterSpacing='';
+  var w=Math.max(t.scrollWidth, t.offsetWidth)||1;
+  if(w>max){
+    var k=max/w;
+    t.style.fontSize=(fs*k).toFixed(1)+'px'; t.style.letterSpacing=(ls*k).toFixed(1)+'px';
+    w=Math.max(t.scrollWidth, t.offsetWidth);
+    if(w>max){ k=k*max/w; t.style.fontSize=(fs*k).toFixed(1)+'px'; t.style.letterSpacing=(ls*k).toFixed(1)+'px'; w=max; }
+  }
+  return w;
+}
+function measureOne(){
+  /* 副标题条要贴着文字走：通栏条留一截空黑 = 版面事故 */
+  var sw = fitOneLine(els.subTxt, SUBFS, SUBLS, SUBMAX) || 240;
+  els.subBar.style.width = (sw + 56) + 'px';
+  var pw = fitOneLine(els.partTxt, TABFS, TABLS, TABMAX) || 120;
+  els.partTab.style.width = (pw + 44) + 'px';
+}
+var TITLE={plates:[[],[],[]], lines:1, fs:120, lh:132};
+function fillPlate(box, lines, fs, lh){
+  box.textContent='';
+  var out=[], li, ci;
+  for(li=0;li<lines.length;li++){
+    var ln=document.createElement('div'); ln.className='tl';
+    ln.style.fontSize=fs+'px'; ln.style.lineHeight=lh+'px';
+    var inner=document.createElement('span'); inner.className='ti';
+    inner.textContent=lines[li] || ' ';
+    ln.appendChild(inner); box.appendChild(ln);
+    out.push(inner);
+  }
+  return out;
+}
+function buildTitle(){
+  var raw=(cfg.title||'').replace(/\s+$/,'');
+  var lines=raw.split('\n');
+  if(lines.length===1 && raw.length>8){            /* 单行过长 ⇒ 先按空格切词再硬切两行 */
+    var sp=raw.lastIndexOf(' ', Math.ceil(raw.length/2));
+    if(sp<0) sp=Math.floor(raw.length/2);
+    lines=[raw.slice(0,sp), raw.slice(sp+1)];
+  }
+  lines=lines.slice(0,3);                          /* 竖向预算只给 3 行 */
+  var maxLen=Math.max.apply(null, lines.map(function(s){return s.length;}));
+  var fs=clamp(TITW/Math.max(1,maxLen), TITMINFS, TITMAXFS);
+  var VB=770-24-TITY;                              /* 副标题条顶 770 之上留 24 缝 */
+  if(lines.length*fs*TITLH>VB) fs=Math.max(26, VB/(lines.length*TITLH));
+  var lh=fs*TITLH;
+  TITLE.plates=[ fillPlate(els.plV,lines,fs,lh), fillPlate(els.plC,lines,fs,lh), fillPlate(els.plK,lines,fs,lh) ];
+  TITLE.lines=lines.length; TITLE.fs=fs; TITLE.lh=lh;
+  /* 微横向压缩：工业黑体的「挤」感，与 pop-mint 的自然宽不同 */
+  var i; for(i=0;i<3;i++) TITLE.plates[i].forEach(function(t){ t.style.transform=''; });
+}
+function setProdImg(src){
+  cfg.img=src||'';
+  /* ⚠️ 无图 = 属性缺省（不是空串）：空串会被解析成文档 URL ⇒ 永不结束的请求 ⇒ 导出第 0 帧抓屏挂死 */
+  if(cfg.img) els.prodImg.setAttribute('href', cfg.img);
+  else els.prodImg.removeAttribute('href');
+}
+function applyCfg(d){
+  var dirty=false;
+  if(d.part!==undefined){ cfg.part=d.part; dirty=true; }
+  if(d.title!==undefined){ cfg.title=d.title; dirty=true; }
+  if(d.sub!==undefined){ cfg.sub=d.sub; dirty=true; }
+  els.partTxt.textContent=cfg.part||'';
+  els.subTxt.textContent=cfg.sub||'';
+  /* ★ 固定串里不许出现副标题的默认文本（撞词会看着像重复排版） */
+  els.meta.textContent='VOL.16 · 60 LPI · SHEET 04';
+  els.tagline.textContent='TWO-COLOR OVERPRINT · 190GSM COATED';
+  measureOne();
+  if(dirty||!TITLE.plates[0].length) buildTitle();
+  var has=!!cfg.img;
+  els.prodTag.textContent = has ? 'PLATE LOCKED' : 'NO PLATE';
+  els.prodSub.textContent = has ? 'DROP IMAGE TO REPLACE' : 'DROP IMAGE HERE';
+}
+
+/* ============================== 逐帧渲染（纯函数） ============================== */
+function render(f){
+  var i, k;
+
+  /* ① 裁切标记：四角同时向外长出 */
+  var cg=easeOut(seg(f,2,24));
+  for(i=0;i<CROPS.length;i++){
+    var cp=CROPS[i], L=cp.L*cg;
+    setA(cp.h,'x2',(cp.x+cp.sx*L).toFixed(1)); setA(cp.v,'y2',(cp.y+cp.sy*L).toFixed(1));
+  }
+  els.crops.setAttribute('opacity', seg(f,2,16).toFixed(3));
+
+  /* ② 报头双细线：通栏从左边抽出来（两档错开 ⇒ 一眼是「先粗后细」的印刷规矩） */
+  var r1=easeOut(seg(f,8,34)), r2=easeOut(seg(f,16,44));
+  els.rule1.setAttribute('transform','translate(120 0) scale('+r1.toFixed(3)+' 1) translate(-120 0)');
+  els.rule2.setAttribute('transform','translate(120 0) scale('+r2.toFixed(3)+' 1) translate(-120 0)');
+
+  /* ③ 刊号章：press 硬压进场（1.28→1 + 轻微回弹一档），之后不动 —— 报头件必须稳 */
+  var tp=press(seg(f,14,40));
+  setS(els.partTab,'opacity',seg(f,14,26).toFixed(3));
+  setS(els.partTab,'transform','scale('+tp.toFixed(3)+')');
+  setS(els.tabBg,'transform','translateX('+((1-tp)*-14).toFixed(1)+'px)');
+  /* 元信息：字距从开到紧（对位报头的「排版收口」） */
+  var mp=seg(f,20,52);
+  setS(els.meta,'opacity',(0.78*mp).toFixed(3));
+  setS(els.meta,'letterSpacing',(14-9*easeOut(mp)).toFixed(2)+'px');
+
+  /* ④ 主标题：三版【套印错位收敛】+ 逐行遮罩上推
+        错位量随字号走（大标题厚），收敛在 f≈118 完成 —— 之后三版重合 = 套准 */
+  var conv=1-easeInOut(seg(f,30,118)), off=TITLE.fs*0.17;
+  setS(els.plV,'transform','translate('+(off*conv).toFixed(1)+'px,'+(-off*0.42*conv).toFixed(1)+'px)');
+  setS(els.plC,'transform','translate('+(-off*0.86*conv).toFixed(1)+'px,'+(off*0.34*conv).toFixed(1)+'px)');
+  for(i=0;i<TITLE.lines;i++){
+    var st=30+i*13, q=easeOut(seg(f,st,st+30));
+    for(k=0;k<3;k++){
+      var t=TITLE.plates[k][i]; if(!t) continue;
+      setS(t,'transform','translateY('+((1-q)*170).toFixed(1)+'%) scaleX(0.94)');
+      setS(t,'opacity',(k===0?seg(f,st,st+12):seg(f,st+6,st+22)).toFixed(3));
+    }
+  }
+
+  /* ④b 正文细规线：【自适应闸门】—— 只画「落在标题墨底 +26 之下」的行。
+        亮几条 = 6 − 被标题吃掉几条，是【几何结果】不是预设档：1 行大标题 6 条全亮，
+        3 行 × lh 110 时只剩最下 3 条。不做这闸门 ⇒ 长标题和规线重叠成糊版；
+        做死 6 条 ⇒ 短标题留一屏空。 */
+  var tBottom = TITY + TITLE.lines*TITLE.lh + 26;
+  for(i=0;i<COPY.length;i++){
+    var cy0=520+i*30, room=cy0-tBottom;
+    var cw=COPY[i];
+    if(room<0){ setA(cw.e,'width',0); continue; }
+    var wp=easeOut(seg(f, 62+i*7, 62+i*7+26));
+    setA(cw.e,'width',(cw.w*wp).toFixed(1));
+  }
+
+  /* ⑤ 副标题条：clip-path 从左往右裁开（不是弹入、不是滑入 —— 与两版前作都不同） */
+  var sp=easeOut(seg(f,112,150));
+  els.subBar.style.clipPath='inset(0 '+((1-sp)*100).toFixed(2)+'% 0 0)';
+  setS(els.subBar,'opacity',seg(f,112,124).toFixed(3));
+
+  /* ⑥ 页脚：字距收口 + 淡入 */
+  var fp=seg(f,150,186);
+  setS(els.tagline,'opacity',(0.95*fp).toFixed(3));
+  setS(els.tagline,'letterSpacing',(2+4*easeOut(fp)).toFixed(2)+'px');
+
+  /* ⑦ 产品出血印张：从画布【右下外】推进来（推 = translate，不是 scale），全程不越界回弹 */
+  var pp=easeOut(seg(f,120,168));
+  els.prodG.setAttribute('transform','translate('+((1-pp)*420).toFixed(1)+' '+((1-pp)*360).toFixed(1)+')');
+  els.prodG.setAttribute('opacity', seg(f,120,136).toFixed(3));
+  /* 显影网点：对角波次长满（128→196）。★ 这里【不加「已长满」闩】—— R165 那一族（draft-desk 的
+     __prodOff）就是被一个「做过一次就不做」的闩毁掉的：seek 回跳后闩不重置，画面永久错。
+     143 个 setAttribute 每帧的代价远小于一次静默缺陷。 */
+  var rv=seg(f,128,196);
+  for(i=0;i<MDOTS.length;i++){
+    var m=MDOTS[i], q2=easeOut(clamp((rv-m.k*0.55)/0.45,0,1));
+    setA(m.e,'r',(m.R*q2).toFixed(1));
+  }
+  /* 套准框角规缓慢浮动（纯 f 函数，永不停死） */
+  els.blkReg.setAttribute('opacity',(0.55+0.45*Math.abs(Math.sin(f*0.031))).toFixed(3));
+  els.blkEdge.setAttribute('stroke-dashoffset',((f*1.6)%240).toFixed(1));
+
+  /* ⑧ 网点场：半径走对角扫描波 —— 本引擎贯穿全片的「活着」的信号 */
+  for(i=0;i<DOTS.length;i++){
+    var d=DOTS[i];
+    var inP=easeOut(seg(f, 46+i*1.1, 46+i*1.1+18));
+    var w=0.5+0.5*Math.sin(f*0.055 - d.ph*2.2);
+    setA(d.g,'transform','translate('+d.x+' '+d.y+') scale('+(inP*(0.30+0.78*w)).toFixed(3)+')');
+  }
+  /* ⑨ 套准十字：错位 → 归位，归位后继续微浮（印刷机一直在走的暗示） */
+  for(i=0;i<REGS.length;i++){
+    /* 🔴 r0 挂在 REGS[i] 上、不在 REGS[i].r 上（regMark 只回 {g,a,b,x,y}）。
+       写成 R.r0 会拿到 undefined ⇒ render 每帧抛 TypeError，而【rAF 里抛错不弹红框】，
+       表现是「画面从第 4 帧起再也不更新」—— 数值判据全绿、肉眼才看得见。 */
+    var RE=REGS[i], R=RE.r, base=58+i*16;
+    var cn=1-easeInOut(seg(f, base, base+64));
+    var drift=Math.sin(f*0.038+i*1.7)*2.2;
+    R.g.setAttribute('transform','translate('+RE.r0.x+' '+RE.r0.y+')');
+    setA(R.a,'transform','translate('+(9*cn+drift).toFixed(2)+' '+(-6*cn).toFixed(2)+')');
+    setA(R.b,'transform','translate('+(-11*cn-drift).toFixed(2)+' '+(7*cn).toFixed(2)+')');
+    R.g.setAttribute('opacity', seg(f,base,base+16).toFixed(3));
+  }
+  /* ⑩ 占位玫瑰环 vs 上传图：互不闩住，每帧按目标态写（幂等比较省写） */
+  var has=!!cfg.img;
+  var pvOp=has?0:easeOut(seg(f,150,196)).toFixed(3);
+  setA(PRODV,'opacity',pvOp);
+  var piOp=has?easeOut(seg(f,150,196)).toFixed(3):0;
+  setA(els.prodImg,'opacity',piOp);
+  setS(els.prodTag,'opacity',easeOut(seg(f,170,200)).toFixed(3));
+  setS(els.prodSub,'opacity',(0.85*easeOut(seg(f,178,208))).toFixed(3));
+}
+
+/* ---------- 主循环 ---------- */
+var rafId=0, startAt=performance.now();
+function tick(){
+  var now=performance.now();
+  var t=((now-startAt)/1000)%CYCLE;
+  render(Math.min(DUR, t*FPS));
+  rafId=requestAnimationFrame(tick);
+}
+function restart(){ startAt=performance.now(); }
+var fitScale=1;
+function fit(){
+  /* ⚠️ 无放大上限（导出高清链路要求） */
+  var s=Math.min(innerWidth/1920, innerHeight/1080);
+  var wr=$('wrap');
+  wr.style.width=(1920*s)+'px'; wr.style.height=(1080*s)+'px';
+  /* 🔴 #wrap 被缩了，但 #stage 是定死 1920×1080 + overflow:hidden ⇒ 不写这条缩放，
+     小窗口里只会看到画面的【左上角一块】，而文件尺寸/像素判据照样全绿。
+     本引擎没有斜倾回正件（pop-mint 的 #tiltAll 顺手承担了缩放），所以必须显式写在这里。 */
+  els.stage.style.transform='scale('+s+')';
+  fitScale=s;
+}
+window.addEventListener('resize',fit);
+
+/* ---------- 配色 ---------- */
+var VAR_NAMES=['--ph-paper','--ph-ink','--ph-verm','--ph-cobalt','--ph-cobalt2','--ph-stone'];
+function applyColors(vars){
+  var root=document.documentElement.style, k;
+  for(k in vars){ if(k.indexOf('--ph-')===0) root.setProperty(k,vars[k]); }
+}
+
+/* ---------- 自定义字体（cyber 协议） ---------- */
+function applyFont(d){
+  var name=d.family, url=d.dataURL;
+  if(!name){ var old=document.getElementById('__phtFont'); if(old) old.remove(); return; }
+  var st=document.getElementById('__phtFont')||document.createElement('style');
+  st.id='__phtFont';
+  st.textContent = url ? '@font-face{font-family("__phtfont");src:url('+url+') format("truetype");font-display:block;}' : '';
+  if(!st.parentNode) document.head.appendChild(st);
+  var fam = url ? '__phtfont' : name;
+  $('stage').style.fontFamily='"'+fam+'","Noto Sans SC","Microsoft YaHei",sans-serif';
+}
+
+/* ---------- postMessage 桥（与 pop-mint / moss-window 同协议） ---------- */
+window.addEventListener('message',function(e){
+  var d=e.data||{};
+  if(d.source!=='host')return;
+  try{
+    if(d.type==='cyber-embed'){ document.body.classList.add('embed'); fit(); }
+    else if(d.type==='cyber-unembed'){ document.body.classList.remove('embed'); fit(); }
+    else if(d.type==='cyber-cfg'){ applyCfg(d); if(d.replay)restart(); }
+    else if(d.type==='cyber-color'){ applyColors(d.vars||{}); }
+    else if(d.type==='cyber-img'){ setProdImg(d.img||''); applyCfg({}); }
+    else if(d.type==='cyber-font'){ applyFont(d); }
+    else if(d.type==='cyber-play'){ restart(); if(!rafId) rafId=requestAnimationFrame(tick); }
+    else if(d.type==='cyber-seek'){
+      if(rafId){ try{ cancelAnimationFrame(rafId); }catch(err){} rafId=0; }
+      /* ⚠️ d.t 单位是【秒】 */
+      if(typeof d.t==='number'){ try{ render(Math.min(DUR, d.t*FPS)); void document.documentElement.offsetHeight; }catch(err){} }
+    }
+    else if(d.type==='cyber-resume'){
+      startAt=performance.now(); if(!rafId) rafId=requestAnimationFrame(tick);
+    }
+    else if(d.type==='cyber-get-html'){
+      var ovr='',k2;
+      var cs=getComputedStyle(document.documentElement);
+      for(k2=0;k2<VAR_NAMES.length;k2++){ ovr+=VAR_NAMES[k2]+':'+cs.getPropertyValue(VAR_NAMES[k2]).trim()+';'; }
+      ovr=':root{'+ovr+'}';
+      /* ⚠️ 本注释里不能写 script 闭合标签的字面量 —— 它会先把自己所在的 script 截断 */
+      var boot='<script>window.__PRESSHT_BOOT='+JSON.stringify({part:cfg.part,title:cfg.title,sub:cfg.sub,img:cfg.img||''}).replace(/</g,'\\u003c')+'<\/script>';
+      var html=PRISTINE.replace('</head>','<style id="pressht-override">'+ovr+'</style>'+boot+'</head>');
+      parent.postMessage({source:'cyber',type:'cyber-html',reqId:d.reqId,html:html},'*');
+    }
+  }catch(err){ parent.postMessage({source:'cyber',type:'cyber-status',err:err.message},'*'); }
+});
+
+/* ---------- 独立面板 ---------- */
+$('pPart').addEventListener('input',function(){ applyCfg({part:this.value}); restart(); });
+$('pTitle').addEventListener('input',function(){ applyCfg({title:this.value}); restart(); });
+$('pSub').addEventListener('input',function(){ applyCfg({sub:this.value}); restart(); });
+$('pPlay').addEventListener('click',function(){ restart(); });
+$('pImg').addEventListener('change',function(){
+  var f=this.files&&this.files[0]; if(!f) return;
+  if(!/^image\//i.test(f.type||'')) return;
+  var r=new FileReader();
+  r.onload=function(){ setProdImg(r.result); applyCfg({}); restart(); };
+  r.readAsDataURL(f); this.value='';
+});
+
+/* ---------- 启动 ---------- */
+buildCrops(); buildDots(); buildCopy(); buildRegs(); buildMaskDots(); buildBlkReg(); buildProdVec();
+/* REGS 建完才有坐标可缓存：把 r0 挂上去，render 里就不必再解构数组下标 */
+(function(){ for(var i=0;i<REGS.length;i++){ var r=REGS[i].r; REGS[i].r0={x:r.x,y:r.y}; } })();
+/* ⚠️ 顺序不能反：applyCfg 只认「传了的键」，__PRESSHT_BOOT 里带的是固化时的用户值，
+   必须先铺默认再拿 boot 覆盖，否则固化 HTML 打开永远是模板默认字。 */
+applyCfg(cfg);
+if(window.__PRESSHT_BOOT){ applyCfg(window.__PRESSHT_BOOT); }
+fit();
+render(0);
+/* ★ 必须自启主循环：漏掉的后果不是报错，是【预览永远停在第 0 帧】—— 版式全对、数值全绿，就是不动。 */
+rafId=requestAnimationFrame(tick);
+parent.postMessage({source:'cyber',type:'cyber-ready'},'*');
+</script>
+</body>
+</html>
