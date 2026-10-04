@@ -1,0 +1,814 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>Gold Seam · 金缮合缝（错位双域 + 裂缝结疤 + 补片）</title>
+<!--
+  风格方向（老板 2026-10-03：Pinterest 自选参考，任意主题/配色，只求高级配色 + 高级动效；
+  元素与构图都必须与既有 18 张引擎区分）
+  参考 = _tmp/pins1003/sheets/kintsugi_gold_crack_design.png（14 张，母题 = 破碎瓷器沿裂缝以金修补）
+  配色真源 = 两组各取三阶（都是本地 140 组高级配色库里的现成条目，无自造色值）：
+    X039「审美提升｜世界经典撞色」 #F3F0E8 瓷白 / #383735 暖 slate / #0B0B0A 墨
+    X012「不会配色，跟着莫奈直接抄」 #BEBEBD 灰瓷 / #FDC123 金 / #E99618 暗金
+    （X039 与 X012 的暗部三阶本就同族 —— 索引表里两组的 #0B0B0A/#383735 与 #050505/#373633 只差一档，
+      所以这是「同一族色卡取两套」，不是拼贴。）
+  ★ 构图 = 【通栏横跨 + 中缝劈字】（老板点名「不用一直都是一个左右设计」）：
+    一条不规则折线从画面顶 x≈772 斜劈到底 x≈1188，把整幅切成左块 / 右块两个瓷域。
+    主标题是【一整行通栏字】被这条缝劈成两半 —— 不是左右分栏，是「同一块版面裂开再合拢」。
+    Part 与副标题整体落在左块（离缝 ≥167px），产品补片落在右块 —— 重心偏右下，非对称。
+  母题 = 瓷面 / 裂缝 / 金缝结疤 / 金池 / 次级蝉翼纹 / 不规则补片（现有引擎零撞：
+    无街机电路、无竹窗、无网点、无 blob、无液态铬、无蓝图纸、无贴纸）。
+  动效动词 = 【双域错位合拢 → 金线从 5 个节点向两端生长结疤】。
+    （moss-window=竖条遮罩+dolly / pop-mint=backOut 弹跳 / press-halftone=三版套印收敛 /
+      blush-morandi=逐字拉焦 / liquid-chrome=液体形变吞入 / draft-desk=一笔描字 ——
+      本引擎不推镜、不弹跳、不套印、不拉焦、不形变，全程只有「位移归位 + 沿缝生长」。）
+    ⚠️ 与 draft-desk 的「描线」关系如实登记：draft-desk 是【一支笔顺描一个字】，
+      本引擎是【5 个节点同时向两端生长一条疤】，且招牌动作是合拢而不是描。
+  字体 = Noto Sans SC 【200 极细】+ 大字距 20px（现有引擎最细只到 400 衬线斜体）。
+  产品位形状 = 【不规则六边形补片】（既非圆 medallion、非圆角贴纸、非纸堆、非拱窗、非液窝）。
+  本文件为零依赖单文件 HTML 引擎, 挂 cyber 同款 postMessage 桥:
+    host→iframe: cyber-embed / cyber-unembed / cyber-cfg{part,title,sub,replay} / cyber-color{vars}
+                 / cyber-img{img} / cyber-play / cyber-seek{t} / cyber-resume / cyber-get-html{reqId} / cyber-font
+    iframe→host: cyber-ready / cyber-html{reqId,html} / cyber-status{err}  (source 均为 'cyber')
+  铁律: 所有视觉量 = 帧号 f 的纯函数；无 Math.random（抖动走 hash1）；禁 CSS animation/transition。
+  ⚠️ 已付过学费的硬约束（R151/R152/R158 + R165~R184）全部落实：
+    ① 描边件 class .ln{fill:none}，实心件一律内联 style="fill:…"；
+    ② 几何（折线点、路径长度、补片多边形）只在 build* 量一次，不进 render()；
+    ③ 「无产品图」= href 属性缺省（href="" = 永不结束的请求 ⇒ 导出第 0 帧抓屏挂死）；
+    ④ 禁一次性闩；只允许「当前值 ≠ 目标值才写」的幂等写法；
+    ⑤ SVG transform 只写裸数字，不写单位也不写 none；
+    ⑥ 同权重按书写顺序翻盘 ⇒ 覆盖用复合选择器；HTML 文字层显式 z-index 高于 SVG；
+    ⑦ seg() 段前 = 0 ⇒ 不许拿 (1-p)*k 当入场前暗度；
+    ⑧ 可编辑文字按【最坏输入】设计：超行压字号，单行缩宽时字号与字距同乘 k；
+    ⑨ 主循环开机自启（漏掉 = 预览停在第 0 帧，不报错、数值全绿）；
+    ⑩ ★ 劈开的两半文字必须【同一份 DOM 复制两份 + 各自 clip-path】，
+       而不是按字符切容器 —— 切容器要让「字符中心」精确落在折线上，字距/换行一变就错；
+       clip-path 用的是【和瓷块完全同一条折线】，所以合拢后两半必然严丝合缝。
+    ⑪ ★ #stage 的 transform 归 fit() 独占；本引擎没有全局斜倾，所以两块的运动直接写
+       在 #plateL/#plateR 与 #txtL/#txtR 上（四处共用同一个 pivot 960,540）。
+-->
+<style>
+  /* 🔴 六个配色变量必须在这里给【默认值】：JS 里 setAttribute('style','fill:var(--kt-x)')
+     不带 CSS 回退，宿主没发色时整棵树解析成 black。 */
+  :root{
+    --kt-porc:#F3F0E8;  --kt-slate:#383735; --kt-ink:#0B0B0A;
+    --kt-mist:#BEBEBD;  --kt-gold:#FDC123;  --kt-brass:#E99618;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{width:100%;height:100%;background:#171614;overflow:hidden;}
+  body{font-family:"Noto Sans SC","Microsoft YaHei","PingFang SC",sans-serif;}
+  #wrap{position:absolute;left:50%;top:50%;width:1920px;height:1080px;margin:-540px 0 0 -960px;}
+  /* ★ 舞台底色 = 墨（裂缝背后露出来的那一层）。f=0 时两块瓷还没亮 ⇒ 整幅 = 均匀墨色 = 开场全灭。 */
+  #stage{position:relative;width:1920px;height:1080px;overflow:hidden;transform-origin:0 0;
+    background:var(--kt-ink,#0B0B0A);}
+  #hud{position:absolute;inset:0;width:1920px;height:1080px;z-index:5;}
+  #hud .ln{fill:none;}
+  #txt{position:absolute;inset:0;z-index:9;pointer-events:none;}
+  /* 两半文字层：各自被【和瓷块同一条折线】裁掉一半，并跟着瓷块一起位移/微旋。
+     transform-origin 必须和 SVG 里 rotate(a 960 540) 的 pivot 一致，否则两半对不齐。 */
+  #txtL,#txtR{position:absolute;inset:0;transform-origin:960px 540px;}
+  #txtL > *,#txtR > *{position:absolute;}
+
+  /* ---------- Part（左上，整块归左域） ---------- */
+  #partTxt{left:150px;top:138px;white-space:pre;font-size:26px;font-weight:300;letter-spacing:16px;
+    color:var(--kt-slate);}
+  #partRule{left:152px;top:190px;width:214px;height:1px;background:var(--kt-brass);
+    transform-origin:0 50%;}
+
+  /* ---------- 主标题（通栏横跨中缝，被劈成两半） ----------
+     两份 DOM 完全同构：#titleBox 在左半、#titleBoxR 在右半（同 left/top/width）。
+     判据只认 #titleBox（冒烟脚本按 id 取样），右半是它的镜像副本。 */
+  #titleBox,#titleBoxR{left:150px;top:398px;width:1350px;}
+  .tline{display:block;white-space:pre;position:relative;font-weight:200;letter-spacing:20px;}
+  /* .tw 里必须留一个【在流里】的字撑宽度；副本 absolute。两层都 absolute ⇒ 行宽恒 0，整行叠成一坨。 */
+  .tw{position:relative;display:inline-block;white-space:pre;}
+  .tf{position:relative;display:inline-block;color:var(--kt-slate);}
+  /* 描金副本：压在字身后 3.5px，只露出右下一道金边 = 「字也是拿金补过的」。
+     ⚠️ 必须真的偏移：第一版 left/top 都是 0 ⇒ 金副本被墨字整条盖住，白建一倍 DOM。 */
+  .tg{position:absolute;left:3.5px;top:3.5px;white-space:pre;color:var(--kt-gold);opacity:.42;pointer-events:none;}
+
+  /* ---------- 副标题（左域下方） ----------
+     🔴 mist #BEBEBD 压在瓷白 #F3F0E8 上只有 ≈1.5:1 —— 第一版「KINTSUGI」肉眼几乎看不见，
+     而所有数值判据照样全绿（判据只量盒子和 opacity，不量对比度）。一律降到 slate。 */
+  #subTxt{left:150px;top:800px;white-space:pre;font-size:30px;font-weight:300;letter-spacing:12px;
+    color:var(--kt-slate);}
+  #subRule{left:152px;top:858px;width:660px;height:1px;background:var(--kt-slate);opacity:.38;
+    transform-origin:0 50%;}
+  /* 固定串：⚠️ 不许复用副标题默认文本（R183），也不放无出处的数字
+     ⚠️ 小字一律走 slate：暗金 #E99618 压在瓷白 #F3F0E8 上只有 ≈1.9:1，14px 直接糊掉 */
+  #tagline{left:150px;top:892px;white-space:pre;font-size:14px;font-weight:400;letter-spacing:9px;
+    color:var(--kt-slate);opacity:.72;}
+
+  /* ---------- 补片标签（右域） ---------- */
+  #prodTag{left:1322px;top:812px;width:372px;text-align:center;font-size:18px;font-weight:400;
+    letter-spacing:8px;color:var(--kt-slate);}
+  #prodSub{left:1322px;top:844px;width:372px;text-align:center;font-size:12px;font-weight:300;
+    letter-spacing:5px;color:var(--kt-slate);opacity:.62;}
+
+  /* ---------- 独立面板 ---------- */
+  #panel{position:fixed;left:14px;top:14px;z-index:50;display:flex;gap:8px;align-items:center;}
+  #panel input[type=text],#panel input:not([type=file]){background:rgba(255,255,255,.9);color:#16211D;
+    border:1px solid #c9c0aa;border-radius:6px;padding:6px 9px;font-size:13px;width:150px;}
+  #panel button{background:#383735;color:#FDC123;border:0;border-radius:6px;padding:7px 12px;font-size:13px;cursor:pointer;}
+  body.embed #panel{display:none;}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="stage">
+    <svg id="hud" viewBox="0 0 1920 1080" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <clipPath id="patchClip"><polygon id="patchClipPoly"/></clipPath>
+        <clipPath id="plateLClip"><path id="plateLClipPath"/></clipPath>
+        <clipPath id="plateRClip"><path id="plateRClipPath"/></clipPath>
+        <radialGradient id="gPool" cx="50%" cy="42%" r="62%">
+          <stop offset="0%"   style="stop-color:var(--kt-gold);stop-opacity:1"/>
+          <stop offset="58%"  style="stop-color:var(--kt-brass);stop-opacity:.92"/>
+          <stop offset="100%" style="stop-color:var(--kt-brass);stop-opacity:0"/>
+        </radialGradient>
+        <linearGradient id="gGlaze" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%"   style="stop-color:var(--kt-porc);stop-opacity:0"/>
+          <stop offset="50%"  style="stop-color:var(--kt-porc);stop-opacity:.55"/>
+          <stop offset="100%" style="stop-color:var(--kt-porc);stop-opacity:0"/>
+        </linearGradient>
+        <!-- 🔴 两块【必须不同调】才读得出「这里裂开过」：第一版左右是同一条对称渐变 ⇒
+             整幅就是一张纸中间画了道缝。光从左上来 ⇒ 左块断口受光（porc 起）、
+             右块断口落进阴影（mist 起），再叠 glowL / shOnR 两组材质光，三层同向。 -->
+        <linearGradient id="gPlateL" x1="1" y1="0.12" x2="0" y2="0.9">
+          <stop offset="0%"   style="stop-color:var(--kt-porc)"/>
+          <stop offset="30%"  style="stop-color:var(--kt-porc)"/>
+          <stop offset="68%"  style="stop-color:var(--kt-porc)"/>
+          <stop offset="100%" style="stop-color:var(--kt-mist)"/>
+        </linearGradient>
+        <linearGradient id="gPlateR" x1="0" y1="0.12" x2="1" y2="0.9">
+          <stop offset="0%"   style="stop-color:var(--kt-mist)"/>
+          <stop offset="34%"  style="stop-color:var(--kt-porc)"/>
+          <stop offset="64%"  style="stop-color:var(--kt-porc)"/>
+          <stop offset="100%" style="stop-color:var(--kt-mist)"/>
+        </linearGradient>
+      </defs>
+
+      <!-- 裂缝背后那一层：两块分开时缝里露出来的那一层。
+           🔴 第一版这里用 --kt-ink（#0B0B0A）纯黑 + 缝宽 216px ⇒ 开场两秒画面被一道
+              「黑色闪电」劈成一半，比金缝还抢眼，判据全绿、肉眼看是灾难。
+              正解 = 缝是【阴影】不是【洞】：色用陶胎暖炭 #383735，宽度收到 60 出头。 -->
+      <rect id="gapDark" x="-320" y="-160" width="2560" height="1400"
+            style="fill:var(--kt-slate)" opacity="0"/>
+
+      <!-- 左瓷域 -->
+      <g id="plateL">
+        <path id="plateLFill" fill="url(#gPlateL)"/>
+        <!-- 🔴 断口必须「有厚度」：第一版两块瓷是同一条渐变的连续面，肉眼根本看不出这里裂开过。
+             解法 = 沿裂缝一条硬白细边（rimL）+ 一道向外衰减的瓷光带（glowL）。
+             glow 挂在各自 clip 里 ⇒ 只在瓷内亮，不会糊到缝上。 -->
+        <g clip-path="url(#plateLClip)">
+          <g id="glowL" class="ln" stroke="var(--kt-porc)" stroke-linecap="round" opacity="0">
+            <path id="glowL0" stroke-width="210" opacity=".10"/>
+            <path id="glowL1" stroke-width="140" opacity=".14"/>
+            <path id="glowL2" stroke-width="82"  opacity=".18"/>
+            <path id="glowL3" stroke-width="36"  opacity=".24"/>
+          </g>
+        </g>
+        <path id="rimL" class="ln" stroke="var(--kt-porc)" stroke-width="3.4" stroke-linejoin="round" opacity=".95"/>
+        <g id="grainL" clip-path="url(#plateLClip)"></g>
+        <g id="hairL" class="ln" stroke="var(--kt-slate)" stroke-width="1.4" stroke-linecap="round"></g>
+        <!-- 🔴 外层 g 挂 clip、内层 rect 自己 translate：clip-path 用的是元素自身 transform 之后的
+             用户空间，直接给 rect 同时挂 clip 和 translate 会让遮罩跟着光一起跑。 -->
+        <g clip-path="url(#plateLClip)">
+          <rect id="glazeL" x="-900" y="-160" width="760" height="1400" fill="url(#gGlaze)" opacity="0"/>
+        </g>
+      </g>
+
+      <!-- 右瓷域 -->
+      <g id="plateR">
+        <path id="plateRFill" fill="url(#gPlateR)"/>
+        <!-- 左块压到右块上的那道接触阴影（三层假高斯，不用 filter ⇒ 逐帧零重栅格化开销） -->
+        <!-- 🔴 左右【不对称】才是对的：光从左上来 ⇒ 左块的断口受光（glowL 亮带 + 白瓷硬边），
+             右块的断口落进左块压下来的接触阴影（shOnR）。第一版两边都刷亮带 = 谁也不受谁的光，
+             两块瓷读成一张纸。 -->
+        <g clip-path="url(#plateRClip)">
+          <g id="shOnR" class="ln" stroke="var(--kt-slate)" stroke-linecap="round" opacity="0">
+            <path id="shR0" stroke-width="72" opacity=".05"/>
+            <path id="shR1" stroke-width="48"  opacity=".08"/>
+            <path id="shR2" stroke-width="28"  opacity=".12"/>
+            <path id="shR3" stroke-width="12"  opacity=".18"/>
+          </g>
+        </g>
+        <path id="rimR" class="ln" stroke="var(--kt-mist)" stroke-width="2.6" stroke-linejoin="round" opacity=".9"/>
+        <g id="grainR" clip-path="url(#plateRClip)"></g>
+        <g id="hairR" class="ln" stroke="var(--kt-slate)" stroke-width="1.4" stroke-linecap="round"></g>
+
+        <!-- 补片：不规则六边形，金边 + 内部自绘细金脉 / 上传图 -->
+        <g id="patch">
+          <polygon id="patchBack" style="fill:var(--kt-slate)"/>
+          <polygon id="patchSheen" style="fill:var(--kt-porc)" opacity=".05"/>
+          <image id="prodImg" x="1296" y="388" width="424" height="424"
+                 clip-path="url(#patchClip)" preserveAspectRatio="xMidYMid slice"/>
+          <g id="patchVec" clip-path="url(#patchClip)"></g>
+          <polygon id="patchEdge" class="ln" stroke="var(--kt-gold)" stroke-width="4"/>
+        </g>
+      </g>
+
+      <!-- 金缝：底槽（暗）+ 10 条半程金线 + 5 个金池 + 收尾扫光 -->
+      <g id="seam">
+        <path id="seamDark" class="ln" stroke="var(--kt-ink)" stroke-width="7" stroke-linejoin="round"/>
+        <g id="seamGrow" class="ln" stroke-linecap="round" stroke-linejoin="round"></g>
+        <g id="pools"></g>
+        <path id="seamSweep" class="ln" stroke="var(--kt-porc)" stroke-width="4.4" stroke-linecap="round"/>
+      </g>
+    </svg>
+
+    <div id="txt">
+      <div id="txtL">
+        <div id="partTxt"></div>
+        <div id="partRule"></div>
+        <div id="titleBox"></div>
+        <div id="subTxt"></div>
+        <div id="subRule"></div>
+        <div id="tagline"></div>
+      </div>
+      <div id="txtR">
+        <div id="titleBoxR"></div>
+        <div id="prodTag"></div>
+        <div id="prodSub"></div>
+      </div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<div id="panel">
+  <input id="pPart" placeholder="Part" value="Part.01" />
+  <input id="pTitle" placeholder="主标题" value="残缺本身就是完整" />
+  <input id="pSub" placeholder="副标题" value="KINTSUGI" />
+  <button id="pPlay">重播</button>
+  <input id="pImg" type="file" accept="image/*" />
+</div>
+
+<script>
+"use strict";
+/* ============================== 工具 ============================== */
+var $ = function(id){ return document.getElementById(id); };
+function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
+function seg(f,a,b){ return clamp((f-a)/(b-a),0,1); }                 /* 段前严格 0 */
+function easeOut(p){ return 1-Math.pow(1-p,3); }
+function easeInOut(p){ return p<0.5?4*p*p*p:1-Math.pow(-2*p+2,3)/2; }
+function smoother(p){ return p*p*p*(p*(p*6-15)+10); }
+function hash1(n){ var x=Math.sin(n*127.1+311.7)*43758.5453; return x-Math.floor(x); }
+function mk(parent,tag,attrs){
+  var e=document.createElementNS('http://www.w3.org/2000/svg',tag),k;
+  for(k in attrs){ if(Object.prototype.hasOwnProperty.call(attrs,k)) e.setAttribute(k,attrs[k]); }
+  parent.appendChild(e); return e;
+}
+
+/* ============================== 常量 ============================== */
+var FPS=30, DUR=225, HOLD=0.9, CYCLE=DUR/FPS+HOLD;
+var CX=960, CY=540;
+var TITX=150, TITY=398, TITW=1350, TITMAXFS=130, TITMINFS=34, TITVB=700;
+var PATCH={cx:1508, cy:600, r:178};
+/* 两块分开时的位移/微旋（合拢 = 归零）。
+   🔴 第一版 ±158/±176 + 2.6°/2.2° ⇒ 缝口张开 334px、且上窄下宽，
+   配上锯齿折线读成「两块灰板中间夹了一道黑色闪电」。收到 ±110 / 1.5° 才像【同一片瓷裂开】。 */
+/* 🔴 错位量 = 「两块裂开多远」。第一版 ±104/±112 + y 36/-44 ⇒ 缝宽 216px，
+   开场两秒是一道纯黑闪电，把整幅画的注意力全吃掉。收到 1/3.5 ⇒ 缝是一条会合拢的暗口。 */
+var OFFL={x:-30,y:11,r:-0.46}, OFFR={x:32,y:-13,r:0.40};
+
+var els={
+  stage:$('stage'), hud:$('hud'), txt:$('txt'), txtL:$('txtL'), txtR:$('txtR'),
+  gapDark:$('gapDark'),
+  plateL:$('plateL'), plateR:$('plateR'), plateLFill:$('plateLFill'), plateRFill:$('plateRFill'),
+  plateLClipPath:$('plateLClipPath'), plateRClipPath:$('plateRClipPath'),
+  grainL:$('grainL'), grainR:$('grainR'), hairL:$('hairL'), hairR:$('hairR'), glazeL:$('glazeL'),
+  glowL:$('glowL'), rimL:$('rimL'), rimR:$('rimR'), shOnR:$('shOnR'),
+  seam:$('seam'), seamDark:$('seamDark'), seamGrow:$('seamGrow'), seamSweep:$('seamSweep'), pools:$('pools'),
+  patch:$('patch'), patchBack:$('patchBack'), patchSheen:$('patchSheen'), patchEdge:$('patchEdge'),
+  patchClipPoly:$('patchClipPoly'), patchVec:$('patchVec'), prodImg:$('prodImg'),
+  partTxt:$('partTxt'), partRule:$('partRule'), titleBox:$('titleBox'), titleBoxR:$('titleBoxR'),
+  subTxt:$('subTxt'), subRule:$('subRule'), tagline:$('tagline'),
+  prodTag:$('prodTag'), prodSub:$('prodSub')
+};
+/* 🔴 必须在任何 build* 往 DOM 里塞生成件【之前】抓原始快照，否则固化件里带着上一轮的节点，
+   重新打开会翻倍。 */
+var PRISTINE = '<!doctype html>\n' + document.documentElement.outerHTML;
+
+/* ============================== 裂缝折线（一切的几何真源） ============================== */
+var CRACK=[], CRACKD='', SEAM=[], POOLS=[], HAIRS=[];
+var HAIR_ANCH=[3,9,17,23,28];   /* 换算成 y ≈ 48 / 284 / 600 / 839 / 1033 */
+
+function buildCrack(){
+  /* 🔴🔴 第一版实测：下半段长成了一把【锯齿】，上半段却是有机曲线 —— 因为
+     「等步长 dy(47px) + 等振幅横向抖(±46px)」= 数学上必然的三角波，而 hash1 只决定
+     三角朝哪边。肉眼审判直接打回。有机裂纹的三个必要条件，缺一不可：
+       ① 纵向步长【非均匀】（40±15px，忽快忽慢）
+       ② 横向走【带惯性的随机游走】（保持率 .62 ⇒ 会连走几段同方向 = 直路，偶尔急折一次），
+          而不是每点独立重掷（独立 = 抖动，惯性 = 走势）
+       ③ 底形是【低频 S】不是一条斜线（42px 正弦，整条只有 1.7 个半波）
+     振幅在两端收到 0，否则第一点/最后点一抖，多边形会在画外留出缺口。 */
+  var n=30, x0=772, x1=1188, y0=-70, y1=1150, i, t;
+  var raw=[], v=0, mx=1;
+  for(i=1;i<n;i++){
+    v = v*0.62 + (hash1(120+i*13)-0.5)*52;
+    raw.push(v);
+    mx = Math.max(mx, Math.abs(v));
+  }
+  CRACK=[[x0,y0]];
+  for(i=0;i<raw.length;i++){
+    t=(i+1)/n;
+    var env=Math.min(1, Math.min(i+1, n-1-i)/2.5);       /* 两端渐收 */
+    var off=raw[i]/mx*34*env;                            /* 归一化 ⇒ 振幅可预算 */
+    var base=x0+(x1-x0)*t + 42*Math.sin(t*Math.PI*1.7-0.55);
+    var y=y0+(y1-y0)*t + (hash1(340+i*7)-0.5)*26;        /* ① 非均匀步长 */
+    CRACK.push([Math.round(base+off), Math.round(y)]);
+  }
+  CRACK.push([x1,y1]);
+}
+function polyStr(pts, closeSide){
+  /* closeSide='L' → 沿左边界收口；'R' → 沿右边界。收口点刻意推到画外 ±320，
+     这样两块各自平移 ±176 + 微旋 2.6° 之后仍然铺得住。 */
+  var s='', i;
+  for(i=0;i<pts.length;i++) s+=(i?'L':'M')+pts[i][0]+' '+pts[i][1];
+  if(closeSide==='L'){ s+='L-320 '+CRACK[CRACK.length-1][1]+'L-320 '+CRACK[0][1]; return s+'Z'; }
+  if(closeSide==='R'){ s+='L2240 '+CRACK[CRACK.length-1][1]+'L2240 '+CRACK[0][1]; return s+'Z'; }
+  return s;   /* 🔴 金缝/蝉翼纹是【开放】折线：补 Z 会从末点直连回起点，描边多出一条横贯画面的假线 */
+}
+function clipPolyStr(side){
+  /* CSS clip-path 用同一批点（不带 Z 的收口，改成贴边的两个远点）。
+     🔴 必须与 polyStr 用【同一组坐标】：两半文字能不能严丝合缝全靠这一点。 */
+  var out=[], i;
+  for(i=0;i<CRACK.length;i++) out.push(CRACK[i][0]+'px '+CRACK[i][1]+'px');
+  if(side==='L'){ out.push('-400px '+CRACK[CRACK.length-1][1]+'px'); out.push('-400px '+CRACK[0][1]+'px'); }
+  else          { out.push('2320px '+CRACK[CRACK.length-1][1]+'px'); out.push('2320px '+CRACK[0][1]+'px'); }
+  return 'polygon('+out.join(',')+')';
+}
+function midPoint(a,b){
+  return [Math.round((CRACK[a][0]+CRACK[b][0])/2), Math.round((CRACK[a][1]+CRACK[b][1])/2)];
+}
+function buildSeam(){
+  /* 5 段，每段从自己的【中点节点】向两端生长 ⇒ 10 条半程路径。
+     路径长度在 build 期量一次存表，render 只写 dashoffset。
+     ⚠️ 分段边界必须从 CRACK.length 现推 —— 写死 [0,5][5,11]… 会在折线改点数后
+        悄悄只描到 26/31 段，末端 5 段永远不上金（不报错、不崩）。 */
+  var last=CRACK.length-1, k, a, b;
+  SEAM=[]; POOLS=[];
+  for(k=0;k<5;k++){
+    a=Math.round(last*k/5); b=Math.round(last*(k+1)/5);
+    var m=(a+b)/2;
+    var node = (m%1===0) ? CRACK[m].slice() : midPoint(Math.floor(m), Math.ceil(m));
+    var fwd=[node], bwd=[node], i;
+    for(i=Math.ceil(m)+ (m%1===0?1:0); i<=b; i++) fwd.push(CRACK[i]);
+    for(i=Math.floor(m)- (m%1===0?1:0); i>=a; i--) bwd.push(CRACK[i]);
+    /* 半程至少两个点才成路径；退化时补一个中间点 */
+    if(fwd.length<2) fwd.push(CRACK[b]);
+    if(bwd.length<2) bwd.push(CRACK[a]);
+    [[fwd,k*2],[bwd,k*2+1]].forEach(function(pair){
+      /* 🔴 金线要「一条漆线」的粗细，不是贴纸描边：第一版 7~8.4px 压在 11px 墨槽上，
+         两侧各露 1.5px 黑边 = 卡通外框，整条缝读成闪电符号而不是修补。 */
+      var p=mk(els.seamGrow,'path',{d:polyStr(pair[0]), 'stroke-width':(6.2+(pair[1]%2?1.0:0)).toFixed(1)});
+      p.setAttribute('style','stroke:var(--kt-gold)');
+      var L=p.getTotalLength();
+      p.setAttribute('stroke-dasharray', L.toFixed(1)+' '+L.toFixed(1));
+      p.setAttribute('stroke-dashoffset', L.toFixed(1));
+      p.setAttribute('opacity','0');
+      SEAM.push({el:p, len:L, node:k, dir:pair[1]%2});
+    });
+    POOLS.push({node:node, r:6+hash1(300+k)*4});
+  }
+}
+function buildPools(){
+  for(var i=0;i<POOLS.length;i++){
+    var c=mk(els.pools,'circle',{cx:POOLS[i].node[0], cy:POOLS[i].node[1], r:'0', fill:'url(#gPool)'});
+    c.setAttribute('opacity','0');
+    POOLS[i].el=c;
+  }
+}
+function buildGrain(){
+  /* 瓷面颗粒：hash1 定位，左右各 150 颗，压在各自 clip 里。
+     ⚠️ 半径不许为 0（0 半径的 circle 不渲染，白建）。 */
+  var i, side, parent, n=150;
+  for(side=0; side<2; side++){
+    parent = side? els.grainR : els.grainL;
+    for(i=0;i<n;i++){
+      var s=side*977;
+      var x=Math.round(hash1(1000+s+i)*1920), y=Math.round(hash1(2000+s+i)*1080);
+      var r=(0.9+hash1(3000+s+i)*1.7).toFixed(2);
+      var o=(0.05+hash1(4000+s+i)*0.13).toFixed(3);
+      mk(parent,'circle',{cx:x,cy:y,r:r, style:'fill:var(--kt-slate);opacity:'+o});
+    }
+  }
+}
+function buildHair(){
+  /* 次级蝉翼纹：从主缝上 6 个节点往外岔出去，左右各 3 条。
+     ⚠️ 第一版每条 3 折、单步 58~144px ⇒ 拉成一根「铅笔斜线」，反而像画面脏了一道。
+     次级纹要【短、且明显是从主缝岔出来的】：2 折、总长 ≤150px、越往外越细。 */
+  var i, side, parent, j;
+  HAIRS=[];
+  for(side=0; side<2; side++){
+    parent = side? els.hairR : els.hairL;
+    for(i=0;i<5;i++){
+      var anchor = HAIR_ANCH[i];                       /* 避开主标题带 y398~549 */
+      if(anchor>=CRACK.length) continue;
+      var p=[[CRACK[anchor][0], CRACK[anchor][1]]], px=p[0][0], py=p[0][1];
+      var dir = side? 1 : -1;
+      var lean = (hash1(500+side*31+i*7)-0.5)*1.5;       /* 岔出去的角度：±43° */
+      for(j=1;j<=2;j++){
+        var step=52+hash1(560+side*31+i*7+j)*58;
+        px += dir*step*Math.cos(lean);
+        py += step*Math.sin(lean) + (hash1(700+side*31+i*7+j)-0.5)*36;
+        p.push([Math.round(px), Math.round(py)]);
+      }
+      var e=mk(parent,'path',{d:polyStr(p), 'stroke-width':(1.6-(i%3)*0.28).toFixed(2)});
+      e.setAttribute('opacity','0');
+      HAIRS.push(e);
+    }
+  }
+}
+function buildPatch(){
+  /* 不规则六边形补片：顶点半径走 hash1 ⇒ 每块补片都不一样，但整体是「一块接上的瓷」。 */
+  var pts=[], i, n=6;
+  for(i=0;i<n;i++){
+    var a=(i/n)*Math.PI*2 - Math.PI/2 + (hash1(900+i)-0.5)*0.34;
+    var r=PATCH.r*(0.80+hash1(950+i)*0.30);
+    pts.push([Math.round(PATCH.cx+Math.cos(a)*r), Math.round(PATCH.cy+Math.sin(a)*r)]);
+  }
+  var s=pts.map(function(p){return p[0]+','+p[1];}).join(' ');
+  els.patchBack.setAttribute('points', s);
+  els.patchEdge.setAttribute('points', s);
+  els.patchClipPoly.setAttribute('points', s);
+  /* 内圈反光：同一多边形按 0.86 向心收缩 ⇒ 读成「这片瓷有个厚度/釉面」，而不是一块死色板 */
+  els.patchSheen.setAttribute('points', pts.map(function(q){
+    return Math.round(PATCH.cx+(q[0]-PATCH.cx)*0.86)+','+Math.round(PATCH.cy+(q[1]-PATCH.cy)*0.86);
+  }).join(' '));
+  var L=0;   /* polygon 没有 getTotalLength ⇒ 自己按边长累加 */
+  for(i=0;i<n;i++){
+    var q=pts[i], w=pts[(i+1)%n];
+    L+=Math.sqrt((q[0]-w[0])*(q[0]-w[0])+(q[1]-w[1])*(q[1]-w[1]));
+  }
+  els.patchEdge.setAttribute('stroke-dasharray', L.toFixed(1)+' '+L.toFixed(1));
+  els.patchEdge.setAttribute('stroke-dashoffset', L.toFixed(1));
+  PATCH.len=L; PATCH.pts=pts;
+}
+function buildPatchVec(){
+  /* 🔴 第一版画的是【三重同心环 + 八条辐 + 中心实心】= 雷达 / 靶心，语义完全跑偏
+     （肉眼审判：「补片读成一个任务徽章」）。
+     正解回到母题本身 = 这块补片【自己也被金补过】：三条从边缘岔进来的细金脉。
+     纯几何、零外部素材；挂在 #patchClip 里 ⇒ 再怎么写都不会甩到片外。 */
+  var g=els.patchVec, cx=PATCH.cx, cy=PATCH.cy, i, j;
+  for(i=0;i<3;i++){
+    var a0=Math.PI*2*(0.12+i*0.31)+ (hash1(1400+i)-0.5)*0.5;   /* 三条入口错开，不均分更像手补 */
+    var lean=(hash1(1450+i)-0.5)*1.1;
+    var px=cx+Math.cos(a0)*PATCH.r*0.60, py=cy+Math.sin(a0)*PATCH.r*0.60;
+    var p=[[Math.round(px),Math.round(py)]];
+    for(j=0;j<3;j++){
+      var step=30+hash1(1500+i*7+j)*24;
+      px += -Math.cos(a0)*step*Math.cos(lean) - Math.sin(a0)*step*Math.sin(lean);
+      py += -Math.cos(a0)*step*Math.sin(lean) + Math.sin(a0)*step*Math.cos(lean);
+      p.push([Math.round(px),Math.round(py)]);
+    }
+    var e=mk(g,'path',{d:polyStr(p), 'stroke-width':(3.2-i*0.6).toFixed(2)});
+    e.setAttribute('class','ln');
+    e.setAttribute('style','stroke:var(--kt-gold)');
+    e.setAttribute('opacity',(0.88-i*0.16).toFixed(2));
+  }
+}
+function buildClipPaths(){
+  els.plateLFill.setAttribute('d', polyStr(CRACK,'L'));
+  els.plateRFill.setAttribute('d', polyStr(CRACK,'R'));
+  els.plateLClipPath.setAttribute('d', polyStr(CRACK,'L'));
+  els.plateRClipPath.setAttribute('d', polyStr(CRACK,'R'));
+  /* 🔴 同一条【开放】折线复用七次：底槽 / 扫光 / 左右硬边 / 左右光带 / 接触阴影。
+     几何真源只有一份 ⇒ 两块合拢时这些东西必然全部重合在缝上，不会各跑各的。 */
+  CRACKD = polyStr(CRACK);
+  els.seamDark.setAttribute('d', CRACKD);
+  els.seamSweep.setAttribute('d', CRACKD);
+  els.rimL.setAttribute('d', CRACKD);
+  els.rimR.setAttribute('d', CRACKD);
+  ['glowL0','glowL1','glowL2','glowL3','shR0','shR1','shR2','shR3'].forEach(function(id){
+    $(id).setAttribute('d', CRACKD);
+  });
+  SEAMLEN = els.seamSweep.getTotalLength();
+  /* 一段 150 长的亮头沿缝跑一趟：offset 从 +150（整段在起点之前）走到 −SEAMLEN（整段跑过终点）。
+     间隙给到 SEAMLEN+150 ⇒ 全程只有一颗亮头，不会冒出第二段。 */
+  els.seamSweep.setAttribute('stroke-dasharray', '150 '+(SEAMLEN+150).toFixed(1));
+  els.seamSweep.setAttribute('opacity','0');
+  els.txtL.style.clipPath = clipPolyStr('L');
+  els.txtR.style.clipPath = clipPolyStr('R');
+}
+var SEAMLEN=0;
+
+/* ============================== 文字构建 + 最坏输入预算 ============================== */
+var cfg={part:'Part.01', title:'残缺本身就是完整', sub:'KINTSUGI', img:''};
+var TITBASE={partTxt:26, partLS:16, partMax:520, subTxt:30, subLS:12, subMax:660, tagFS:14, tagLS:9, tagMax:620};
+
+/* 单行缩到宽度上限：字号与字距【同乘 k】（letter-spacing 是绝对 px，只缩字号宽度不按比例降） */
+function fitOneLine(t, fs, ls, max){
+  t.style.fontSize=''; t.style.letterSpacing='';
+  var w=Math.max(t.scrollWidth, t.offsetWidth)||1;
+  if(w>max){
+    var k=max/w;
+    t.style.fontSize=(fs*k).toFixed(1)+'px'; t.style.letterSpacing=(ls*k).toFixed(1)+'px';
+    w=Math.max(t.scrollWidth, t.offsetWidth);
+    if(w>max){ k=k*max/w; t.style.fontSize=(fs*k).toFixed(1)+'px'; t.style.letterSpacing=(ls*k).toFixed(1)+'px'; w=max; }
+  }
+  return w;
+}
+function measureOne(){
+  /* 🔴 细规（underline）宽度必须跟着【实测字宽】走：定宽 214/660 在 Part 改成 6 个字之后
+     会出现「字比线长一截」，而线比字短是肉眼可读的错版。 */
+  var pw=fitOneLine(els.partTxt, TITBASE.partTxt, TITBASE.partLS, TITBASE.partMax)||120;
+  var sw=fitOneLine(els.subTxt,  TITBASE.subTxt,  TITBASE.subLS,  TITBASE.subMax)||200;
+  fitOneLine(els.tagline, TITBASE.tagFS,  TITBASE.tagLS, TITBASE.tagMax);
+  els.partRule.style.width=Math.round(pw+6)+'px';
+  els.subRule.style.width =Math.round(sw*0.72)+'px';
+}
+var TITLE={chars:[], lines:1, fs:130, lh:151};
+function buildTitleInto(box, sink){
+  box.textContent='';
+  var raw=(cfg.title||'').replace(/\s+$/,'');
+  var lines=raw.split('\n');
+  if(lines.length===1 && raw.length>11){              /* 单行过长 ⇒ 先按空格切词再硬切两行 */
+    var sp=raw.lastIndexOf(' ', Math.ceil(raw.length/2));
+    if(sp<0) sp=Math.floor(raw.length/2);
+    lines=[raw.slice(0,sp), raw.slice(sp+1)];
+  }
+  lines=lines.slice(0,3);                             /* 竖向预算只给 3 行 */
+  var maxLen=Math.max.apply(null, lines.map(function(s){return s.length;}));
+  var fs=clamp(TITW/Math.max(1,maxLen), TITMINFS, TITMAXFS);
+  /* 🔴 竖向预算：标题块底不许越过副标题顶（TITVB=700），从 TITY 起算 */
+  var VB=TITVB-TITY;
+  if(lines.length*fs*1.16>VB) fs=Math.max(TITMINFS, VB/(lines.length*1.16));
+  /* 极细大字距：字距随字号走（130px 时 20px，缩到 40px 时 6px），否则小字会散成一排蚂蚁 */
+  var ls=Math.max(2, fs*0.155);
+  var lh=fs*1.16, li, ci, idx=0;
+  for(li=0;li<lines.length;li++){
+    var ln=document.createElement('div'); ln.className='tline';
+    ln.style.fontSize=fs+'px'; ln.style.lineHeight=lh+'px'; ln.style.letterSpacing=ls.toFixed(1)+'px';
+    var t=lines[li];
+    for(ci=0;ci<t.length;ci++){
+      var w=document.createElement('span'); w.className='tw';
+      var d=document.createElement('span'); d.className='tg'; d.textContent=t.charAt(ci);
+      var f=document.createElement('span'); f.className='tf'; f.textContent=t.charAt(ci);
+      w.appendChild(d); w.appendChild(f); ln.appendChild(w);
+      sink.push({w:w, i:idx++});
+    }
+    if(!t.length){ var nb=document.createElement('span'); nb.className='tw'; nb.innerHTML='&nbsp;';
+      sink.push({w:nb, i:idx++}); }
+    box.appendChild(ln);
+  }
+  return {fs:fs, lh:lh, n:idx, lines:lines.length};
+}
+function buildTitle(){
+  TITLE.chars=[];
+  var A=buildTitleInto(els.titleBox, TITLE.chars);
+  var right=[]; buildTitleInto(els.titleBoxR, right);
+  TITLE.chars.forEach(function(c,i){ c.r=right[i] ? right[i].w : null; });
+  TITLE.fs=A.fs; TITLE.lh=A.lh; TITLE.n=A.n; TITLE.lines=A.lines;
+}
+function setProdImg(src){
+  cfg.img=src||'';
+  /* ⚠️ 无图 = 属性缺省（不是空串）：空串会被解析成文档 URL ⇒ 永不结束的请求 ⇒ 导出第 0 帧抓屏挂死 */
+  if(cfg.img) els.prodImg.setAttribute('href', cfg.img);
+  else els.prodImg.removeAttribute('href');
+}
+function applyCfg(d){
+  var dirty=false;
+  if(d.part!==undefined){ cfg.part=d.part; dirty=true; }
+  if(d.title!==undefined){ cfg.title=d.title; dirty=true; }
+  if(d.sub!==undefined){ cfg.sub=d.sub; dirty=true; }
+  els.partTxt.textContent=cfg.part||'';
+  els.subTxt.textContent=cfg.sub||'';
+  /* ★ 固定串里不许出现副标题的默认文本（撞词会看着像重复排版），也不许放无出处的数字 */
+  els.tagline.textContent='MENDED WITH GOLD';
+  measureOne();
+  if(dirty||!TITLE.chars.length) buildTitle();
+  var has=!!cfg.img;
+  els.prodTag.textContent = has ? 'PATCH LOCKED' : 'NO PATCH';
+  els.prodSub.textContent = has ? 'GOLD SEAM OVER IMAGE' : 'DROP IMAGE HERE';
+}
+
+/* ---------- 两块的运动：同一个 pivot，SVG 与 HTML 两套写法必须等价 ---------- */
+function setPlates(dxL,dyL,rotL,dxR,dyR,rotR){
+  els.plateL.setAttribute('transform','translate('+dxL.toFixed(2)+' '+dyL.toFixed(2)+') rotate('+rotL.toFixed(3)+' '+CX+' '+CY+')');
+  els.plateR.setAttribute('transform','translate('+dxR.toFixed(2)+' '+dyR.toFixed(2)+') rotate('+rotR.toFixed(3)+' '+CX+' '+CY+')');
+  els.txtL.style.transform='translate('+dxL.toFixed(2)+'px,'+dyL.toFixed(2)+'px) rotate('+rotL.toFixed(3)+'deg)';
+  els.txtR.style.transform='translate('+dxR.toFixed(2)+'px,'+dyR.toFixed(2)+'px) rotate('+rotR.toFixed(3)+'deg)';
+}
+
+/* ============================== 逐帧渲染（纯函数） ============================== */
+function render(f){
+  var i, p;
+
+  /* ① 开场全灭 → 墨底 + 两块各自淡入（f=0 时整幅只有均匀墨色） */
+  var appear=easeOut(seg(f,0,18));
+  els.gapDark.setAttribute('opacity', (0.96*appear).toFixed(3));
+  els.plateL.setAttribute('opacity', appear.toFixed(3));
+  els.plateR.setAttribute('opacity', appear.toFixed(3));
+
+  /* ② ★ 招牌动作：双域错位合拢。ring = 撞在一起之后的余振（衰减正弦），
+        它让「合拢」这一下有重量，而不是两条 easeInOut 滑到位就死。 */
+  var mp=seg(f,6,74);
+  var meet=easeInOut(mp);
+  var ring=Math.sin(mp*Math.PI*3)*Math.exp(-mp*4.4);
+  var k=1-meet;
+  /* ★ 撞上的那一下：整块【沿法线弹开】(sep)，而不是只把旋转抖一点。
+     第一版 ring 只作用在 ±0.5° 旋转上 ⇒ 位移 < 8px，「合拢」这一下在画面上根本不存在。 */
+  var sep=ring*13;
+  setPlates(
+    OFFL.x*k + ring*1.1 - sep,  OFFL.y*k + ring*0.7,  OFFL.r*k + ring*0.16,
+    OFFR.x*k - ring*1.2 + sep,  OFFR.y*k - ring*0.5,  OFFR.r*k - ring*0.18
+  );
+
+  /* ③ 次级蝉翼纹：裂到副纹有先后，但【不能等到合拢完才有纹理】——
+        第一版 44→96 起，f10~f40 那 1 秒整幅是「白地 + 一条黑带」，空得没有材质。提前到 22。 */
+  var hp=easeOut(seg(f,22,74));
+  for(i=0;i<HAIRS.length;i++) HAIRS[i].setAttribute('opacity',(0.34*hp).toFixed(3));
+
+  /* ③.5 ★ 断口的材质光：越合拢、缝两侧的瓷光与接触阴影越实；
+          撞上的那一瞬（f≈76）再叠一次高斯闪 = 「合拢这一下有重量」。 */
+  var flash=Math.exp(-Math.pow((f-76)/9,2));
+  els.glowL.setAttribute('opacity', clamp(0.30+0.42*meet+0.28*flash,0,1).toFixed(3));
+  els.shOnR.setAttribute('opacity', (0.22+0.42*meet).toFixed(3));
+
+  /* ④ 金缝底槽（暗）：分开的缝越窄它越淡；金补上之后退成一条极细的暗根，
+        不再当「卡通外框」用（第一版 11px 墨槽压 7px 金线 = 贴纸描边）。 */
+  els.seamDark.setAttribute('opacity', (0.26+0.30*appear*(0.35+0.65*k)).toFixed(3));
+
+  /* ⑤ ★ 金线从 5 个节点向两端生长：每段两条半程，错相 9 帧，单条 46 帧 */
+  for(i=0;i<SEAM.length;i++){
+    var s=SEAM[i];
+    var st=78 + s.node*9 + s.dir*5;
+    var g=easeOut(seg(f, st, st+46));
+    s.el.setAttribute('stroke-dashoffset', (s.len*(1-g)).toFixed(1));
+    s.el.setAttribute('opacity', seg(f, st, st+7).toFixed(3));
+  }
+
+  /* ⑥ 金池：节点处那滴「凝住的漆金」。入场后持续极缓地呼吸（活着的证据，放在中性层） */
+  for(i=0;i<POOLS.length;i++){
+    var po=POOLS[i], q=easeOut(seg(f, 96+i*9, 96+i*9+24));
+    var pulse = 1 + 0.055*Math.sin(f*0.085 + i*1.3)*seg(f, 150, 176);
+    po.el.setAttribute('r', (po.r*q*pulse).toFixed(2));
+    po.el.setAttribute('opacity', (0.62*q).toFixed(3));
+  }
+
+  /* ⑦ 主标题：逐字淡入 + 18px 起。两份 DOM 同步写，否则两半会错开。 */
+  for(i=0;i<TITLE.chars.length;i++){
+    var c=TITLE.chars[i];
+    var st2=104 + i*2.4, o=easeOut(seg(f, st2, st2+15));
+    var ty=((1-o)*18).toFixed(2), op=o.toFixed(3);
+    if(c.w){ c.w.style.opacity=op; c.w.style.transform='translateY('+ty+'px)'; }
+    if(c.r){ c.r.style.opacity=op; c.r.style.transform='translateY('+ty+'px)'; }
+  }
+
+  /* ⑧ Part 章 + 一道暗金细规（scaleX 从 0 抽出） */
+  var pp=easeOut(seg(f,150,174));
+  els.partTxt.style.opacity=seg(f,150,168).toFixed(3);
+  els.partTxt.style.transform='translateY('+((1-pp)*10).toFixed(1)+'px)';
+  els.partRule.style.opacity=(0.9*pp).toFixed(3);
+  els.partRule.style.transform='scaleX('+pp.toFixed(3)+')';
+
+  /* ⑨ 副标题 + 灰瓷规 */
+  var sp=easeOut(seg(f,162,188));
+  els.subTxt.style.opacity=seg(f,162,180).toFixed(3);
+  els.subTxt.style.transform='translateY('+((1-sp)*12).toFixed(1)+'px)';
+  els.subRule.style.transform='scaleX('+sp.toFixed(3)+')';
+  /* 🔴 写 style.opacity 会【覆盖】CSS 里那条 .72/.62 —— 小字自带降透明度时必须把它乘进公式，
+     否则入场动画一跑完，降透就悄悄失效了。 */
+  els.tagline.style.opacity=(0.72*easeOut(seg(f,176,200))).toFixed(3);
+
+  /* ⑩ 补片：从右域外沿小幅滑进 + 微旋归位；金边随后沿周长描出一圈。
+        🔴 它挂在 #plateR 里，所以 setPlates 的位移已经作用在它身上 —— 这里只写【相对右块】的局部位移。 */
+  var kp=easeOut(seg(f,150,186));
+  els.patch.setAttribute('transform',
+    'translate('+((1-kp)*74).toFixed(1)+' '+((1-kp)*-38).toFixed(1)+') '+
+    'rotate('+((1-kp)*-4.2).toFixed(2)+' '+PATCH.cx+' '+PATCH.cy+')');
+  els.patch.setAttribute('opacity', seg(f,150,166).toFixed(3));
+  els.patchEdge.setAttribute('stroke-dashoffset', (PATCH.len*(1-easeOut(seg(f,168,210)))).toFixed(1));
+  /* 矢量占位 vs 上传图：互不闩住，每帧按目标态写（幂等比较省写） */
+  var has=!!cfg.img;
+  var pvOp=has?0:easeOut(seg(f,176,204));
+  if(els.patchVec.getAttribute('opacity')!==String(pvOp.toFixed(3))) els.patchVec.setAttribute('opacity', pvOp.toFixed(3));
+  var piOp=has?easeOut(seg(f,176,204)):0;
+  if(els.prodImg.getAttribute('opacity')!==String(piOp.toFixed(3))) els.prodImg.setAttribute('opacity', piOp.toFixed(3));
+  els.prodTag.style.opacity=seg(f,186,206).toFixed(3);
+  els.prodSub.style.opacity=(0.62*seg(f,192,212)).toFixed(3);
+
+  /* ⑪ 收尾（186→225 仍在动，不留定版死帧）：
+        一道高光沿金缝跑完一趟 + 左域釉光横扫。两者都是 f 的闭式函数。 */
+  var tail=seg(f,186,225);
+  if(tail>0 && tail<1){
+    els.seamSweep.setAttribute('opacity', (0.85*Math.sin(tail*Math.PI)).toFixed(3));
+    els.seamSweep.setAttribute('stroke-dashoffset', (150 - smoother(tail)*(SEAMLEN+150)).toFixed(1));
+  } else {
+    els.seamSweep.setAttribute('opacity','0');
+  }
+  var gz=seg(f,176,225);
+  els.glazeL.setAttribute('opacity', (0.30*Math.sin(gz*Math.PI)).toFixed(3));
+  els.glazeL.setAttribute('transform','translate('+(smoother(gz)*2900).toFixed(1)+' 0)');
+}
+
+/* ============================== 主循环 ============================== */
+var rafId=0, startAt=performance.now();
+function tick(){
+  var now=performance.now();
+  var t=((now-startAt)/1000)%CYCLE;
+  render(Math.min(DUR, t*FPS));
+  rafId=requestAnimationFrame(tick);
+}
+function restart(){ startAt=performance.now(); }
+function fit(){
+  /* ⚠️ 无放大上限（导出高清链路要求）。#stage 的 transform 归这里独占 ——
+     两块的运动写在 #plateL/#plateR 与 #txtL/#txtR 上，不碰 #stage。 */
+  var s=Math.min(innerWidth/1920, innerHeight/1080);
+  var st=$('stage'), wr=$('wrap');
+  st.style.transform='scale('+s+')';
+  wr.style.width=(1920*s)+'px'; wr.style.height=(1080*s)+'px';
+}
+window.addEventListener('resize',fit);
+
+/* ============================== 配色 ============================== */
+var VAR_NAMES=['--kt-porc','--kt-slate','--kt-ink','--kt-mist','--kt-gold','--kt-brass'];
+function applyColors(vars){
+  var root=document.documentElement.style, k;
+  for(k in vars){ if(k.indexOf('--kt-')===0) root.setProperty(k,vars[k]); }
+}
+
+/* ============================== 自定义字体（cyber 协议） ============================== */
+function applyFont(d){
+  var name=d.family, url=d.dataURL;
+  if(!name){ var old=document.getElementById('__ktFont'); if(old) old.remove(); return; }
+  var st=document.getElementById('__ktFont')||document.createElement('style');
+  st.id='__ktFont';
+  st.textContent = url ? '@font-face{font-family("__ktfont");src:url('+url+') format("truetype");font-display:block;}' : '';
+  if(!st.parentNode) document.head.appendChild(st);
+  var fam = url ? '__ktfont' : name;
+  $('stage').style.fontFamily='"'+fam+'","Noto Sans SC","Microsoft YaHei",sans-serif';
+}
+
+/* ============================== postMessage 桥（与 pop-mint / liquid-chrome 同协议） ============================== */
+window.addEventListener('message',function(e){
+  var d=e.data||{};
+  if(d.source!=='host')return;
+  try{
+    if(d.type==='cyber-embed'){ document.body.classList.add('embed'); fit(); }
+    else if(d.type==='cyber-unembed'){ document.body.classList.remove('embed'); fit(); }
+    else if(d.type==='cyber-cfg'){ applyCfg(d); if(d.replay)restart(); }
+    else if(d.type==='cyber-color'){ applyColors(d.vars||{}); }
+    else if(d.type==='cyber-img'){ setProdImg(d.img||''); applyCfg({}); }
+    else if(d.type==='cyber-font'){ applyFont(d); }
+    else if(d.type==='cyber-play'){ restart(); if(!rafId) rafId=requestAnimationFrame(tick); }
+    else if(d.type==='cyber-seek'){
+      if(rafId){ try{ cancelAnimationFrame(rafId); }catch(err){} rafId=0; }
+      /* ⚠️ d.t 单位是【秒】 */
+      if(typeof d.t==='number'){ try{ render(Math.min(DUR, d.t*FPS)); void document.documentElement.offsetHeight; }catch(err){} }
+    }
+    else if(d.type==='cyber-resume'){
+      startAt=performance.now(); if(!rafId) rafId=requestAnimationFrame(tick);
+    }
+    else if(d.type==='cyber-get-html'){
+      var ovr='',k2;
+      var cs=getComputedStyle(document.documentElement);
+      for(k2=0;k2<VAR_NAMES.length;k2++){ ovr+=VAR_NAMES[k2]+':'+cs.getPropertyValue(VAR_NAMES[k2]).trim()+';'; }
+      ovr=':root{'+ovr+'}';
+      /* ⚠️ 本注释里不能写 script 闭合标签的字面量 —— 它会先把自己所在的 script 截断 */
+      var boot='<script>window.__KTSUG_BOOT='+JSON.stringify({part:cfg.part,title:cfg.title,sub:cfg.sub,img:cfg.img||''}).replace(/</g,'\\u003c')+'<\/script>';
+      var html=PRISTINE.replace('</head>','<style id="ktsug-override">'+ovr+'</style>'+boot+'</head>');
+      parent.postMessage({source:'cyber',type:'cyber-html',reqId:d.reqId,html:html},'*');
+    }
+  }catch(err){ parent.postMessage({source:'cyber',type:'cyber-status',err:err.message},'*'); }
+});
+
+/* ============================== 独立面板 ============================== */
+$('pPart').addEventListener('input',function(){ applyCfg({part:this.value}); restart(); });
+$('pTitle').addEventListener('input',function(){ applyCfg({title:this.value}); restart(); });
+$('pSub').addEventListener('input',function(){ applyCfg({sub:this.value}); restart(); });
+$('pPlay').addEventListener('click',function(){ restart(); });
+$('pImg').addEventListener('change',function(){
+  var f=this.files&&this.files[0]; if(!f) return;
+  if(!/^image\//i.test(f.type||'')) return;
+  var r=new FileReader();
+  r.onload=function(){ setProdImg(r.result); applyCfg({}); restart(); };
+  r.readAsDataURL(f); this.value='';
+});
+
+/* ============================== 启动 ============================== */
+/* ⚠️ 顺序有讲究：折线是一切几何的真源 ⇒ 先 buildCrack，再建两块/金缝/补片，
+   最后 buildClipPaths 需要 seamSweep 已在 DOM 里才能量总长。 */
+buildCrack();
+buildSeam();
+buildPools();
+buildGrain();
+buildHair();
+buildPatch();
+buildPatchVec();
+buildClipPaths();
+/* ⚠️ 顺序不能反：applyCfg 只认「传了的键」，__KTSUG_BOOT 里带的是固化时的用户值，
+   必须先铺默认再拿 boot 覆盖，否则固化 HTML 打开永远是模板默认字。 */
+applyCfg(cfg);
+if(window.__KTSUG_BOOT){ applyCfg(window.__KTSUG_BOOT); }
+fit();
+render(0);
+/* ★ 必须自启主循环：漏掉的后果不是报错，是【预览永远停在第 0 帧】—— 版式全对、数值全绿，就是不动。 */
+rafId=requestAnimationFrame(tick);
+parent.postMessage({source:'cyber',type:'cyber-ready'},'*');
+</script>
+</body>
+</html>
